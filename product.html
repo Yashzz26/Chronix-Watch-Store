@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Product Details - Chronix</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+  </head>
+  <body>
+    <div id="main-content">
+      <header>
+        <nav class="navbar">
+          <a href="index.html" class="logo">Chronix<span>.</span></a>
+          <div class="nav-icons">
+            <a href="cart.html" class="sticky-cart-icon">
+              <i class="fa fa-shopping-cart"></i>
+              <span id="cart-item-count">0</span>
+            </a>
+            <div id="user-greeting-container" class="user-greeting"></div>
+            <button id="logout-btn" class="btn-logout">Logout</button>
+          </div>
+        </nav>
+      </header>
+
+      <main id="product-detail-container" class="product-detail-main"></main>
+
+      <section class="reviews-section">
+        <div class="reviews-container">
+          <h2>Customer Reviews</h2>
+          <div id="reviews-list"></div>
+          <div class="review-form-container">
+            <h3>Leave a Review</h3>
+            <form id="review-form">
+              <div class="form-group">
+                <label for="reviewer-name">Your Name</label>
+                <input type="text" id="reviewer-name" required />
+              </div>
+              <div class="form-group">
+                <label>Your Rating</label>
+                <div class="star-rating-input">
+                  <i class="fa-regular fa-star" data-value="1"></i>
+                  <i class="fa-regular fa-star" data-value="2"></i>
+                  <i class="fa-regular fa-star" data-value="3"></i>
+                  <i class="fa-regular fa-star" data-value="4"></i>
+                  <i class="fa-regular fa-star" data-value="5"></i>
+                </div>
+                <input type="hidden" id="rating-value" value="0" required />
+              </div>
+              <div class="form-group">
+                <label for="review-text">Your Review</label>
+                <textarea id="review-text" rows="4" required></textarea>
+              </div>
+              <button type="submit" class="btn">Submit Review</button>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <footer>
+        <p>&copy; 2025 Chronix. All rights reserved.</p>
+      </footer>
+    </div>
+    <div id="toast-container"></div>
+    <script src="script.js"></script>
+  </body>
+</html>

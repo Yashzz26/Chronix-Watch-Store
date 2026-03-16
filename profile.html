@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Profile - Chronix</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="main-content">
+        <header>
+            <nav class="navbar">
+                <a href="index.html" class="logo">Chronix<span>.</span></a>
+                <div class="nav-icons">
+                    <div id="user-greeting-container" class="user-greeting"></div>
+                    <a href="cart.html" class="sticky-cart-icon"><i class="fa fa-shopping-cart"></i><span id="cart-item-count">0</span></a>
+                    <button id="logout-btn" class="btn-logout">Logout</button>
+                </div>
+            </nav>
+        </header>
+
+        <main class="profile-main">
+            <h1>Your Profile</h1>
+            <p>Manage your personal information and preferences.</p>
+            <form id="profile-form" class="profile-form">
+                <div class="profile-photo-section">
+                    <img src="/images/photo.png" alt="Profile Preview" id="profile-photo-preview">
+                    <input type="file" id="profile-photo-input" accept="image/*">
+                    <label for="profile-photo-input" class="btn-upload">Upload Photo</label>
+                </div>
+                <div class="form-group">
+                    <label for="full-name">Full Name</label>
+                    <input type="text" id="full-name" placeholder="Enter your full name">
+                </div>
+                <div class="form-group">
+                    <label for="email-id">Email ID</label>
+                    <input type="email" id="email-id" placeholder="Enter your email">
+                </div>
+                <div class="form-group">
+                    <label for="address">Address</label>
+                    <textarea id="address" rows="4" placeholder="Enter your shipping address"></textarea>
+                </div>
+                <button type="submit" class="btn">Save Changes</button>
+            </form>
+        </main>
+    </div>
+    <div id="toast-container"></div>
+    <script src="script.js"></script>
+</body>
+</html>
