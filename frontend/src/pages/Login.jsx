@@ -1,103 +1,133 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { HiOutlineLockClosed, HiOutlineUser, HiEye, HiEyeOff } from 'react-icons/hi';
-import useAuthStore from '../store/authStore';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../lib/firebase';
 import toast from 'react-hot-toast';
+import { HiOutlineMail, HiOutlineLockClosed, HiOutlineEye, HiOutlineEyeOff } from 'react-icons/hi';
 
-export default function Login() {
+const Login = () => {
   const navigate = useNavigate();
-  const login = useAuthStore(s => s.login);
+  const location = useLocation();
+  const from = location.state?.from?.pathname || '/';
 
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
-  const [loading, setLoading]   = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!username || !password) return toast.error('Enter credentials');
-
+    setError('');
     setLoading(true);
-    // Mock latency
-    setTimeout(() => {
-      const success = login(username, password);
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      toast.success('Welcome back!');
+      navigate(from, { replace: true });
+    } catch (err) {
+      const messages = {
+        'auth/user-not-found': 'No account found with this email.',
+        'auth/wrong-password': 'Incorrect password.',
+        'auth/invalid-credential': 'Invalid email or password.',
+        'auth/too-many-requests': 'Too many failed attempts. Try again later.',
+      };
+      setError(messages[err.code] || 'Login failed. Please try again.');
+    } finally {
       setLoading(false);
-      if (success) {
-        toast.success(`Welcome back, ${username}`);
-        navigate('/');
-      } else {
-        toast.error('Invalid credentials (admin/admin1234)');
-      }
-    }, 800);
+    }
   };
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 24px' }}>
+    <div className="min-h-screen bg-obsidian-900 flex items-center justify-center px-4 relative overflow-hidden">
+      {/* Ambient glow */}
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-amber/5 rounded-full blur-3xl pointer-events-none" />
+
       <motion.div
-        initial={{ opacity: 0, scale: 0.98 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="card"
-        style={{ width: '100%', maxWidth: 420, padding: 40 }}
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-md"
       >
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{
-            width: 48, height: 48, borderRadius: 12, background: 'rgba(212,175,55,0.1)',
-            color: '#D4AF37', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            margin: '0 auto 16px'
-          }}>
-            <HiOutlineLockClosed size={24} />
-          </div>
-          <h1 style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '2rem',
-            fontWeight: 500, color: '#F0EDE8' }}>Sign In</h1>
-          <p style={{ color: '#5A5652', fontSize: '0.85rem', marginTop: 8 }}>
-            Access your Chronix account
-          </p>
+        {/* Header */}
+        <div className="text-center mb-8">
+          <Link to="/">
+            <span className="font-display text-3xl font-bold text-white">
+              Chronix<span className="text-amber">.</span>
+            </span>
+          </Link>
+          <h2 className="mt-4 text-2xl font-display font-semibold text-white">Welcome back</h2>
+          <p className="mt-1 text-platinum text-sm">Sign in to your account</p>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <div>
-            <label className="section-label" style={{ display: 'block', marginBottom: 8 }}>Username</label>
-            <div style={{ position: 'relative' }}>
-              <HiOutlineUser style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#3A3A3A' }} />
-              <input
-                className="input" style={{ paddingLeft: 40 }}
-                placeholder="admin"
-                value={username} onChange={e => setUsername(e.target.value)}
-              />
+        {/* Card */}
+        <div className="glass rounded-2xl p-8">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Email */}
+            <div>
+              <label className="block text-sm font-medium text-platinum mb-2">Email</label>
+              <div className="relative">
+                <HiOutlineMail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-platinum text-lg" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  placeholder="you@example.com"
+                  className="w-full bg-obsidian-700 text-white placeholder-platinum/50 text-sm pl-11 pr-4 py-3.5 rounded-xl border border-white/5 focus:outline-none focus:border-amber/50 focus:ring-1 focus:ring-amber/20 transition-all"
+                />
+              </div>
             </div>
-          </div>
 
-          <div>
-            <label className="section-label" style={{ display: 'block', marginBottom: 8 }}>Password</label>
-            <div style={{ position: 'relative' }}>
-              <HiOutlineLockClosed style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#3A3A3A' }} />
-              <input
-                type={showPass ? 'text' : 'password'}
-                className="input" style={{ paddingLeft: 40, paddingRight: 44 }}
-                placeholder="••••••••"
-                value={password} onChange={e => setPassword(e.target.value)}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPass(!showPass)}
-                style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
-                  background: 'none', border: 'none', color: '#3A3A3A', cursor: 'pointer' }}
-              >
-                {showPass ? <HiEyeOff size={18} /> : <HiEye size={18} />}
-              </button>
+            {/* Password */}
+            <div>
+              <label className="block text-sm font-medium text-platinum mb-2">Password</label>
+              <div className="relative">
+                <HiOutlineLockClosed className="absolute left-3.5 top-1/2 -translate-y-1/2 text-platinum text-lg" />
+                <input
+                  type={showPass ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  placeholder="Enter your password"
+                  className="w-full bg-obsidian-700 text-white placeholder-platinum/50 text-sm pl-11 pr-12 py-3.5 rounded-xl border border-white/5 focus:outline-none focus:border-amber/50 focus:ring-1 focus:ring-amber/20 transition-all"
+                />
+                <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-platinum hover:text-white transition-colors">
+                  {showPass ? <HiOutlineEyeOff className="text-lg" /> : <HiOutlineEye className="text-lg" />}
+                </button>
+              </div>
             </div>
-          </div>
 
-          <button type="submit" className="btn-primary" disabled={loading} style={{ marginTop: 8 }}>
-            {loading ? 'Entering...' : 'Sign In'}
-          </button>
-        </form>
+            {error && (
+              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-red-400 text-sm text-center bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+                {error}
+              </motion.p>
+            )}
 
-        <p style={{ color: '#3A3A3A', fontSize: '0.8rem', textAlign: 'center', marginTop: 24 }}>
-          Don't have an account? <Link to="/login" style={{ color: '#5A5652', textDecoration: 'none' }}>Create one</Link>
-        </p>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-amber hover:bg-amber-dark disabled:opacity-50 disabled:cursor-not-allowed text-black font-semibold py-3.5 rounded-xl transition-all transform hover:-translate-y-0.5 active:translate-y-0"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                  Signing in...
+                </span>
+              ) : 'Sign In'}
+            </button>
+          </form>
+
+          <p className="mt-6 text-center text-sm text-platinum">
+            Don't have an account?{' '}
+            <Link to="/register" className="text-amber hover:text-amber-light font-semibold transition-colors">
+              Create account
+            </Link>
+          </p>
+        </div>
       </motion.div>
     </div>
   );
-}
+};
+
+export default Login;

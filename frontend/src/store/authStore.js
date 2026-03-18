@@ -1,33 +1,36 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, db } from '../lib/firebase';
 
-// Original login: username "admin", password "admin1234"
-// Keep this for now. Firebase replaces it in Phase 3.
-const useAuthStore = create(
-  persist(
-    (set, get) => ({
-      isLoggedIn: false,
-      user: null,
-      profile: JSON.parse(localStorage.getItem('chronix-profile') || '{}'),
+const useAuthStore = create((set) => ({
+  user: null,          // Firebase Auth user object
+  userProfile: null,   // Firestore user document
+  loading: true,
+  setUser: (user) => set({ user }),
+  setUserProfile: (profile) => set({ userProfile: profile }),
+  setLoading: (loading) => set({ loading }),
+}));
 
-      login(username, password) {
-        if (username === 'admin' && password === 'admin1234') {
-          set({ isLoggedIn: true, user: { username } });
-          return true;
+export const initAuthListener = () => {
+  onAuthStateChanged(auth, async (firebaseUser) => {
+    if (firebaseUser) {
+      useAuthStore.getState().setUser(firebaseUser);
+      // Fetch Firestore profile
+      try {
+        const profileDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+        if (profileDoc.exists()) {
+          useAuthStore.getState().setUserProfile(profileDoc.data());
         }
-        return false;
-      },
-      logout() {
-        set({ isLoggedIn: false, user: null });
-      },
-      updateProfile(data) {
-        const updated = { ...get().profile, ...data };
-        set({ profile: updated });
-        localStorage.setItem('chronix-profile', JSON.stringify(updated));
-      },
-    }),
-    { name: 'chronix-auth', partialize: (s) => ({ isLoggedIn: s.isLoggedIn, user: s.user }) }
-  )
-);
+      } catch (err) {
+        console.error('Failed to load user profile:', err);
+      }
+    } else {
+      useAuthStore.getState().setUser(null);
+      useAuthStore.getState().setUserProfile(null);
+    }
+    useAuthStore.getState().setLoading(false);
+  });
+};
 
 export default useAuthStore;

@@ -1,330 +1,217 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { HiOutlineShoppingCart, HiOutlineSearch, HiOutlineUser, HiMenu, HiX } from 'react-icons/hi';
-import { useDebounce } from '../../hooks/useDebounce';
-import { products } from '../../data/products';
-import useCartStore from '../../store/cartStore';
+import { signOut } from 'firebase/auth';
+import { auth } from '../../lib/firebase';
 import useAuthStore from '../../store/authStore';
+import useCartStore from '../../store/cartStore';
+import { useDebounce } from '../../hooks/useDebounce';
+import { getProducts } from '../../services/productService';
+import { HiOutlineShoppingCart, HiOutlineUser, HiOutlineSearch, HiOutlineMenu, HiX } from 'react-icons/hi';
 import toast from 'react-hot-toast';
 
-export default function Navbar() {
+const Navbar = () => {
+  const { user, userProfile } = useAuthStore();
+  const totalItems = useCartStore((s) => s.getTotalItems());
   const navigate = useNavigate();
   const location = useLocation();
-  const totalItems = useCartStore(s => s.totalItems());
-  const { isLoggedIn, user, profile, logout } = useAuthStore();
 
-  const [query, setQuery]           = useState('');
-  const [results, setResults]       = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [userMenu, setUserMenu]     = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const searchRef = useRef(null);
-  const debouncedQuery = useDebounce(query, 250);
 
-  // Close mobile menu on navigation
-  useEffect(() => setMobileOpen(false), [location.pathname]);
+  const debouncedSearch = useDebounce(searchQuery, 300);
+
+  // Close mobile menu on route change
+  useEffect(() => { setMobileOpen(false); }, [location]);
 
   // Live search
   useEffect(() => {
-    if (debouncedQuery.length < 2) { setResults([]); return; }
-    const filtered = products
-      .filter(p => p.name.toLowerCase().includes(debouncedQuery.toLowerCase()))
-      .slice(0, 5);
-    setResults(filtered);
-  }, [debouncedQuery]);
+    if (debouncedSearch.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    getProducts({ limitCount: 20 }).then((products) => {
+      const filtered = products.filter((p) =>
+        p.name.toLowerCase().includes(debouncedSearch.toLowerCase())
+      );
+      setSearchResults(filtered.slice(0, 5));
+    });
+  }, [debouncedSearch]);
 
-  // Close search dropdown on outside click
+  // Close search on outside click
   useEffect(() => {
-    const handler = e => {
+    const handler = (e) => {
       if (searchRef.current && !searchRef.current.contains(e.target)) {
         setSearchOpen(false);
+        setSearchResults([]);
       }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const handleLogout = () => {
-    logout();
-    setUserMenu(false);
-    toast.success('Signed out');
+  const handleLogout = async () => {
+    await signOut(auth);
+    setUserMenuOpen(false);
+    toast.success('Signed out successfully');
     navigate('/');
   };
 
-  const initials = profile?.name
-    ? profile.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-    : user?.username?.[0]?.toUpperCase() || 'A';
+  const initials = userProfile?.name
+    ? userProfile.name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
+    : user?.email?.[0]?.toUpperCase() || 'U';
 
   return (
     <motion.header
-      initial={{ opacity: 0, y: -16 }}
+      initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      style={{
-        position: 'sticky', top: 0, zIndex: 100,
-        background: 'rgba(8,8,8,0.92)',
-        backdropFilter: 'blur(20px)',
-        borderBottom: '1px solid #1A1A1A',
-      }}
+      transition={{ duration: 0.4 }}
+      className="sticky top-0 z-50 bg-obsidian-800/80 backdrop-blur-xl border-b border-white/5"
     >
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', height: 64, gap: 24 }}>
+      <nav className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+        {/* Logo */}
+        <Link to="/" className="flex-shrink-0">
+          <span className="font-display text-2xl font-bold text-white tracking-tight">
+            Chronix<span className="text-amber">.</span>
+          </span>
+        </Link>
 
-          {/* Logo */}
-          <Link to="/" style={{ textDecoration: 'none', flexShrink: 0 }}>
-            <span style={{
-              fontFamily: '"Cormorant Garamond", serif',
-              fontSize: '1.6rem',
-              fontWeight: 600,
-              color: '#F0EDE8',
-              letterSpacing: '0.02em',
-            }}>
-              Chronix<span style={{ color: '#D4AF37' }}>.</span>
-            </span>
-          </Link>
-
-          {/* Search — desktop */}
-          <div ref={searchRef} style={{ flex: 1, maxWidth: 440, position: 'relative', display: 'flex' }}
-            className="hidden md:flex">
-            <div style={{ position: 'relative', width: '100%' }}>
-              <HiOutlineSearch style={{
-                position: 'absolute', left: 14, top: '50%',
-                transform: 'translateY(-50%)',
-                color: '#5A5652', fontSize: 16,
-              }} />
-              <input
-                className="input"
-                style={{ paddingLeft: 40, fontSize: '0.875rem' }}
-                placeholder="Search timepieces…"
-                value={query}
-                onChange={e => { setQuery(e.target.value); setSearchOpen(true); }}
-                onFocus={() => query.length >= 2 && setSearchOpen(true)}
-              />
-            </div>
-
-            <AnimatePresence>
-              {searchOpen && results.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 8, scale: 0.98 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 8 }}
-                  transition={{ duration: 0.15 }}
-                  style={{
-                    position: 'absolute', top: 'calc(100% + 8px)', left: 0, right: 0,
-                    background: '#0F0F0F', border: '1px solid #2A2A2A',
-                    borderRadius: 10, overflow: 'hidden',
-                    boxShadow: '0 16px 48px rgba(0,0,0,0.6)', zIndex: 200,
-                  }}
-                >
-                  {results.map(p => (
-                    <Link
-                      key={p.id}
-                      to={`/product/${p.id}`}
-                      onClick={() => { setQuery(''); setResults([]); setSearchOpen(false); }}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 12,
-                        padding: '10px 14px', textDecoration: 'none',
-                        borderLeft: '2px solid transparent',
-                        transition: 'all 0.15s ease',
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.borderLeftColor = '#D4AF37'}
-                      onMouseLeave={e => e.currentTarget.style.borderLeftColor = 'transparent'}
-                    >
-                      <img src={p.imageGallery[0]} alt={p.name}
-                        style={{ width: 40, height: 40, objectFit: 'contain',
-                          background: '#161616', borderRadius: 6 }} />
-                      <div>
-                        <p style={{ color: '#F0EDE8', fontSize: '0.85rem', fontWeight: 500 }}>{p.name}</p>
-                        <p style={{ color: '#D4AF37', fontSize: '0.8rem', fontFamily: '"DM Mono", monospace' }}>
-                          ₹{(p.dealPrice || p.price).toLocaleString('en-IN')}
-                        </p>
-                      </div>
-                    </Link>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
+        {/* Search — desktop */}
+        <div ref={searchRef} className="hidden md:flex flex-1 max-w-md relative">
+          <div className="relative w-full">
+            <HiOutlineSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-platinum text-lg" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setSearchOpen(true); }}
+              onFocus={() => setSearchOpen(true)}
+              placeholder="Search timepieces..."
+              className="w-full bg-obsidian-700 text-white placeholder-platinum text-sm pl-10 pr-4 py-2.5 rounded-xl border border-white/5 focus:outline-none focus:border-amber/50 focus:ring-1 focus:ring-amber/20 transition-all"
+            />
           </div>
-
-          {/* Right icons */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
-
-            {/* Mobile search toggle */}
-            <button className="md:hidden" onClick={() => setSearchOpen(s => !s)}
-              style={{ background: 'none', border: 'none', color: '#9A9690',
-                padding: 8, cursor: 'pointer', borderRadius: 8 }}>
-              <HiOutlineSearch size={20} />
-            </button>
-
-            {/* Cart */}
-            <Link to="/cart" style={{ position: 'relative', padding: 8,
-              color: '#9A9690', textDecoration: 'none', borderRadius: 8,
-              transition: 'color 0.2s', display: 'flex' }}
-              onMouseEnter={e => e.currentTarget.style.color = '#F0EDE8'}
-              onMouseLeave={e => e.currentTarget.style.color = '#9A9690'}
-            >
-              <HiOutlineShoppingCart size={20} />
-              {totalItems > 0 && (
-                <span style={{
-                  position: 'absolute', top: 4, right: 4,
-                  background: '#D4AF37', color: '#080808',
-                  fontSize: '0.6rem', fontFamily: '"DM Mono", monospace', fontWeight: 700,
-                  width: 16, height: 16, borderRadius: '50%',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  {totalItems > 9 ? '9+' : totalItems}
-                </span>
-              )}
-            </Link>
-
-            {/* User */}
-            {isLoggedIn ? (
-              <div style={{ position: 'relative' }}>
-                <button
-                  onClick={() => setUserMenu(s => !s)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 8,
-                    background: 'none', border: '1px solid #2A2A2A',
-                    borderRadius: 8, padding: '6px 12px', cursor: 'pointer',
-                    transition: 'border-color 0.2s' }}
-                  onMouseEnter={e => e.currentTarget.style.borderColor = '#D4AF37'}
-                  onMouseLeave={e => e.currentTarget.style.borderColor = '#2A2A2A'}
-                >
-                  {profile?.photo ? (
-                    <img src={profile.photo} alt=""
-                      style={{ width: 26, height: 26, borderRadius: '50%', objectFit: 'cover' }} />
-                  ) : (
-                    <div style={{
-                      width: 26, height: 26, borderRadius: '50%',
-                      background: 'rgba(212,175,55,0.15)', border: '1px solid rgba(212,175,55,0.3)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '0.7rem', fontWeight: 700, color: '#D4AF37',
-                    }}>
-                      {initials}
-                    </div>
-                  )}
-                  <span className="hidden sm:block" style={{
-                    fontSize: '0.85rem', color: '#9A9690', maxWidth: 80,
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                  }}>
-                    {profile?.name?.split(' ')[0] || user?.username}
-                  </span>
-                </button>
-
-                <AnimatePresence>
-                  {userMenu && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 8, scale: 0.96 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 8 }}
-                      style={{
-                        position: 'absolute', top: 'calc(100% + 8px)', right: 0,
-                        width: 180, background: '#0F0F0F',
-                        border: '1px solid #2A2A2A', borderRadius: 10,
-                        overflow: 'hidden', boxShadow: '0 16px 40px rgba(0,0,0,0.5)',
-                      }}
-                    >
-                      <Link to="/profile" onClick={() => setUserMenu(false)}
-                        style={{ display: 'block', padding: '11px 16px', color: '#9A9690',
-                          textDecoration: 'none', fontSize: '0.875rem',
-                          borderBottom: '1px solid #1A1A1A', transition: 'color 0.15s' }}
-                        onMouseEnter={e => e.currentTarget.style.color = '#F0EDE8'}
-                        onMouseLeave={e => e.currentTarget.style.color = '#9A9690'}
-                      >
-                        My Profile
-                      </Link>
-                      <button onClick={handleLogout}
-                        style={{ width: '100%', textAlign: 'left', padding: '11px 16px',
-                          background: 'none', border: 'none', color: '#C0392B',
-                          fontSize: '0.875rem', cursor: 'pointer', transition: 'color 0.15s' }}
-                        onMouseEnter={e => e.currentTarget.style.color = '#E74C3C'}
-                        onMouseLeave={e => e.currentTarget.style.color = '#C0392B'}
-                      >
-                        Sign Out
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            ) : (
-              <Link to="/login"
-                className="btn-primary"
-                style={{ padding: '8px 18px', fontSize: '0.85rem', textDecoration: 'none',
-                  display: 'flex', alignItems: 'center', gap: 6 }}
+          <AnimatePresence>
+            {searchOpen && searchResults.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 8 }}
+                className="absolute top-full mt-2 left-0 w-full bg-obsidian-700 border border-white/10 rounded-xl overflow-hidden shadow-card z-50"
               >
-                <HiOutlineUser size={15} /> Sign In
-              </Link>
+                {searchResults.map((p) => (
+                  <Link
+                    key={p.id}
+                    to={`/product/${p.id}`}
+                    onClick={() => { setSearchOpen(false); setSearchQuery(''); setSearchResults([]); }}
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-obsidian-600 transition-colors"
+                  >
+                    <img src={p.imageGallery?.[0]} alt={p.name} className="w-10 h-10 rounded-lg object-cover bg-obsidian-900" />
+                    <div>
+                      <p className="text-white text-sm font-medium">{p.name}</p>
+                      <p className="text-amber text-xs font-semibold">₹{(p.dealPrice || p.price).toLocaleString('en-IN')}</p>
+                    </div>
+                  </Link>
+                ))}
+              </motion.div>
             )}
-
-            {/* Hamburger */}
-            <button className="md:hidden" onClick={() => setMobileOpen(s => !s)}
-              style={{ background: 'none', border: 'none', color: '#9A9690',
-                padding: 8, cursor: 'pointer' }}>
-              {mobileOpen ? <HiX size={22} /> : <HiMenu size={22} />}
-            </button>
-          </div>
+          </AnimatePresence>
         </div>
 
-        {/* Mobile search bar */}
-        <AnimatePresence>
-          {searchOpen && (
-            <motion.div className="md:hidden"
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              style={{ overflow: 'hidden', borderTop: '1px solid #1A1A1A' }}
-            >
-              <div style={{ padding: '12px 0' }}>
-                <input className="input" placeholder="Search timepieces…"
-                  value={query}
-                  onChange={e => setQuery(e.target.value)}
-                  style={{ fontSize: '0.9rem' }}
-                  autoFocus
-                />
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+        {/* Right icons */}
+        <div className="flex items-center gap-2">
+          {/* Cart */}
+          <Link to="/cart" className="relative p-2 rounded-xl hover:bg-obsidian-700 transition-colors text-platinum hover:text-white">
+            <HiOutlineShoppingCart className="text-xl" />
+            {totalItems > 0 && (
+              <span className="absolute -top-1 -right-1 bg-amber text-black text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                {totalItems > 9 ? '9+' : totalItems}
+              </span>
+            )}
+          </Link>
 
-      {/* Mobile drawer */}
+          {/* User */}
+          {user ? (
+            <div className="relative">
+              <button
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-obsidian-700 transition-colors"
+              >
+                <div className="w-7 h-7 rounded-full bg-amber/20 border border-amber/30 flex items-center justify-center">
+                  <span className="text-amber text-xs font-bold">{initials}</span>
+                </div>
+                <span className="hidden sm:block text-sm text-platinum max-w-[80px] truncate">
+                  {userProfile?.name?.split(' ')[0] || 'Account'}
+                </span>
+              </button>
+              <AnimatePresence>
+                {userMenuOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: 8 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: 8 }}
+                    className="absolute right-0 top-full mt-2 w-48 bg-obsidian-700 border border-white/10 rounded-xl overflow-hidden shadow-card"
+                  >
+                    <Link to="/profile" onClick={() => setUserMenuOpen(false)} className="block px-4 py-3 text-sm text-platinum hover:text-white hover:bg-obsidian-600 transition-colors">
+                      My Profile
+                    </Link>
+                    <Link to="/orders" onClick={() => setUserMenuOpen(false)} className="block px-4 py-3 text-sm text-platinum hover:text-white hover:bg-obsidian-600 transition-colors">
+                      My Orders
+                    </Link>
+                    <hr className="border-white/5 mx-4" />
+                    <button onClick={handleLogout} className="w-full text-left px-4 py-3 text-sm text-red-400 hover:text-red-300 hover:bg-obsidian-600 transition-colors">
+                      Sign Out
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ) : (
+            <Link to="/login" className="flex items-center gap-1.5 px-4 py-2 bg-amber hover:bg-amber-dark text-black text-sm font-semibold rounded-xl transition-colors">
+              <HiOutlineUser className="text-base" />
+              Sign In
+            </Link>
+          )}
+
+          {/* Mobile hamburger */}
+          <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden p-2 rounded-xl hover:bg-obsidian-700 text-platinum">
+            {mobileOpen ? <HiX className="text-xl" /> : <HiOutlineMenu className="text-xl" />}
+          </button>
+        </div>
+      </nav>
+
+      {/* Mobile menu */}
       <AnimatePresence>
         {mobileOpen && (
-          <motion.div className="md:hidden"
-            initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }}
-            style={{ overflow: 'hidden', borderTop: '1px solid #1A1A1A',
-              background: '#0A0A0A' }}
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="md:hidden border-t border-white/5 bg-obsidian-800"
           >
-            <div style={{ padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-              {[['/', 'Home'], ['/cart', `Cart (${totalItems})`]].map(([to, label]) => (
-                <Link key={to} to={to}
-                  style={{ padding: '10px 0', color: '#9A9690', textDecoration: 'none',
-                    fontSize: '0.95rem', borderBottom: '1px solid #161616',
-                    transition: 'color 0.15s' }}
-                  onMouseEnter={e => e.currentTarget.style.color = '#F0EDE8'}
-                  onMouseLeave={e => e.currentTarget.style.color = '#9A9690'}
-                >
-                  {label}
-                </Link>
-              ))}
-              {isLoggedIn ? (
+            <div className="px-4 py-4 space-y-2">
+              {/* Mobile search */}
+              <div className="relative">
+                <HiOutlineSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-platinum" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search timepieces..."
+                  className="w-full bg-obsidian-700 text-white placeholder-platinum text-sm pl-10 pr-4 py-2.5 rounded-xl border border-white/5 focus:outline-none focus:border-amber/50"
+                />
+              </div>
+              <Link to="/" className="block px-3 py-2 text-platinum hover:text-white text-sm font-medium">Home</Link>
+              <Link to="/cart" className="block px-3 py-2 text-platinum hover:text-white text-sm font-medium">Cart ({totalItems})</Link>
+              {user ? (
                 <>
-                  <Link to="/profile" style={{ padding: '10px 0', color: '#9A9690',
-                    textDecoration: 'none', fontSize: '0.95rem',
-                    borderBottom: '1px solid #161616' }}>
-                    Profile
-                  </Link>
-                  <button onClick={handleLogout}
-                    style={{ padding: '10px 0', background: 'none', border: 'none',
-                      color: '#C0392B', textAlign: 'left', cursor: 'pointer', fontSize: '0.95rem' }}>
-                    Sign Out
-                  </button>
+                  <Link to="/profile" className="block px-3 py-2 text-platinum hover:text-white text-sm font-medium">Profile</Link>
+                  <button onClick={handleLogout} className="block w-full text-left px-3 py-2 text-red-400 text-sm font-medium">Sign Out</button>
                 </>
               ) : (
-                <Link to="/login" style={{ padding: '10px 0', color: '#D4AF37',
-                  textDecoration: 'none', fontSize: '0.95rem', fontWeight: 600 }}>
-                  Sign In
-                </Link>
+                <Link to="/login" className="block px-3 py-2 text-amber font-semibold text-sm">Sign In</Link>
               )}
             </div>
           </motion.div>
@@ -332,4 +219,6 @@ export default function Navbar() {
       </AnimatePresence>
     </motion.header>
   );
-}
+};
+
+export default Navbar;
