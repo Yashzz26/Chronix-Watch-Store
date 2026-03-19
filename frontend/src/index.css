@@ -1,46 +1,143 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&family=Outfit:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-@layer base {
-  body {
-    @apply bg-obsidian-900 text-white font-sans antialiased selection:bg-amber/30 selection:text-white;
-  }
-  
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-display;
-  }
+:root {
+  --bg:         #080808;
+  --s1:         #0F0F0F;
+  --s2:         #161616;
+  --s3:         #1E1E1E;
+  --border:     #2A2A2A;
+  --gold:       #D4AF37;
+  --gold-light: #F0D060;
+  --gold-dim:   #8A7020;
+  --t1:         #F0EDE8;
+  --t2:         #9A9690;
+  --t3:         #5A5652;
 }
 
-@layer components {
-  .glass {
-    @apply bg-obsidian-800/40 backdrop-blur-md border border-white/5 shadow-glass;
-  }
-  
-  .glass-dark {
-    @apply bg-obsidian-900/60 backdrop-blur-xl border border-white/10 shadow-2xl;
-  }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  .btn-amber {
-    @apply bg-amber hover:bg-amber-dark text-black font-semibold px-6 py-3 rounded-xl transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
-  }
-  
-  .input-field {
-    @apply bg-obsidian-700 text-white placeholder:text-platinum/50 border border-white/5 rounded-xl px-4 py-3 focus:outline-none focus:border-amber/50 focus:ring-1 focus:ring-amber/20 transition-all;
-  }
+html { scroll-behavior: smooth; }
+
+body {
+  background-color: var(--bg);
+  color: var(--t1);
+  font-family: 'Outfit', sans-serif;
+  font-weight: 400;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--s3); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--gold-dim); }
+
+/* Text selection */
+::selection { background: rgba(212,175,55,0.25); color: var(--t1); }
+
+/* Custom Typography */
+.font-display { font-family: 'Cormorant Garamond', serif; }
+.font-mono    { font-family: 'DM Mono', monospace; }
+
+/* Gold text gradient */
+.text-gold-gradient {
+  background: linear-gradient(135deg, #D4AF37, #F0D060);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-::-webkit-scrollbar-track {
-  @apply bg-obsidian-900;
+/* Card base - modified for Bootstrap compatibility */
+.chronix-card {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+.chronix-card:hover {
+  border-color: rgba(212,175,55,0.25);
+  box-shadow: 0 0 40px rgba(212,175,55,0.06);
 }
 
-::-webkit-scrollbar-thumb {
-  @apply bg-obsidian-700 rounded-full border-2 border-obsidian-900 hover:bg-platinum/30 transition-colors;
+/* Glass effect for modals/overlays */
+.glass {
+  background: rgba(15,15,15,0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(42,42,42,0.8);
+}
+
+/* Section label */
+.section-label {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+/* Input overrides for Bootstrap compatibility */
+.form-control.chronix-input {
+  background: var(--s2);
+  color: var(--t1);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-family: 'Outfit', sans-serif;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.form-control.chronix-input:focus {
+  background: var(--s2);
+  color: var(--t1);
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(212,175,55,0.1);
+}
+.form-control.chronix-input::placeholder { color: var(--t3); }
+
+/* Button styles */
+.btn-chronix-primary {
+  background: var(--gold);
+  color: var(--bg);
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 13px 28px;
+  border: none;
+  transition: all 0.2s ease;
+}
+.btn-chronix-primary:hover {
+  background: var(--gold-light);
+  transform: translateY(-1px);
+}
+
+.btn-chronix-ghost {
+  background: transparent;
+  color: var(--t2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 13px 28px;
+  transition: all 0.2s ease;
+}
+.btn-chronix-ghost:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+/* Grid helper if needed above Bootstrap row/col */
+.chronix-grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+/* Responsive Hide/Show counterparts for Bootstrap */
+@media (max-width: 767.98px) {
+  .md-hide { display: none !important; }
+}
+@media (min-width: 768px) {
+  .md-show { display: block !important; }
 }

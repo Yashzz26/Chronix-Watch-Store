@@ -1,40 +1,51 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { HiOutlineCheckCircle } from 'react-icons/hi2';
 
 export default function Confirmation() {
-  const orderId = 'CHX-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+  const orderId = `CHX-${Math.random().toString(36).toUpperCase().substring(2, 10)}`;
 
   return (
-    <div style={{ textAlign: 'center', padding: '120px 24px' }}>
+    <div className="container min-vh-100 d-flex flex-column align-items-center justify-content-center p-4 text-center mx-auto" style={{ maxWidth: 600 }}>
       <motion.div
-        initial={{ scale: 0.8, opacity: 0 }}
+        initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.5, type: 'spring' }}
+        transition={{ type: "spring", stiffness: 260, damping: 20 }}
+        className="text-gold mb-5"
+        style={{ width: 100, height: 100 }}
       >
-        <div style={{
-          width: 80, height: 80, borderRadius: '50%',
-          background: 'rgba(212,175,55,0.1)', border: '2px solid #D4AF37',
-          color: '#D4AF37', fontSize: '2.5rem', margin: '0 auto 32px',
-          display: 'flex', alignItems: 'center', justifyContent: 'center'
-        }}>✓</div>
+        <HiOutlineCheckCircle size="100%" />
+      </motion.div>
 
-        <p className="section-label" style={{ marginBottom: 12 }}>Gratitude</p>
-        <h1 style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '3rem',
-          fontWeight: 400, color: '#F0EDE8', marginBottom: 16 }}>
-          Order Confirmed
-        </h1>
-        <p style={{ color: '#9A9690', fontSize: '1rem', marginBottom: 40, maxWidth: 500, margin: '0 auto 40px' }}>
-          Your timepiece is being prepared for shipment. A confirmation email has been sent to your registered address.
-        </p>
+      <motion.h1
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.2 }}
+        className="font-display display-3 text-t1 mb-4"
+      >
+        Welcome to the <br /> <span className="text-gold">Chronix Circle.</span>
+      </motion.h1>
 
-        <div className="card" style={{ padding: '16px 24px', display: 'inline-flex', alignItems: 'center', gap: 12, marginBottom: 48 }}>
-          <span style={{ color: '#5A5652', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Order ID:</span>
-          <span style={{ color: '#D4AF37', fontFamily: '"DM Mono", monospace', fontWeight: 600 }}>{orderId}</span>
+      <motion.div
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.3 }}
+        className="mb-5"
+      >
+        <p className="text-t2 fs-5 mb-5">Your reservation has been successfully accepted.</p>
+        <div className="d-inline-block px-5 py-3 bg-s1 border border-border rounded-3 shadow-lg">
+          <p className="text-[0.65rem] uppercase text-t3 tracking-widest mb-1">Reservation Reference</p>
+          <p className="text-gold font-mono fw-bold h4 mb-0">{orderId}</p>
         </div>
+      </motion.div>
 
-        <br />
-        <Link to="/" className="btn-primary" style={{ textDecoration: 'none' }}>
-          Back to Collection
+      <motion.div
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.4 }}
+      >
+        <Link to="/" className="btn-chronix-ghost py-3 px-5 text-decoration-none">
+          Keep Exploring
         </Link>
       </motion.div>
     </div>

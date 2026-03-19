@@ -1,103 +1,108 @@
-export const categories = ['All', 'Analog', 'Smart Watch', 'Luxury'];
-
 export const products = [
   {
     id: 1,
-    name: 'Seiko 5 Sports',
-    category: 'Analog',
-    price: 25500,
-    description: 'A reliable and iconic automatic watch, perfect for everyday wear and adventure. Features a durable stainless steel case and Japanese automatic movement.',
+    name: 'Galaxy Watch 6',
+    price: 21999,
+    category: 'Smart Watch',
+    description: 'A stylish and powerful smartwatch with advanced health tracking, a larger screen, and improved performance. Built for those who demand more from every second.',
     imageGallery: [
-      '/assets/watch3.png',
-      '/assets/watch3.png',
-      '/assets/watch3.png'
+      'https://m.media-amazon.com/images/I/61fDRIfPQEL.jpg',
+      'https://m.media-amazon.com/images/I/61fDRIfPQEL.jpg',
+      'https://m.media-amazon.com/images/I/61fDRIfPQEL.jpg',
+      'https://m.media-amazon.com/images/I/61fDRIfPQEL.jpg',
     ],
-    stock: 30,
+    tags: ['samsung', 'smartwatch'],
+    stock: 50,
     isOnDeal: false,
     dealPrice: null,
   },
   {
     id: 2,
-    name: 'G-Shock GA2100',
+    name: 'Seiko 5 Sports',
+    price: 25500,
     category: 'Analog',
-    price: 9900,
-    description: 'Legendary toughness in a slim, modern octagonal case. Water-resistant up to 200 meters. The carbon core guard structure provides unmatched impact resistance.',
+    description: 'A reliable and iconic automatic watch, perfect for everyday wear and adventure. Features a durable stainless steel case and Japanese automatic movement.',
     imageGallery: [
-      '/assets/watch1.png',
-      '/assets/watch1.png',
-      '/assets/watch1.png'
+      'https://m.media-amazon.com/images/I/71L5l2A4DPL._AC_UY1000_.jpg',
+      'https://www.seikowatches.com/in-en/-/media/Images/Global/Seiko/Home/Seiko-5-Sports/lineup/SKX-Sports-Style/img_SRPD55K1/SRPD55K1_bac.png',
+      'https://5.imimg.com/data5/ANDROID/Default/2021/4/SF/QB/FP/36395995/product-jpeg-500x500.jpg',
+      'https://i.ebayimg.com/images/g/g~QAAOSw-4xka-n1/s-l1200.webp',
     ],
-    stock: 50,
-    isOnDeal: true,
-    dealPrice: 8500,
-  },
-  {
-    id: 3,
-    name: 'Apple Watch Ultra',
-    category: 'Smart Watch',
-    price: 82900,
-    description: 'The most rugged and capable Apple Watch ever. Built for exploration, adventure, and endurance athletes who push beyond limits.',
-    imageGallery: [
-      '/assets/watch2.png',
-      '/assets/watch2.png',
-      '/assets/watch2.png'
-    ],
-    stock: 8,
+    tags: ['seiko', 'automatic', 'analog'],
+    stock: 30,
     isOnDeal: false,
     dealPrice: null,
   },
   {
-    id: 4,
-    name: 'Rolex Submariner',
-    category: 'Luxury',
-    price: 950000,
-    description: 'The archetype of the diver\'s watch, a true icon. Unwavering reliability, timeless design, and a legacy that defines what a luxury sports watch should be.',
+    id: 3,
+    name: 'G-Shock GA2100',
+    price: 8995,
+    category: 'Analog',
+    description: 'Legendary toughness in a slim, modern octagonal case. Water-resistant up to 200 meters. The carbon core guard structure provides unmatched impact resistance.',
     imageGallery: [
-      '/assets/watch1.png',
-      '/assets/watch2.png'
+      'https://m.media-amazon.com/images/I/61-pC3-A8BL._AC_UY1000_.jpg',
+      'https://www.casio.com/content/dam/casio/product-info/wat/g-shock/ga-2100/ga-2100-1a1/assets/GA-2100-1A1_l-02.png.transform/main-l/image.png',
+      'https://www.casio.com/content/dam/casio/product-info/wat/g-shock/ga-2100/ga-2100-1a1/assets/GA-2100-1A1_l-03.png.transform/main-l/image.png',
+      'https://media.gq.com/photos/5d5452a20423910008544e31/master/w_1600%2Cc_limit/casio-g-shock-watch.jpg',
     ],
-    stock: 3,
+    tags: ['casio', 'gshock', 'tough'],
+    stock: 100,
+    isOnDeal: true,
+    dealPrice: 598,
+  },
+  {
+    id: 4,
+    name: 'Tudor Black Bay',
+    price: 350000,
+    category: 'Luxury',
+    description: 'A vintage-inspired diver watch with modern craftsmanship and a timeless design. Certified chronometer. A modern icon born from a legendary heritage.',
+    imageGallery: [
+      'https://content.thewosgroup.com/productimage/17771235/17771235_1.jpg',
+      'https://www.tudorwatch.com/-/media/watch-assets/family/black-bay/black-bay-41-mm-steel/m79230n-0005/slides/m79230n-0005-02-watch-case.jpg',
+      'https://www.tudorwatch.com/-/media/watch-assets/family/black-bay/black-bay-41-mm-steel/m79230n-0005/slides/m79230n-0005-04-watch-bracelet.jpg',
+      'https://images.ethoswatches.com/img/t/tudor-black-bay-m79230n-0005-41-mm-17771235_5.jpg',
+    ],
+    tags: ['tudor', 'luxury', 'diver'],
+    stock: 5,
     isOnDeal: false,
     dealPrice: null,
   },
   {
     id: 5,
-    name: 'Tissot PRX',
-    category: 'Luxury',
-    price: 65000,
-    description: 'An evocative and slim design that makes it an uncompromising essential for all design enthusiasts. The PRX Powermatic 80 is a tribute to the 1978 original.',
+    name: 'Apple Watch Ultra',
+    price: 89900,
+    category: 'Smart Watch',
+    description: 'The most rugged and capable Apple Watch ever. Built for exploration, adventure, and endurance athletes who push beyond limits.',
     imageGallery: [
-      '/assets/watch3.png',
-      '/assets/watch1.png'
+      'https://store.storeimages.cdn-apple.com/4668/as-images.apple.com/is/MQF03_VW_34FR+watch-49-titanium-ultra_VW_34FR_WF_CO+watch-face-49-alpine-ultra_VW_34FR_WF_CO_GEO_IN?wid=752&hei=720&bgc=fafafa&trim=1&.v=1683226926343',
+      'https://store.storeimages.cdn-apple.com/4668/as-images.apple.com/is/MQF03_VW_34FR+watch-49-titanium-ultra_VW_34FR_WF_CO?wid=752&hei=720&bgc=fafafa&trim=1&.v=1683226926343',
+      'https://store.storeimages.cdn-apple.com/4668/as-images.apple.com/is/iup-hero-marketing-202209?wid=986&hei=636&fmt=png-alpha&.v=1680126780029',
+      'https://m.media-amazon.com/images/I/812cA4I2I3L.jpg',
     ],
-    stock: 15,
+    tags: ['apple', 'smartwatch', 'rugged'],
+    stock: 20,
     isOnDeal: false,
     dealPrice: null,
   },
   {
     id: 6,
-    name: 'Fossil Gen 6',
-    category: 'Smart Watch',
-    price: 24995,
-    description: 'Our fastest charging smartwatch yet. The Gen 6 features the Snapdragon Wear 4100+ platform for improved performance and heart rate tracking.',
+    name: 'Rolex Submariner',
+    price: 1250000,
+    category: 'Luxury',
+    description: 'The archetype of the diver\'s watch, a true icon. Unwavering reliability, timeless design, and a legacy that defines what a luxury sports watch should be.',
     imageGallery: [
-      '/assets/watch2.png',
-      '/assets/watch3.png'
+      'https://content.rolex.com/v7/dam/new-watches/2023/m126610lv-0002/m126610lv-0002_portrait.jpg?sc_lang=en_in&imwidth=1280',
+      'https://content.rolex.com/v7/dam/new-watches/2023/m126610lv-0002/m126610lv-0002_showcase.jpg?sc_lang=en_in&imwidth=1280',
+      'https://content.rolex.com/v7/dam/new-watches/2023/m126610lv-0002/m126610lv-0002_0006.jpg?sc_lang=en_in&imwidth=1280',
+      'https://content.rolex.com/v7/dam/new-watches/2023/m126610lv-0002/m126610lv-0002_0003.jpg?sc_lang=en_in&imwidth=1280',
     ],
-    stock: 20,
-    isOnDeal: true,
-    dealPrice: 18995,
-  }
+    tags: ['rolex', 'luxury', 'diver'],
+    stock: 3,
+    isOnDeal: false,
+    dealPrice: null,
+  },
 ];
 
-export const getDealProduct = () => products.find(p => p.dealPrice) || null;
+export const getDealProduct = () => products.find(p => p.isOnDeal) || null;
 export const getProductById = (id) => products.find(p => p.id === Number(id)) || null;
-
-export const searchProducts = (query) => {
-  if (!query) return [];
-  const q = query.toLowerCase();
-  return products.filter(p => 
-    p.name.toLowerCase().includes(q) || 
-    p.category.toLowerCase().includes(q)
-  );
-};
+export const categories = ['All', 'Analog', 'Smart Watch', 'Luxury'];

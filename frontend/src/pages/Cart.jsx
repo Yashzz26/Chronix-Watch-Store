@@ -1,159 +1,136 @@
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { HiOutlineTrash, HiOutlineShoppingCart } from 'react-icons/hi';
+import { HiOutlineTrash, HiOutlineShoppingBag, HiPlus, HiMinus, HiArrowLeft } from 'react-icons/hi2';
 import useCartStore from '../store/cartStore';
 
 export default function Cart() {
-  const { items, removeItem, updateQty, totalPrice } = useCartStore();
-  const total = totalPrice();
+  const { items, removeItem, updateQty, totalPrice, totalItems } = useCartStore();
 
-  if (items.length === 0) return (
-    <div style={{ textAlign: 'center', padding: '120px 24px' }}>
-      <HiOutlineShoppingCart style={{ fontSize: 56, color: '#2A2A2A', marginBottom: 16 }} />
-      <h2 style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '2rem',
-        fontWeight: 400, color: '#5A5652', marginBottom: 24 }}>
-        Your cart is empty
-      </h2>
-      <Link to="/" className="btn-primary"
-        style={{ display: 'inline-block', textDecoration: 'none' }}>
-        Explore Collection
-      </Link>
-    </div>
-  );
+  if (items.length === 0) {
+    return (
+      <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center">
+        <motion.div
+           initial={{ opacity: 0, scale: 0.9 }}
+           animate={{ opacity: 1, scale: 1 }}
+           className="w-24 h-24 bg-s1 border border-border rounded-full flex items-center justify-center mb-8"
+        >
+          <HiOutlineShoppingBag size={40} className="text-t3" />
+        </motion.div>
+        <h1 className="font-display text-4xl text-t1 mb-4">Your collection is empty.</h1>
+        <p className="text-t3 text-lg mb-10 max-w-sm">
+          A man of your stature should have at least one timepiece worthy of the name.
+        </p>
+        <Link to="/" className="btn-primary py-4 px-10">
+          Begin Browsing
+        </Link>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ maxWidth: 1100, margin: '0 auto', padding: '48px 24px 80px' }}>
-      <p className="section-label" style={{ marginBottom: 8 }}>Your Selection</p>
-      <h1 style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '2.6rem',
-        fontWeight: 400, color: '#F0EDE8', marginBottom: 48 }}>
-        Shopping Cart
-      </h1>
+    <div className="container py-5 my-5">
+      <div className="mb-5">
+        <Link to="/" className="text-t3 hover-text-gold text-sm d-flex align-items-center gap-2 mb-3 text-decoration-none">
+          <HiArrowLeft /> Continue Selection
+        </Link>
+        <h1 className="font-display display-3 text-t1">Your Selection</h1>
+      </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 48, alignItems: 'start' }}
-        className="cart-layout">
-        <style>{`@media(max-width:768px){.cart-layout{grid-template-columns:1fr!important}}`}</style>
-
-        {/* Items */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-          <AnimatePresence>
-            {items.map(item => {
-              const price = item.dealPrice || item.price;
-              return (
-                <motion.div key={item.id}
+      <div className="row g-5 align-items-start">
+        {/* List */}
+        <div className="col-12 col-lg-8">
+          <div className="d-flex flex-column gap-4">
+            <AnimatePresence>
+              {items.map((item) => (
+                <motion.div
+                  key={item.id}
                   layout
-                  initial={{ opacity: 0, x: -16 }}
+                  initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -16, height: 0 }}
-                  transition={{ duration: 0.25 }}
-                  style={{
-                    display: 'grid', gridTemplateColumns: '80px 1fr auto',
-                    gap: 20, alignItems: 'center',
-                    padding: '20px 0',
-                    borderBottom: '1px solid #1A1A1A',
-                  }}
+                  exit={{ opacity: 0, x: 20 }}
+                  className="chronix-card p-4 d-flex flex-column flex-sm-row gap-4"
+                  style={{ marginBottom: 0 }}
                 >
-                  {/* Image */}
-                  <div style={{ background: '#0A0A0A', borderRadius: 8, padding: 8,
-                    border: '1px solid #2A2A2A', aspectRatio: '1/1',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <img src={item.imageGallery[0]} alt={item.name}
-                      style={{ maxWidth: '80%', maxHeight: '80%', objectFit: 'contain' }} />
+                  <div className="bg-s2 rounded-3 p-3 flex-shrink-0" style={{ width: 120, height: 120 }}>
+                    <img src={item.imageGallery[0]} alt={item.name} className="w-100 h-100 object-fit-contain" />
                   </div>
 
-                  {/* Details */}
-                  <div>
-                    <p style={{ fontSize: '0.7rem', color: '#5A5652',
-                      letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>
-                      {item.category}
+                  <div className="flex-grow-1">
+                    <div className="d-flex justify-content-between align-items-start gap-4">
+                      <div>
+                        <p className="section-label mb-1" style={{ fontSize: '0.6rem' }}>{item.category}</p>
+                        <Link to={`/product/${item.id}`} className="font-display h4 text-t1 text-decoration-none hover-text-gold">
+                          {item.name}
+                        </Link>
+                      </div>
+                      <button
+                        onClick={() => removeItem(item.id)}
+                        className="btn border-0 p-2 text-t3 hover:text-danger"
+                      >
+                        <HiOutlineTrash size={20} />
+                      </button>
+                    </div>
+
+                    <p className="font-mono text-gold fw-medium mt-2">
+                      ₹{(item.dealPrice || item.price).toLocaleString('en-IN')}
                     </p>
-                    <p style={{ fontFamily: '"Cormorant Garamond", serif',
-                      fontSize: '1.15rem', color: '#F0EDE8', marginBottom: 12 }}>
-                      {item.name}
-                    </p>
-                    {/* Qty controls */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
-                      {['-', item.qty, '+'].map((v, i) => (
-                        <button key={i} onClick={() => {
-                          if (v === '-') updateQty(item.id, item.qty - 1);
-                          if (v === '+') updateQty(item.id, item.qty + 1);
-                        }}
-                        disabled={typeof v === 'number'}
-                        style={{
-                          width: i === 1 ? 40 : 30, height: 30,
-                          background: 'transparent',
-                          border: '1px solid #2A2A2A',
-                          borderLeft: i > 0 ? 'none' : '1px solid #2A2A2A',
-                          borderRadius: i === 0 ? '6px 0 0 6px' : i === 2 ? '0 6px 6px 0' : 0,
-                          color: typeof v === 'number' ? '#F0EDE8' : '#9A9690',
-                          cursor: typeof v === 'number' ? 'default' : 'pointer',
-                          fontFamily: typeof v === 'number' ? '"DM Mono", monospace' : 'inherit',
-                          fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          transition: 'color 0.15s',
-                        }}>
-                          {v}
+
+                    <div className="d-flex flex-wrap align-items-center gap-4 mt-3">
+                      <div className="d-flex align-items-center bg-s2 border border-border rounded-2 overflow-hidden h-100">
+                        <button onClick={() => updateQty(item.id, item.qty - 1)} className="btn border-0 py-1 px-3 text-t2" disabled={item.qty <= 1}>
+                          <HiMinus size={14} />
                         </button>
-                      ))}
+                        <span className="px-3 py-1 font-mono text-sm fw-bold text-t1 border-start border-end border-border border-opacity-20">
+                          {item.qty}
+                        </span>
+                        <button onClick={() => updateQty(item.id, item.qty + 1)} className="btn border-0 py-1 px-3 text-t2">
+                          <HiPlus size={14} />
+                        </button>
+                      </div>
+                      <p className="text-[0.7rem] text-t3 uppercase tracking-widest m-0">
+                         Subtotal: <span className="text-t2 font-mono ms-2">₹{((item.dealPrice || item.price) * item.qty).toLocaleString('en-IN')}</span>
+                      </p>
                     </div>
                   </div>
-
-                  {/* Price + remove */}
-                  <div style={{ textAlign: 'right' }}>
-                    <p style={{ fontFamily: '"DM Mono", monospace', fontSize: '1rem',
-                      color: '#D4AF37', marginBottom: 12 }}>
-                      ₹{(price * item.qty).toLocaleString('en-IN')}
-                    </p>
-                    <button onClick={() => removeItem(item.id)} style={{
-                      background: 'none', border: 'none', color: '#3A3A3A',
-                      cursor: 'pointer', transition: 'color 0.2s',
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.color = '#C0392B'}
-                    onMouseLeave={e => e.currentTarget.style.color = '#3A3A3A'}
-                    >
-                      <HiOutlineTrash size={18} />
-                    </button>
-                  </div>
                 </motion.div>
-              );
-            })}
-          </AnimatePresence>
+              ))}
+            </AnimatePresence>
+          </div>
         </div>
 
         {/* Summary */}
-        <div className="card" style={{ padding: 28, minWidth: 280, position: 'sticky', top: 88 }}>
-          <h3 style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '1.3rem',
-            fontWeight: 500, color: '#F0EDE8', marginBottom: 20, paddingBottom: 16,
-            borderBottom: '1px solid #1A1A1A' }}>
-            Order Summary
-          </h3>
-          {[
-            ['Subtotal', `₹${total.toLocaleString('en-IN')}`],
-            ['Shipping', 'Free'],
-          ].map(([label, value]) => (
-            <div key={label} style={{ display: 'flex', justifyContent: 'space-between',
-              marginBottom: 12, fontSize: '0.9rem' }}>
-              <span style={{ color: '#5A5652' }}>{label}</span>
-              <span style={{ color: '#9A9690', fontFamily: '"DM Mono", monospace' }}>{value}</span>
+        <div className="col-12 col-lg-4">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="chronix-card p-4 position-sticky" style={{ top: '100px' }}>
+            <h2 className="font-display h4 text-t1 mb-4">Order Summary</h2>
+
+            <div className="space-y-3 mb-4 pb-4 border-bottom border-border">
+              <div className="d-flex justify-content-between text-sm">
+                <span className="text-t3">Items ({totalItems()})</span>
+                <span className="text-t2 font-mono fw-medium">₹{totalPrice().toLocaleString('en-IN')}</span>
+              </div>
+              <div className="d-flex justify-content-between text-sm">
+                <span className="text-t3">VIP Shipping</span>
+                <span className="text-success font-mono text-[0.65rem] fw-bold uppercase tracking-widest">Complimentary</span>
+              </div>
             </div>
-          ))}
-          <div style={{ display: 'flex', justifyContent: 'space-between',
-            paddingTop: 16, marginTop: 8, borderTop: '1px solid #1A1A1A', marginBottom: 24 }}>
-            <span style={{ color: '#F0EDE8', fontWeight: 600 }}>Total</span>
-            <span style={{ fontFamily: '"DM Mono", monospace', fontSize: '1.1rem', color: '#D4AF37', fontWeight: 500 }}>
-              ₹{total.toLocaleString('en-IN')}
-            </span>
-          </div>
-          <Link to="/checkout" className="btn-primary"
-            style={{ display: 'block', textAlign: 'center', textDecoration: 'none', width: '100%' }}>
-            Proceed to Checkout
-          </Link>
-          <Link to="/" style={{ display: 'block', textAlign: 'center', marginTop: 12,
-            fontSize: '0.85rem', color: '#5A5652', textDecoration: 'none',
-            transition: 'color 0.2s' }}
-          onMouseEnter={e => e.currentTarget.style.color = '#D4AF37'}
-          onMouseLeave={e => e.currentTarget.style.color = '#5A5652'}
-          >
-            Continue Shopping
-          </Link>
+
+            <div className="d-flex justify-content-between align-items-end mb-4 pt-2">
+              <span className="text-t1 fw-semibold">Total Amount</span>
+              <div className="text-end">
+                <span className="d-block h3 text-gold font-mono fw-bold m-0">
+                  ₹{totalPrice().toLocaleString('en-IN')}
+                </span>
+              </div>
+            </div>
+
+            <Link to="/checkout" className="btn-chronix-primary w-100 py-3 d-flex align-items-center justify-content-center gap-3 text-sm" style={{ boxShadow: '0 10px 30px rgba(212,175,55,0.2)' }}>
+              Proceed to Secure Checkout
+            </Link>
+
+            <p className="text-[0.6rem] text-t3 text-center mt-4 uppercase tracking-wider mb-0">
+              Every transaction is protected <br /> by institutional-grade encryption.
+            </p>
+          </motion.div>
         </div>
       </div>
     </div>

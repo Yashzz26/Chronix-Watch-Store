@@ -1,99 +1,103 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { HiOutlineCamera, HiOutlineBadgeCheck } from 'react-icons/hi';
+import { HiOutlineCamera, HiOutlineUser, HiOutlineEnvelope, HiOutlineMapPin } from 'react-icons/hi2';
 import useAuthStore from '../store/authStore';
 import toast from 'react-hot-toast';
 
 export default function Profile() {
   const { profile, updateProfile, user } = useAuthStore();
-  const [formData, setFormData] = useState({
+  const [form, setForm] = useState({
     name: profile?.name || '',
     email: profile?.email || '',
     address: profile?.address || '',
-    photo: profile?.photo || null,
+    photo: profile?.photo || '',
   });
 
-  const handlePhotoChange = e => {
+  const fileRef = useRef(null);
+
+  const handlePhoto = (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 1024 * 1024) return toast.error('File too large (>1MB)');
       const reader = new FileReader();
-      reader.onloadend = () => setFormData({ ...formData, photo: reader.result });
+      reader.onload = (ev) => setForm({ ...form, photo: ev.target.result });
       reader.readAsDataURL(file);
     }
   };
 
-  const handleSave = e => {
+  const save = (e) => {
     e.preventDefault();
-    updateProfile(formData);
-    toast.success('Profile updated');
+    updateProfile(form);
+    toast.success('Dossier updated');
   };
 
   return (
-    <div style={{ maxWidth: 640, margin: '0 auto', padding: '48px 24px 80px' }}>
-      <h1 style={{ fontFamily: '"Cormorant Garamond", serif', fontSize: '2.4rem',
-        fontWeight: 400, color: '#F0EDE8', marginBottom: 40 }}>
-        Personal Profile
-      </h1>
+    <div className="container py-5 my-5 mx-auto" style={{ maxWidth: 800 }}>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        <div className="text-center text-md-start border-bottom border-border pb-5 mb-5">
+          <h1 className="font-display display-3 text-t1 mb-3">Member Dossier</h1>
+          <p className="text-t3 font-mono text-sm uppercase tracking-[0.2em] fw-medium m-0">
+            Verified since 2024 • Rank: Premium Collector
+          </p>
+        </div>
 
-      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="card" style={{ padding: 40 }}>
-        <form onSubmit={handleSave}>
-          {/* Avatar Section */}
-          <div style={{ textAlign: 'center', marginBottom: 40 }}>
-            <div style={{ position: 'relative', width: 100, height: 100, margin: '0 auto 16px' }}>
-              <div style={{
-                width: '100%', height: '100%', borderRadius: '50%',
-                background: '#080808', border: '2px solid #1A1A1A',
-                overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center'
-              }}>
-                {formData.photo ? (
-                  <img src={formData.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                ) : (
-                  <span style={{ color: '#D4AF37', fontSize: '2rem', fontWeight: 600 }}>
-                    {user?.username?.[0]?.toUpperCase()}
-                  </span>
-                )}
+        <form onSubmit={save} className="row g-5">
+          {/* Left: Avatar */}
+          <div className="col-12 col-md-4 d-flex flex-column align-items-center">
+            <div className="position-relative overflow-hidden cursor-pointer" style={{ width: 180, height: 180 }} onClick={() => fileRef.current.click()}>
+              <div className="w-100 h-100 rounded-circle border border-2 border-border p-1 bg-s1 transition-all hover-border-gold">
+                <div className="w-100 h-100 rounded-circle overflow-hidden bg-s2 d-flex align-items-center justify-content-center">
+                  {form.photo ? (
+                    <img src={form.photo} alt="Profile" className="w-100 h-100 object-fit-cover" />
+                  ) : (
+                    <HiOutlineUser size={80} className="text-t3" />
+                  )}
+                </div>
               </div>
-              <label style={{
-                position: 'absolute', bottom: 0, right: 0,
-                width: 32, height: 32, borderRadius: '50%',
-                background: '#D4AF37', color: '#080808',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', border: '3px solid #0F0F0F'
-              }}>
-                <HiOutlineCamera size={18} />
-                <input type="file" hidden accept="image/*" onChange={handlePhotoChange} />
-              </label>
+              <div className="position-absolute inset-0 d-flex align-items-center justify-content-center bg-dark bg-opacity-50 opacity-0 hover-opacity-100 rounded-circle transition-all">
+                <HiOutlineCamera size={36} className="text-gold" />
+              </div>
+              <input type="file" hidden ref={fileRef} accept="image/*" onChange={handlePhoto} />
             </div>
-            <p style={{ color: '#F0EDE8', fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-              {user?.username} <HiOutlineBadgeCheck style={{ color: '#D4AF37' }} />
+            <p className="mt-4 text-[0.6rem] text-t3 uppercase tracking-widest text-center leading-relaxed">
+              Click circle <br /> to update portrait
             </p>
           </div>
 
-          {/* Fields */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-            <div>
-              <label className="section-label" style={{ display: 'block', marginBottom: 8 }}>Full Name</label>
-              <input className="input" value={formData.name}
-                onChange={e => setFormData({ ...formData, name: e.target.value })}
-                placeholder="How shall we address you?" />
-            </div>
-            <div>
-              <label className="section-label" style={{ display: 'block', marginBottom: 8 }}>Email Address</label>
-              <input className="input" value={formData.email}
-                onChange={e => setFormData({ ...formData, email: e.target.value })}
-                placeholder="For delivery updates" />
-            </div>
-            <div>
-              <label className="section-label" style={{ display: 'block', marginBottom: 8 }}>Shipping Address</label>
-              <textarea className="input" value={formData.address}
-                onChange={e => setFormData({ ...formData, address: e.target.value })}
-                rows={3} style={{ resize: 'none' }}
-                placeholder="Where should your timepieces be delivered?" />
+          {/* Right: Fields */}
+          <div className="col-12 col-md-8">
+            <div className="row g-4">
+              {[
+                { label: 'Full Appellation', key: 'name', icon: HiOutlineUser, ph: 'Your name' },
+                { label: 'Electronic Mail', key: 'email', icon: HiOutlineEnvelope, ph: 'your@email.com' },
+                { label: 'Dispatch Address', key: 'address', icon: HiOutlineMapPin, ph: 'Full residence address', area: true }
+              ].map((f) => (
+                <div key={f.key} className="col-12">
+                  <label className="text-[0.65rem] uppercase text-t3 tracking-widest ps-1 mb-2 d-block">{f.label}</label>
+                  <div className="position-relative">
+                    <f.icon className="position-absolute start-0 ms-3 top-50 translate-middle-y text-t3" style={f.area ? {top: 24, transform: 'none'} : {}} size={16} />
+                    {f.area ? (
+                      <textarea
+                        className="form-control chronix-input ps-5 py-3"
+                        style={{ minHeight: 120 }}
+                        placeholder={f.ph}
+                        value={form[f.key]}
+                        onChange={e => setForm({ ...form, [f.key]: e.target.value })}
+                      />
+                    ) : (
+                      <input
+                        className="form-control chronix-input ps-5"
+                        placeholder={f.ph}
+                        value={form[f.key]}
+                        onChange={e => setForm({ ...form, [f.key]: e.target.value })}
+                      />
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
 
-            <button type="submit" className="btn-primary" style={{ marginTop: 12 }}>
-              Save Changes
+            <button type="submit" className="btn-chronix-primary py-3 px-5 mt-5">
+              Preserve Changes
             </button>
           </div>
         </form>
