@@ -247,9 +247,8 @@ export default function Navbar() {
               </div>
             ) : (
               <Link to="/login"
-                className="btn-primary"
-                style={{ padding: '8px 18px', fontSize: '0.85rem', textDecoration: 'none',
-                  display: 'flex', alignItems: 'center', gap: 6 }}
+                className="btn-chronix-primary px-3 py-2 text-decoration-none d-flex align-items-center gap-2"
+                style={{ fontSize: '0.85rem' }}
               >
                 <HiOutlineUser size={15} /> Sign In
               </Link>

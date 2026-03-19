@@ -15,8 +15,10 @@ const Login          = lazy(() => import('./pages/Login'));
 const Profile        = lazy(() => import('./pages/Profile'));
 
 const Loader = () => (
-  <div className="flex items-center justify-center min-h-[50vh]">
-    <div className="w-6 h-6 border-2 border-gold border-t-transparent rounded-full animate-spin" />
+  <div className="d-flex align-items-center justify-content-center min-vh-50 py-5">
+    <div className="spinner-border text-gold" role="status" style={{ width: '3rem', height: '3rem' }}>
+      <span className="visually-hidden">Loading...</span>
+    </div>
   </div>
 );
 
