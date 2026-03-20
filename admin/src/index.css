@@ -1,7 +1,3 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500;600&display=swap');
 
 :root {
@@ -12,17 +8,13 @@
   --color-amber: #F5A623;
   --color-amber-dark: #D48A0E;
   --color-platinum: #8B8FA8;
+  --bg: #0A0A0F;
+  --t1: #E8EAF0;
+  --t2: #8B8FA8;
+  --gold: #F5A623;
 }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-html {
-  scroll-behavior: smooth;
-}
+*, *::after, *::before { box-sizing: border-box; }
 
 body {
   background-color: var(--color-bg);
@@ -30,7 +22,12 @@ body {
   font-family: 'DM Sans', sans-serif;
   -webkit-font-smoothing: antialiased;
   line-height: 1.6;
+  min-height: 100vh;
 }
+
+/* Typography */
+.font-display { font-family: 'Playfair Display', serif; }
+.font-sans    { font-family: 'DM Sans', sans-serif; }
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; }
@@ -38,10 +35,27 @@ body {
 ::-webkit-scrollbar-thumb { background: var(--color-surface-2); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--color-platinum); }
 
-/* Selection */
-::selection { background: rgba(245, 166, 35, 0.3); color: #fff; }
+/* Glass card utility */
+.glass {
+  background: rgba(26, 26, 36, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(139, 143, 168, 0.12);
+  border-radius: 1rem;
+}
 
-/* Grain texture overlay utility */
+/* Custom classes for Admin */
+.bg-obsidian-900 { background-color: #0A0A0F; }
+.bg-obsidian-800 { background-color: #111118; }
+.bg-obsidian-700 { background-color: #1A1A24; }
+
+.text-platinum { color: var(--color-platinum); }
+.text-amber    { color: var(--color-amber); }
+.bg-amber      { background-color: var(--color-amber); }
+
+.border-white-5 { border-color: rgba(255, 255, 255, 0.05) !important; }
+
+/* Grain texture overlay */
 .grain-overlay::after {
   content: '';
   position: absolute;
@@ -51,18 +65,37 @@ body {
   z-index: 1;
 }
 
-/* Glass card utility */
-.glass {
-  background: rgba(26, 26, 36, 0.6);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(139, 143, 168, 0.12);
+/* Button variants */
+.btn-amber {
+  background-color: var(--color-amber);
+  color: #000;
+  font-weight: 700;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  transition: all 0.2s ease;
+}
+.btn-amber:hover {
+  background-color: var(--color-amber-dark);
+  transform: translateY(-1px);
 }
 
-/* Amber text gradient */
-.text-amber-gradient {
-  background: linear-gradient(135deg, #F5A623, #FFD07A);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+/* Table styles */
+.table-chronix {
+  --bs-table-bg: transparent;
+  --bs-table-color: #E8EAF0;
+}
+.table-chronix thead th {
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: var(--color-platinum);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 1rem;
+}
+.table-chronix tbody td {
+  padding: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  vertical-align: middle;
 }
