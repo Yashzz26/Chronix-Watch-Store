@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '../lib/firebase';
 import { apiCall } from '../lib/apiHelper';
-import { HiOutlinePlus, HiOutlinePencil, HiOutlineTrash, HiOutlinePhotograph } from 'react-icons/hi';
+import { HiOutlinePlus, HiOutlinePencil, HiOutlineTrash, HiOutlinePhotograph, HiOutlineCloudUpload } from 'react-icons/hi';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -83,8 +84,43 @@ const Products = () => {
     setShowModal(true);
   };
 
+  const [uploading, setUploading] = useState([false, false, false, false]);
+
+  const handleImageUpload = async (file, index) => {
+    if (!file) return;
+    
+    const newUploading = [...uploading];
+    newUploading[index] = true;
+    setUploading(newUploading);
+
+    const storageRef = ref(storage, `products/${Date.now()}_${file.name}`);
+    const uploadTask = uploadBytesResumable(storageRef, file);
+
+    uploadTask.on('state_changed', 
+      null, 
+      (error) => {
+        toast.error('Upload failed: ' + error.message);
+        newUploading[index] = false;
+        setUploading(newUploading);
+      }, 
+      async () => {
+        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+        const newGallery = [...formData.imageGallery];
+        newGallery[index] = downloadURL;
+        setFormData({ ...formData, imageGallery: newGallery });
+        newUploading[index] = false;
+        setUploading(newUploading);
+        toast.success(`Image ${index + 1} uploaded`);
+      }
+    );
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (uploading.some(u => u)) {
+      toast.error('Please wait for images to finish uploading');
+      return;
+    }
     const cleanData = {
       ...formData,
       price: Number(formData.price),
@@ -224,16 +260,45 @@ const Products = () => {
 
                     <div className="mb-4">
                        <label className="form-label text-uppercase small tracking-widest fw-bold text-platinum mb-3 d-flex align-items-center gap-2">
-                         <HiOutlinePhotograph /> Image Archive (URLs)
+                         <HiOutlinePhotograph /> Image Archive (Upload)
                        </label>
                        <div className="row g-3">
                          {formData.imageGallery.map((url, i) => (
                            <div key={i} className="col-6 col-md-3">
-                             <input placeholder={`URL ${i+1}`} className="form-control bg-obsidian-800 border-white-5 rounded-3 p-2 small text-white shadow-none" value={url} onChange={e => {
-                               const newGallery = [...formData.imageGallery];
-                               newGallery[i] = e.target.value;
-                               setFormData({...formData, imageGallery: newGallery});
-                             }} />
+                             <div className="position-relative chronix-upload-slot overflow-hidden rounded-3 border border-white-5 bg-obsidian-800 d-flex flex-column align-items-center justify-content-center" style={{ height: 100 }}>
+                                {url ? (
+                                  <img src={url} className="w-100 h-100 object-fit-contain p-2" alt="" />
+                                ) : (
+                                  <div className="text-center opacity-50">
+                                    <HiOutlineCloudUpload size={24} className="mb-1" />
+                                    <p className="mb-0" style={{ fontSize: '8px' }}>Slot {i+1}</p>
+                                  </div>
+                                )}
+                                <input 
+                                  type="file" 
+                                  accept="image/*"
+                                  className="position-absolute top-0 start-0 w-100 h-100 opacity-0 cursor-pointer" 
+                                  onChange={e => handleImageUpload(e.target.files[0], i)}
+                                />
+                                {uploading[i] && (
+                                  <div className="position-absolute top-0 start-0 w-100 h-100 bg-obsidian bg-opacity-75 d-flex align-items-center justify-content-center">
+                                    <div className="spinner-border spinner-border-sm text-amber" />
+                                  </div>
+                                )}
+                                {url && (
+                                  <button 
+                                    type="button" 
+                                    className="position-absolute top-0 end-0 m-1 btn btn-sm bg-danger bg-opacity-20 text-danger border-0 p-1 rounded-circle"
+                                    onClick={() => {
+                                      const newGallery = [...formData.imageGallery];
+                                      newGallery[i] = '';
+                                      setFormData({...formData, imageGallery: newGallery});
+                                    }}
+                                  >
+                                    <HiOutlineTrash size={12} />
+                                  </button>
+                                )}
+                             </div>
                            </div>
                          ))}
                        </div>

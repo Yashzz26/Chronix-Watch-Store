@@ -1,36 +1,43 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { HiOutlineLockClosed, HiOutlineUser, HiEye, HiEyeOff } from 'react-icons/hi';
+import { motion, AnimatePresence } from 'framer-motion';
+import { HiOutlineLockClosed, HiOutlineMail, HiEye, HiEyeOff, HiOutlineUser } from 'react-icons/hi';
 import useAuthStore from '../store/authStore';
 import toast from 'react-hot-toast';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login, isLoggedIn } = useAuthStore();
+  const { login, signup, isLoggedIn } = useAuthStore();
 
   useEffect(() => {
     if (isLoggedIn) navigate('/');
   }, [isLoggedIn, navigate]);
 
-  const [username, setUsername] = useState('');
+  const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
-      const success = login(username, password);
-      setLoading(false);
-      if (success) {
-        toast.success(`Welcome back, ${username}`);
-        navigate('/');
-      } else {
-        toast.error('Invalid credentials');
-      }
-    }, 1000);
+    
+    let result;
+    if (isLogin) {
+      result = await login(email, password);
+    } else {
+      result = await signup(email, password, { displayName: name });
+    }
+
+    setLoading(false);
+    if (result.success) {
+      toast.success(isLogin ? 'Welcome back' : 'Account created successfully');
+      navigate('/');
+    } else {
+      toast.error(result.error || 'Authentication failed');
+    }
   };
 
   return (
@@ -44,21 +51,47 @@ export default function Login() {
         <div className="position-absolute top-0 start-0 w-100 h-1 bg-gold" style={{ height: 2 }} />
 
         <div className="text-center mb-5">
-          <h1 className="font-display h2 text-t1 mb-2">Entrance</h1>
-          <p className="text-t3 text-[0.65rem] uppercase tracking-widest m-0">Authorized Access Only</p>
+          <h1 className="font-display h2 text-t1 mb-2">{isLogin ? 'Entrance' : 'Registration'}</h1>
+          <p className="text-t3 text-[0.65rem] uppercase tracking-widest m-0">
+            {isLogin ? 'Authorized Access Only' : 'Create Your Chronix Account'}
+          </p>
         </div>
 
         <form onSubmit={handleSubmit}>
+          <AnimatePresence mode='wait'>
+            {!isLogin && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mb-4"
+              >
+                <label className="text-[0.65rem] uppercase text-t3 tracking-widest ps-1 mb-2 d-block">Full Name</label>
+                <div className="position-relative">
+                  <HiOutlineUser className="position-absolute start-0 ms-3 top-50 translate-middle-y text-t3" />
+                  <input
+                    required
+                    className="form-control chronix-input ps-5"
+                    placeholder="John Doe"
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                  />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <div className="mb-4">
-            <label className="text-[0.65rem] uppercase text-t3 tracking-widest ps-1 mb-2 d-block">Identifer</label>
+            <label className="text-[0.65rem] uppercase text-t3 tracking-widest ps-1 mb-2 d-block">Email Address</label>
             <div className="position-relative">
-              <HiOutlineUser className="position-absolute start-0 ms-3 top-50 translate-middle-y text-t3" />
+              <HiOutlineMail className="position-absolute start-0 ms-3 top-50 translate-middle-y text-t3" />
               <input
                 required
+                type="email"
                 className="form-control chronix-input ps-5"
-                placeholder="Username"
-                value={username}
-                onChange={e => setUsername(e.target.value)}
+                placeholder="email@example.com"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
               />
             </div>
           </div>
@@ -89,13 +122,17 @@ export default function Login() {
             disabled={loading}
             className="btn-chronix-primary w-100 py-3 mt-4 d-flex align-items-center justify-content-center gap-3 shadow-lg"
           >
-            {loading ? <div className="spinner-border spinner-border-sm text-bg" /> : 'Authenticate'}
+            {loading ? <div className="spinner-border spinner-border-sm text-bg" /> : isLogin ? 'Authenticate' : 'Create Account'}
           </button>
         </form>
 
-        <div className="mt-5 pt-5 border-top border-border border-opacity-50 text-center">
-          <p className="text-t3 text-[0.7rem] uppercase tracking-wider mb-2">Internal Admin Demo</p>
-          <p className="text-t2 text-xs font-mono bg-s2 d-inline-block px-3 py-1 rounded">admin / admin1234</p>
+        <div className="mt-5 pt-4 text-center">
+          <button 
+            onClick={() => setIsLogin(!isLogin)}
+            className="btn btn-link text-t3 text-[0.7rem] uppercase tracking-wider text-decoration-none hover-gold"
+          >
+            {isLogin ? "New here? Create an account" : "Already have an account? Login"}
+          </button>
         </div>
       </motion.div>
     </div>

@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
-import useAuthStore from './store/authStore';
+import useAuthStore, { initAuthListener } from './store/authStore';
 
 const Home           = lazy(() => import('./pages/Home'));
 const ProductDetail  = lazy(() => import('./pages/ProductDetail'));
@@ -23,11 +23,20 @@ const Loader = () => (
 );
 
 const Protected = ({ children }) => {
-  const isLoggedIn = useAuthStore(s => s.isLoggedIn);
+  const { isLoggedIn, loading } = useAuthStore(s => ({ isLoggedIn: s.isLoggedIn, loading: s.loading }));
+  if (loading) return <Loader />;
   return isLoggedIn ? children : <Navigate to="/login" replace />;
 };
 
 export default function App() {
+  useEffect(() => {
+    initAuthListener();
+  }, []);
+
+  const loading = useAuthStore(s => s.loading);
+
+  if (loading) return <Loader />;
+
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <div className="min-vh-100 bg-bg text-t1 d-flex flex-column">

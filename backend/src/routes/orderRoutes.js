@@ -6,6 +6,38 @@ const { db } = require('../config/firebase');
 const { verifyToken, verifyAdmin } = require('../middleware/verifyToken');
 
 /**
+ * POST /api/orders
+ * Customer: Create a new order (COD or Online)
+ * Body: { items, totalPrice, paymentMethod, shippingAddress }
+ */
+router.post('/', verifyToken, async (req, res) => {
+  try {
+    const { items, totalPrice, paymentMethod, shippingAddress } = req.body;
+
+    if (!items || !totalPrice || !paymentMethod) {
+      return res.status(400).json({ error: 'Missing order details' });
+    }
+
+    const orderData = {
+      userId: req.user.uid,
+      userEmail: req.user.email,
+      items,
+      totalPrice,
+      paymentMethod,
+      shippingAddress: shippingAddress || {},
+      status: paymentMethod === 'cod' ? 'pending' : 'unpaid',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const docRef = await db.collection('orders').add(orderData);
+    res.status(201).json({ success: true, orderId: docRef.id });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to create order', details: err.message });
+  }
+});
+
+/**
  * POST /api/orders/create-razorpay-order
  * Creates a Razorpay order. Called from frontend checkout.
  * Body: { amount: number (in INR, NOT paise) }

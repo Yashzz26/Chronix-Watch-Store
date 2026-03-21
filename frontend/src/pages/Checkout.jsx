@@ -1,25 +1,101 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { HiOutlineCreditCard, HiOutlineBanknotes, HiOutlineQrCode, HiCheckBadge } from 'react-icons/hi2';
 import useCartStore from '../store/cartStore';
 import toast from 'react-hot-toast';
+import { auth } from '../lib/firebase';
+import { initiateRazorpayPayment } from '../lib/razorpay';
 
 export default function Checkout() {
   const navigate = useNavigate();
   const { items, totalPrice, clearCart } = useCartStore();
-  const [method, setMethod] = useState('cod'); // 'cod' or 'online'
+  const [method, setMethod] = useState('cod');
   const [loading, setLoading] = useState(false);
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
+    if (!auth.currentUser) {
+      toast.error('Please login to place an order');
+      return;
+    }
+
     setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const token = await auth.currentUser.getIdToken();
+      const backendUrl = import.meta.env.VITE_BACKEND_URL;
+
+      if (method === 'online') {
+        // 1. Create Razorpay Order
+        const rezResponse = await fetch(`${backendUrl}/api/orders/create-razorpay-order`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ amount: totalPrice() })
+        });
+        
+        const orderData = await rezResponse.json();
+        if (!rezResponse.ok) throw new Error(orderData.error || 'Failed to create payment order');
+
+        // 2. Open Razorpay Modal
+        await initiateRazorpayPayment({
+          orderData,
+          userInfo: { email: auth.currentUser.email },
+          onSuccess: async (response) => {
+            // 3. Verify & Save to Firestore
+            const finalResponse = await fetch(`${backendUrl}/api/orders`, {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({ 
+                items, 
+                totalPrice: totalPrice(), 
+                paymentMethod: 'online',
+                razorpayDetails: response
+              })
+            });
+            if (finalResponse.ok) {
+              clearCart();
+              toast.success('Acquisition Successful');
+              navigate('/confirmation');
+            }
+          },
+          onFailure: (err) => {
+            toast.error(err);
+            setLoading(false);
+          }
+        });
+      } else {
+        // COD Flow
+        const response = await fetch(`${backendUrl}/api/orders`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ 
+            items, 
+            totalPrice: totalPrice(), 
+            paymentMethod: 'cod' 
+          })
+        });
+
+        if (response.ok) {
+          clearCart();
+          toast.success('Reservation confirmed');
+          navigate('/confirmation');
+        } else {
+          const data = await response.json();
+          throw new Error(data.error || 'Failed to place order');
+        }
+      }
+    } catch (error) {
+      toast.error(error.message);
       setLoading(false);
-      clearCart();
-      toast.success('Reservation confirmed');
-      navigate('/confirmation');
-    }, 2000);
+    }
   };
 
   if (items.length === 0) return null;
