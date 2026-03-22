@@ -1,58 +1,127 @@
-# E-Commerce-Web-Store-Watches-
+# Chronix — Premium Watch E-Commerce
 
+A full-stack luxury watch e-commerce platform built with React, Firebase, and Razorpay.
 
-Welcome to Chronix, a beautifully designed, front-end e-commerce experience for a modern watch store. This project was built from the ground up using only **HTML, CSS, and Vanilla JavaScript**, demonstrating core web development principles without reliance on frameworks or backend services. All data, including the shopping cart and user preferences, is managed client-side using `localStorage`.
-
-**Live Demo:** `[Link to your deployed website here]`
-
----
-
-## ✨ Features
-
-Chronix is packed with features that create a complete and modern shopping experience:
-
--   **Browse & Discover:**
-    -   🖼️ **Dynamic Product Rendering:** Products are loaded dynamically from a JavaScript object, simulating an API.
-    -   💀 **Skeleton Loading Screens:** Professional loading states that improve perceived performance.
-    -   🔍 **Category Filtering:** View products by specific categories.
-
--   **Shopping & Interaction:**
-    -   🛒 **Shopping Cart:** Fully functional cart with quantity control, item removal, and subtotal calculation, all persisted in `localStorage`.
-    -   ❤️ **Wishlist:** Save favorite items for later, also saved to `localStorage`.
-    -   🔔 **Toast Notifications:** Real-time, non-intrusive feedback for actions like "Add to Cart".
-
--   **Product Details:**
-    -   🔄 **Image Carousel:** View multiple images of a product in an interactive gallery.
-    -   ⭐ **Customer Reviews:** Users can submit reviews and ratings, which are saved and displayed for each product.
-
--   **User Experience & UI:**
-    -   📱 **Fully Responsive Design:** A seamless experience on desktops, tablets, and mobile devices.
-    -   🌙 **Dark/Light Mode:** A theme toggle that saves the user's preference for future visits.
-    -   ⏳ **Deal Timers & Coupons:** UI for promotional events (logic handled by JS).
-    -   ✅ **Complete Checkout Simulation:** A multi-step form process leading to an order confirmation page.
+## Live Links
+- 🛍️ **Store:** https://chronix.vercel.app
+- ⚙️ **Admin:** https://chronix-admin.vercel.app
+- 🔌 **API:** https://chronix-backend.onrender.com
 
 ---
 
-## 🛠️ Technologies Used
+## Tech Stack
 
-This project is built exclusively with front-end technologies:
-
--   **HTML5:** For the core structure and content.
--   **CSS3:** For all styling, including Flexbox, CSS Grid, custom properties (variables) for theming, and animations.
--   **Vanilla JavaScript (ES6+):** For all dynamic functionality, DOM manipulation, and state management.
--   **Font Awesome:** For clean and scalable icons.
+| Layer | Technology |
+|---|---|
+| Frontend | React 19 + Vite + Bootstrap 5.3 |
+| Animations | Framer Motion |
+| State | Zustand |
+| Data Fetching | TanStack Query v5 |
+| Auth + DB + Storage | Firebase (Auth, Firestore, Storage) |
+| Payments | Razorpay |
+| Backend | Node.js + Express |
+| Deployment | Vercel (frontend/admin) + Render (backend) |
 
 ---
 
-## 📂 File Structure
+## Project Structure
 
-The project is organized into a clear and logical file structure:
-├── index.html          # Homepage
-├── categories.html     # Category & Product Listing Page
-├── product.html        # Single Product Detail Page (Template)
-├── cart.html           # Shopping Cart Page
-├── checkout.html       # Checkout Form Page
-├── order.html          # Order Confirmation Page
-├── style.css           # All CSS styles
-├── script.js           # All JavaScript logic
-└── /images/            # Product images and assets..
+```
+chronix/
+├── frontend/     ← Customer-facing store (port 5173)
+├── backend/      ← REST API + Razorpay integration (port 5000)
+└── admin/        ← Admin dashboard (port 5174)
+```
+
+---
+
+## Getting Started (Local Dev)
+
+```bash
+# 1. Clone and install all dependencies
+git clone <repo-url>
+cd chronix
+npm run install:all
+
+# 2. Configure environment variables
+#    frontend/.env  — Firebase config + Razorpay key ID + backend URL
+#    backend/.env   — Razorpay keys + Firebase config
+#    backend/serviceAccountKey.json — Firebase Admin service account
+
+# 3. Run all three apps
+cd frontend && npm run dev    # http://localhost:5173
+cd backend  && npm run dev    # http://localhost:5000
+cd admin    && npm run dev    # http://localhost:5174
+```
+
+**Or from root:**
+```bash
+npm run dev:frontend
+npm run dev:backend
+npm run dev:admin
+```
+
+---
+
+## Environment Variables
+
+### `frontend/.env`
+```env
+VITE_FIREBASE_API_KEY=
+VITE_FIREBASE_AUTH_DOMAIN=
+VITE_FIREBASE_PROJECT_ID=
+VITE_FIREBASE_STORAGE_BUCKET=
+VITE_FIREBASE_MESSAGING_SENDER_ID=
+VITE_FIREBASE_APP_ID=
+VITE_RAZORPAY_KEY_ID=
+VITE_BACKEND_URL=http://localhost:5000
+```
+
+### `backend/.env`
+```env
+PORT=5000
+RAZORPAY_KEY_ID=
+RAZORPAY_KEY_SECRET=
+FRONTEND_URL=http://localhost:5173
+```
+
+---
+
+## Setting Up Admin Access
+
+After running the app, create your admin account:
+
+```bash
+cd backend
+node createAdmin.js
+```
+
+Then log in at `http://localhost:5174` with the credentials in `createAdmin.js`.
+
+---
+
+## Deploy
+
+### Frontend & Admin → Vercel
+1. Push to GitHub
+2. Vercel → New Project → set Root Directory to `frontend` (or `admin`)
+3. Add all env vars from `.env`
+4. Deploy — `vercel.json` handles SPA routing
+
+### Backend → Render
+1. New Web Service → Root directory: `backend`
+2. Build: `npm install` | Start: `node src/index.js`
+3. Add env vars including `FIREBASE_SERVICE_ACCOUNT_BASE64`
+
+---
+
+## Completed Phases
+
+| Phase | Description |
+|---|---|
+| ✅ 1 | Monorepo scaffold, design tokens, folder structure |
+| ✅ 2 | Backend: Firebase Admin SDK, Razorpay endpoints, auth middleware |
+| ✅ 3 | Frontend core: Firebase client, Zustand stores, Navbar, Login, Register |
+| ✅ 4 | All frontend pages: Home, ProductDetail, Cart, Checkout, Confirmation, Profile |
+| ✅ 5 | Admin panel: Dashboard, Products CRUD, Orders, Customers, Reviews |
+| ✅ 6 | Firestore rules, cleanup, UI polish, Vercel + Render deployment |

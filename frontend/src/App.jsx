@@ -13,6 +13,7 @@ const Checkout       = lazy(() => import('./pages/Checkout'));
 const Confirmation   = lazy(() => import('./pages/Confirmation'));
 const Login          = lazy(() => import('./pages/Login'));
 const Profile        = lazy(() => import('./pages/Profile'));
+const Orders         = lazy(() => import('./pages/Orders'));
 
 const Loader = () => (
   <div className="d-flex align-items-center justify-content-center min-vh-50 py-5">
@@ -23,7 +24,9 @@ const Loader = () => (
 );
 
 const Protected = ({ children }) => {
-  const { isLoggedIn, loading } = useAuthStore(s => ({ isLoggedIn: s.isLoggedIn, loading: s.loading }));
+  const isLoggedIn = useAuthStore(s => s.isLoggedIn);
+  const loading = useAuthStore(s => s.loading);
+  
   if (loading) return <Loader />;
   return isLoggedIn ? children : <Navigate to="/login" replace />;
 };
@@ -38,26 +41,25 @@ export default function App() {
   if (loading) return <Loader />;
 
   return (
-    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      <div className="min-vh-100 bg-bg text-t1 d-flex flex-column">
-        <Navbar />
-        <main className="flex-grow-1">
+    <div className="min-vh-100 bg-bg text-t1 d-flex flex-column">
+      <Navbar />
+      <main className="flex-grow-1">
 
-          <Suspense fallback={<Loader />}>
-            <Routes>
-              <Route path="/"                   element={<Home />} />
-              <Route path="/product/:id"        element={<ProductDetail />} />
-              <Route path="/login"              element={<Login />} />
-              <Route path="/cart"               element={<Protected><Cart /></Protected>} />
-              <Route path="/checkout"           element={<Protected><Checkout /></Protected>} />
-              <Route path="/confirmation"       element={<Protected><Confirmation /></Protected>} />
-              <Route path="/profile"            element={<Protected><Profile /></Protected>} />
-              <Route path="*"                   element={<Navigate to="/" />} />
-            </Routes>
-          </Suspense>
-        </main>
-        <Footer />
-      </div>
+        <Suspense fallback={<Loader />}>
+          <Routes>
+            <Route path="/"                   element={<Home />} />
+            <Route path="/product/:id"        element={<ProductDetail />} />
+            <Route path="/login"              element={<Login />} />
+            <Route path="/cart"               element={<Protected><Cart /></Protected>} />
+            <Route path="/checkout"           element={<Protected><Checkout /></Protected>} />
+            <Route path="/confirmation"       element={<Protected><Confirmation /></Protected>} />
+            <Route path="/profile"            element={<Protected><Profile /></Protected>} />
+            <Route path="/orders"             element={<Protected><Orders /></Protected>} />
+            <Route path="*"                   element={<Navigate to="/" />} />
+          </Routes>
+        </Suspense>
+      </main>
+      <Footer />
       <Toaster
         position="top-right"
         toastOptions={{
@@ -73,6 +75,6 @@ export default function App() {
           error:   { iconTheme: { primary: '#C0392B', secondary: '#080808' } },
         }}
       />
-    </BrowserRouter>
+    </div>
   );
 }

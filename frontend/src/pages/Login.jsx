@@ -52,7 +52,7 @@ export default function Login() {
 
         <div className="text-center mb-5">
           <h1 className="font-display h2 text-t1 mb-2">{isLogin ? 'Entrance' : 'Registration'}</h1>
-          <p className="text-t3 text-[0.65rem] uppercase tracking-widest m-0">
+          <p className="text-t3 text-uppercase tracking-widest m-0" style={{ fontSize: '0.65rem' }}>
             {isLogin ? 'Authorized Access Only' : 'Create Your Chronix Account'}
           </p>
         </div>
@@ -66,7 +66,7 @@ export default function Login() {
                 exit={{ opacity: 0, height: 0 }}
                 className="mb-4"
               >
-                <label className="text-[0.65rem] uppercase text-t3 tracking-widest ps-1 mb-2 d-block">Full Name</label>
+                <label className="text-uppercase text-t3 tracking-widest ps-1 mb-2 d-block" style={{ fontSize: '0.65rem' }}>Full Name</label>
                 <div className="position-relative">
                   <HiOutlineUser className="position-absolute start-0 ms-3 top-50 translate-middle-y text-t3" />
                   <input
@@ -82,7 +82,7 @@ export default function Login() {
           </AnimatePresence>
 
           <div className="mb-4">
-            <label className="text-[0.65rem] uppercase text-t3 tracking-widest ps-1 mb-2 d-block">Email Address</label>
+            <label className="text-uppercase text-t3 tracking-widest ps-1 mb-2 d-block" style={{ fontSize: '0.65rem' }}>Email Address</label>
             <div className="position-relative">
               <HiOutlineMail className="position-absolute start-0 ms-3 top-50 translate-middle-y text-t3" />
               <input
@@ -97,7 +97,7 @@ export default function Login() {
           </div>
 
           <div className="mb-4">
-            <label className="text-[0.65rem] uppercase text-t3 tracking-widest ps-1 mb-2 d-block">Keyphrase</label>
+            <label className="text-uppercase text-t3 tracking-widest ps-1 mb-2 d-block" style={{ fontSize: '0.65rem' }}>Keyphrase</label>
             <div className="position-relative">
               <HiOutlineLockClosed className="position-absolute start-0 ms-3 top-50 translate-middle-y text-t3" />
               <input
@@ -129,11 +129,13 @@ export default function Login() {
         <div className="mt-5 pt-4 text-center">
           <button 
             onClick={() => setIsLogin(!isLogin)}
-            className="btn btn-link text-t3 text-[0.7rem] uppercase tracking-wider text-decoration-none hover-gold"
+            className="btn btn-link text-t3 text-uppercase tracking-wider text-decoration-none"
+            style={{ fontSize: '0.7rem' }}
           >
             {isLogin ? "New here? Create an account" : "Already have an account? Login"}
           </button>
         </div>
+
       </motion.div>
     </div>
   );

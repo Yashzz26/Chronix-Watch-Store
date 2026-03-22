@@ -17,7 +17,9 @@ export default function ProductDetail() {
   const [comment, setComment]     = useState('');
 
   if (!product) return (
-    <div className="py-40 text-center font-display text-2xl text-t3">Timepiece not found.</div>
+    <div className="d-flex align-items-center justify-content-center text-t3 font-display fs-2" style={{ minHeight: '60vh' }}>
+      Timepiece not found.
+    </div>
   );
 
   const reviews = getProductReviews(product.id);
@@ -44,22 +46,21 @@ export default function ProductDetail() {
 
   return (
     <div className="container py-5 my-5">
-      <div className="row gx-5 mb-5 align-items-center">
+      <div className="row gx-lg-5 mb-5 align-items-center">
 
         {/* Left: Gallery */}
         <div className="col-12 col-lg-6 mb-5 mb-lg-0">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-s2 rounded-4 p-5 d-flex align-items-center justify-content-center position-relative overflow-hidden group"
+            className="bg-s2 rounded-4 p-5 d-flex align-items-center justify-content-center position-relative overflow-hidden"
             style={{ aspectRatio: '1/1' }}
           >
-            <div className="position-absolute inset-0 bg-gold opacity-0 hover-opacity-10 transition-opacity" style={{ zIndex: 0 }} />
             <img
               src={product.imageGallery[activeImg]}
               alt={product.name}
-              className="img-fluid position-relative z-1 drop-shadow-2xl"
-              style={{ maxHeight: '100%' }}
+              className="img-fluid position-relative z-1"
+              style={{ maxHeight: '100%', filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.4))' }}
             />
           </motion.div>
 
@@ -68,10 +69,15 @@ export default function ProductDetail() {
               <button
                 key={i}
                 onClick={() => setActiveImg(i)}
-                className={`flex-shrink-0 rounded-3 bg-s1 border-2 transition-all p-2 ${
-                  activeImg === i ? 'border-gold' : 'border-border opacity-50 hover-opacity-100'
-                }`}
-                style={{ width: 90, height: 90 }}
+                className="btn p-2 rounded-3 bg-s1 border border-2 transition-all flex-shrink-0"
+                style={{ 
+                  width: 90, height: 90, 
+                  borderColor: activeImg === i ? 'var(--gold)' : 'var(--border)',
+                  opacity: activeImg === i ? 1 : 0.5,
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={e => e.currentTarget.style.opacity = 1}
+                onMouseLeave={e => activeImg !== i && (e.currentTarget.style.opacity = 0.5)}
               >
                 <img src={img} alt="" className="w-100 h-100 object-fit-contain" />
               </button>
@@ -89,7 +95,7 @@ export default function ProductDetail() {
 
             <div className="d-flex align-items-center gap-4">
               <div className="d-flex align-items-center gap-3">
-                <span className="h1 text-gold font-mono m-0">
+                <span className="h1 text-gold font-mono m-0 fw-bold">
                   ₹{(product.dealPrice || product.price).toLocaleString('en-IN')}
                 </span>
                 {product.isOnDeal && (
@@ -98,13 +104,13 @@ export default function ProductDetail() {
                   </span>
                 )}
               </div>
-              <div className="badge bg-success bg-opacity-10 text-success text-[0.7rem] px-2 py-1 rounded">
+              <div className="badge bg-success bg-opacity-10 text-success text-uppercase tracking-wider fw-bold p-2" style={{ fontSize: '0.65rem' }}>
                 In Stock
               </div>
             </div>
           </div>
 
-          <p className="text-t2 fs-5 mb-5">{product.description}</p>
+          <p className="text-t2 fs-5 mb-5 lh-base">{product.description}</p>
 
           <div className="row g-4 py-4 border-top border-bottom border-border mb-5">
             {[
@@ -114,7 +120,7 @@ export default function ProductDetail() {
               { icon: HiOutlineArrowPath, label: '30 Day Easy Returns' }
             ].map((item, i) => (
               <div key={i} className="col-6">
-                <div className="d-flex align-items-center gap-2 text-sm text-t3">
+                <div className="d-flex align-items-center gap-2 text-t3" style={{ fontSize: '0.875rem' }}>
                   <item.icon className="text-gold" size={18} />
                   <span>{item.label}</span>
                 </div>
@@ -126,7 +132,8 @@ export default function ProductDetail() {
             <div className="col-12 col-sm-6">
               <button
                 onClick={() => { addItem(product); toast.success('Added to collection'); }}
-                className="btn-chronix-ghost w-100 py-3"
+                className="btn-chronix-ghost w-100 py-3 text-uppercase tracking-widest fw-bold"
+                style={{ fontSize: '0.8rem' }}
               >
                 Add to Cart
               </button>
@@ -134,8 +141,11 @@ export default function ProductDetail() {
             <div className="col-12 col-sm-6">
               <button
                 onClick={handleBuyNow}
-                className="btn-chronix-primary w-100 py-3"
-                style={{ boxShadow: '0 10px 30px rgba(212,175,55,0.2)' }}
+                className="btn-chronix-primary w-100 py-3 text-uppercase tracking-widest fw-bold"
+                style={{ 
+                  boxShadow: '0 10px 30px rgba(212,175,55,0.2)',
+                  fontSize: '0.8rem'
+                }}
               >
                 Acquire Immediately
               </button>
@@ -157,17 +167,17 @@ export default function ProductDetail() {
               <h3 className="section-label mb-4">Leave an Impression</h3>
               <form onSubmit={handleReview}>
                 <div className="mb-4">
-                  <label className="text-[0.7rem] uppercase text-t3 mb-2 d-block">Your Rating</label>
+                  <label className="text-t3 text-uppercase tracking-widest d-block mb-2" style={{ fontSize: '0.65rem' }}>Your Rating</label>
                   <div className="d-flex gap-2">
                     {[1,2,3,4,5].map(s => (
-                      <button key={s} type="button" onClick={() => setRating(s)} className="p-1 btn border-0">
+                      <button key={s} type="button" onClick={() => setRating(s)} className="p-1 btn border-0 bg-transparent">
                         {s <= rating ? <HiStar className="text-gold" /> : <HiOutlineStar className="text-t3" />}
                       </button>
                     ))}
                   </div>
                 </div>
                 <div className="mb-4">
-                  <label className="text-[0.7rem] uppercase text-t3 mb-2 d-block">Message</label>
+                  <label className="text-t3 text-uppercase tracking-widest d-block mb-2" style={{ fontSize: '0.65rem' }}>Message</label>
                   <textarea
                     className="form-control chronix-input"
                     rows="4"
@@ -176,7 +186,7 @@ export default function ProductDetail() {
                     onChange={e => setComment(e.target.value)}
                   />
                 </div>
-                <button type="submit" className="btn-chronix-primary w-100 py-2 text-xs">
+                <button type="submit" className="btn-chronix-primary w-100 py-3 text-uppercase tracking-widest fw-bold" style={{ fontSize: '0.7rem' }}>
                   Submit Review
                 </button>
               </form>
@@ -187,21 +197,21 @@ export default function ProductDetail() {
           <div className="col-12 col-md-8">
             {reviews.length === 0 ? (
               <div className="py-5 text-center border-dashed rounded-4">
-                 <p className="text-t3 font-display fst-italic">Be the first to share your thoughts.</p>
+                 <p className="text-t3 font-display fst-italic fs-5">Be the first to share your thoughts.</p>
               </div>
             ) : (
               reviews.map(r => (
                 <motion.div key={r.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="border-bottom border-border mb-5 pb-4">
                   <div className="d-flex justify-content-between mb-2">
                     <span className="fw-medium text-t1">{r.user}</span>
-                    <span className="text-xs text-t3 font-mono">{r.date}</span>
+                    <span className="text-t3 font-mono" style={{ fontSize: '0.75rem' }}>{r.date}</span>
                   </div>
                   <div className="d-flex gap-1 mb-3">
                     {[1,2,3,4,5].map(s => (
-                      <HiStar key={s} size={14} className={s <= r.rating ? 'text-gold' : 'text-t3 opacity-20'} />
+                      <HiStar key={s} size={14} className={s <= r.rating ? 'text-gold' : 'text-t3 opacity-25'} />
                     ))}
                   </div>
-                  <p className="text-t2 font-serif fst-italic leading-relaxed">"{r.comment}"</p>
+                  <p className="text-t2 font-serif fst-italic lh-relaxed fs-5">"{r.comment}"</p>
                 </motion.div>
               ))
             )}
@@ -211,3 +221,4 @@ export default function ProductDetail() {
     </div>
   );
 }
+

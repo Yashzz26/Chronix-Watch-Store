@@ -158,12 +158,12 @@ router.get('/my', verifyToken, async (req, res) => {
   try {
     const snapshot = await db.collection('orders')
       .where('userId', '==', req.user.uid)
-      .orderBy('createdAt', 'desc')
       .get();
     const orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     res.json({ orders });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch your orders' });
+    console.error('Fetch my orders error:', err);
+    res.status(500).json({ error: 'Failed to fetch your orders', details: err.message });
   }
 });
 

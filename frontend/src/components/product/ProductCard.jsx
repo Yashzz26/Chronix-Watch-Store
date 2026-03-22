@@ -30,7 +30,7 @@ export default function ProductCard({ product, index }) {
           className="w-100 h-100 object-fit-contain p-4"
         />
         {product.isOnDeal && (
-          <div className="position-absolute top-0 start-0 m-3 bg-gold text-bg text-[0.65rem] font-bold px-2 py-1 rounded uppercase tracking-wider" style={{ zIndex: 10 }}>
+          <div className="position-absolute top-0 start-0 m-3 bg-gold text-dark fw-bold px-2 py-1 rounded text-uppercase tracking-wider" style={{ zIndex: 10, fontSize: '0.65rem' }}>
             Deal
           </div>
         )}

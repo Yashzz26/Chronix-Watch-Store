@@ -150,9 +150,7 @@ export default function Navbar() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
 
             {/* Mobile search toggle */}
-            <button className="md:hidden" onClick={() => setSearchOpen(s => !s)}
-              style={{ background: 'none', border: 'none', color: '#9A9690',
-                padding: 8, cursor: 'pointer', borderRadius: 8 }}>
+            <button className="d-md-none bg-transparent border-0 text-t2 p-2" onClick={() => setSearchOpen(s => !s)}>
               <HiOutlineSearch size={20} />
             </button>
 
@@ -202,7 +200,7 @@ export default function Navbar() {
                       {initials}
                     </div>
                   )}
-                  <span className="hidden sm:block" style={{
+                  <span className="d-none d-sm-block" style={{
                     fontSize: '0.85rem', color: '#9A9690', maxWidth: 80,
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                   }}>
@@ -232,6 +230,15 @@ export default function Navbar() {
                       >
                         My Profile
                       </Link>
+                      <Link to="/orders" onClick={() => setUserMenu(false)}
+                        style={{ display: 'block', padding: '11px 16px', color: '#9A9690',
+                          textDecoration: 'none', fontSize: '0.875rem',
+                          borderBottom: '1px solid #1A1A1A', transition: 'color 0.15s' }}
+                        onMouseEnter={e => e.currentTarget.style.color = '#F0EDE8'}
+                        onMouseLeave={e => e.currentTarget.style.color = '#9A9690'}
+                      >
+                        My Acquisitions
+                      </Link>
                       <button onClick={handleLogout}
                         style={{ width: '100%', textAlign: 'left', padding: '11px 16px',
                           background: 'none', border: 'none', color: '#C0392B',
@@ -255,9 +262,7 @@ export default function Navbar() {
             )}
 
             {/* Hamburger */}
-            <button className="md:hidden" onClick={() => setMobileOpen(s => !s)}
-              style={{ background: 'none', border: 'none', color: '#9A9690',
-                padding: 8, cursor: 'pointer' }}>
+            <button className="d-md-none bg-transparent border-0 text-t2 p-2" onClick={() => setMobileOpen(s => !s)}>
               {mobileOpen ? <HiX size={22} /> : <HiMenu size={22} />}
             </button>
           </div>
@@ -266,14 +271,14 @@ export default function Navbar() {
         {/* Mobile search bar */}
         <AnimatePresence>
           {searchOpen && (
-            <motion.div className="md:hidden"
+            <motion.div className="d-md-none px-4"
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               style={{ overflow: 'hidden', borderTop: '1px solid #1A1A1A' }}
             >
               <div style={{ padding: '12px 0' }}>
-                <input className="input" placeholder="Search timepieces…"
+                <input className="form-control chronix-input" placeholder="Search timepieces…"
                   value={query}
                   onChange={e => setQuery(e.target.value)}
                   style={{ fontSize: '0.9rem' }}
@@ -288,7 +293,7 @@ export default function Navbar() {
       {/* Mobile drawer */}
       <AnimatePresence>
         {mobileOpen && (
-          <motion.div className="md:hidden"
+          <motion.div className="d-md-none"
             initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }}
             style={{ overflow: 'hidden', borderTop: '1px solid #1A1A1A',
               background: '#0A0A0A' }}

@@ -1,212 +1,175 @@
 import { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import toast from 'react-hot-toast';
-import { HiOutlineMail, HiOutlineLockClosed, HiOutlineEye, HiOutlineEyeOff, HiOutlineUser } from 'react-icons/hi';
+import { HiOutlineMail, HiOutlineLockClosed, HiOutlineUser, HiOutlineShieldCheck } from 'react-icons/hi2';
 
-const Register = () => {
+export default function Register() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const from = location.state?.from?.pathname || '/';
-
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-  });
-  const [showPass, setShowPass] = useState(false);
+  const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '' });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [passStrength, setPassStrength] = useState(0);
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const checkStrength = (pass) => {
+    let score = 0;
+    if (pass.length > 7) score++;
+    if (/[A-Z]/.test(pass)) score++;
+    if (/[0-9]/.test(pass)) score++;
+    if (/[^A-Za-z0-9]/.test(pass)) score++;
+    setPassStrength(score);
   };
 
-  const validatePassword = (pass) => {
-    if (pass.length < 6) return 'weak';
-    if (pass.length >= 8 && /[!@#$%^&*(),.?":{}|<>]/.test(pass)) return 'strong';
-    return 'medium';
-  };
-
-  const handleSubmit = async (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
-    setError('');
-    
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+    if (form.password !== form.confirmPassword) {
+      toast.error("Passphrases do not match");
+      return;
+    }
+    if (passStrength < 2) {
+      toast.error("Passphrase is too weak for our standards");
       return;
     }
 
     setLoading(true);
     try {
-      const { user } = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+      const { user } = await createUserWithEmailAndPassword(auth, form.email, form.password);
+      await updateProfile(user, { displayName: form.name });
       
       await setDoc(doc(db, 'users', user.uid), {
         uid: user.uid,
-        name: formData.name,
-        email: formData.email,
+        name: form.name,
+        email: form.email,
         role: 'customer',
-        createdAt: serverTimestamp(),
+        createdAt: new Date().toISOString(),
         wishlist: [],
         photoURL: '',
         phone: '',
         address: '',
       });
 
-      toast.success('Account created successfully!');
-      navigate(from, { replace: true });
-    } catch (err) {
-      const messages = {
-        'auth/email-already-in-use': 'Email is already in use.',
-        'auth/invalid-email': 'Invalid email address.',
-        'auth/weak-password': 'Password should be at least 6 characters.',
-      };
-      setError(messages[err.code] || 'Registration failed. Please try again.');
+      toast.success('Welcome to the Inner Circle');
+      navigate('/');
+    } catch (error) {
+      toast.error(error.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const strength = validatePassword(formData.password);
-  const strengthColor = {
-    weak: 'bg-red-500',
-    medium: 'bg-amber',
-    strong: 'bg-green-500',
-  }[strength];
-
   return (
-    <div className="min-h-screen bg-obsidian-900 flex items-center justify-center px-4 relative overflow-hidden py-20">
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-amber/5 rounded-full blur-3xl pointer-events-none" />
+    <div className="min-vh-100 d-flex align-items-center justify-content-center p-4 position-relative overflow-hidden" style={{ background: 'var(--bg)' }}>
+      {/* Decorative Glow */}
+      <div className="position-absolute top-0 start-50 translate-middle-x" style={{ width: '600px', height: '600px', background: 'rgba(212,175,55,0.03)', filter: 'blur(100px)', zIndex: 0, borderRadius: '50%' }} />
 
       <motion.div
-        initial={{ opacity: 0, y: 24 }}
+        initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-md"
+        className="chronix-card p-5 w-100 position-relative z-1"
+        style={{ maxWidth: '500px' }}
       >
-        <div className="text-center mb-8">
-          <Link to="/">
-            <span className="font-display text-3xl font-bold text-white">
-              Chronix<span className="text-amber">.</span>
-            </span>
-          </Link>
-          <h2 className="mt-4 text-2xl font-display font-semibold text-white">Create account</h2>
-          <p className="mt-1 text-platinum text-sm">Join the world of premium horology</p>
+        <div className="text-center mb-5">
+           <h1 className="font-display display-6 text-t1 mb-2">Join the Elite</h1>
+           <p className="text-t3 text-uppercase tracking-widest m-0" style={{ fontSize: '0.65rem' }}>Induct your presence into Chronix</p>
         </div>
 
-        <div className="glass rounded-2xl p-8">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Name */}
-            <div>
-              <label className="block text-sm font-medium text-platinum mb-2">Full Name</label>
-              <div className="relative">
-                <HiOutlineUser className="absolute left-3.5 top-1/2 -translate-y-1/2 text-platinum text-lg" />
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
-                  placeholder="John Doe"
-                  className="w-full bg-obsidian-700 text-white placeholder-platinum/50 text-sm pl-11 pr-4 py-3.5 rounded-xl border border-white/5 focus:outline-none focus:border-amber/50 focus:ring-1 focus:ring-amber/20 transition-all"
-                />
-              </div>
+        <form onSubmit={handleRegister} className="row g-4">
+          <div className="col-12">
+            <label className="text-uppercase text-t3 tracking-widest ps-1 mb-2 d-block" style={{ fontSize: '0.65rem' }}>Full Appellation</label>
+            <div className="position-relative">
+              <HiOutlineUser className="position-absolute start-0 ms-3 top-50 translate-middle-y text-t3" />
+              <input
+                required
+                className="form-control chronix-input ps-5"
+                placeholder="John Doe"
+                value={form.name}
+                onChange={e => setForm({...form, name: e.target.value})}
+              />
             </div>
+          </div>
 
-            {/* Email */}
-            <div>
-              <label className="block text-sm font-medium text-platinum mb-2">Email</label>
-              <div className="relative">
-                <HiOutlineMail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-platinum text-lg" />
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  placeholder="you@example.com"
-                  className="w-full bg-obsidian-700 text-white placeholder-platinum/50 text-sm pl-11 pr-4 py-3.5 rounded-xl border border-white/5 focus:outline-none focus:border-amber/50 focus:ring-1 focus:ring-amber/20 transition-all"
-                />
-              </div>
+          <div className="col-12">
+            <label className="text-uppercase text-t3 tracking-widest ps-1 mb-2 d-block" style={{ fontSize: '0.65rem' }}>Digital Mail</label>
+            <div className="position-relative">
+              <HiOutlineMail className="position-absolute start-0 ms-3 top-50 translate-middle-y text-t3" />
+              <input
+                required
+                type="email"
+                className="form-control chronix-input ps-5"
+                placeholder="email@example.com"
+                value={form.email}
+                onChange={e => setForm({...form, email: e.target.value})}
+              />
             </div>
+          </div>
 
-            {/* Password */}
-            <div>
-              <label className="block text-sm font-medium text-platinum mb-2">Password</label>
-              <div className="relative">
-                <HiOutlineLockClosed className="absolute left-3.5 top-1/2 -translate-y-1/2 text-platinum text-lg" />
-                <input
-                  type={showPass ? 'text' : 'password'}
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                  placeholder="At least 6 characters"
-                  className="w-full bg-obsidian-700 text-white placeholder-platinum/50 text-sm pl-11 pr-12 py-3.5 rounded-xl border border-white/5 focus:outline-none focus:border-amber/50 focus:ring-1 focus:ring-amber/20 transition-all"
-                />
-                <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-platinum hover:text-white transition-colors">
-                  {showPass ? <HiOutlineEyeOff className="text-lg" /> : <HiOutlineEye className="text-lg" />}
-                </button>
-              </div>
-              {formData.password && (
-                <div className="mt-2 flex items-center gap-1.5">
-                  <div className={`h-1 flex-1 rounded-full ${strengthColor}`} />
-                  <span className="text-[10px] uppercase font-bold text-platinum tracking-wider">{strength}</span>
+          <div className="col-12">
+            <label className="text-uppercase text-t3 tracking-widest ps-1 mb-2 d-block" style={{ fontSize: '0.65rem' }}>Secure Passphrase</label>
+            <div className="position-relative">
+              <HiOutlineLockClosed className="position-absolute start-0 ms-3 top-50 translate-middle-y text-t3" />
+              <input
+                required
+                type="password"
+                className="form-control chronix-input ps-5"
+                placeholder="At least 8 characters"
+                value={form.password}
+                onChange={e => {
+                  setForm({...form, password: e.target.value});
+                  checkStrength(e.target.value);
+                }}
+              />
+            </div>
+            
+            {/* Strength Indicator */}
+            {form.password && (
+              <div className="mt-2 px-1">
+                <div className="d-flex gap-1 mb-1">
+                  {[1,2,3,4].map(i => (
+                    <div key={i} className="flex-grow-1" style={{ height: 3, background: i <= passStrength ? 'var(--gold)' : 'rgba(255,255,255,0.05)', transition: 'background 0.3s' }} />
+                  ))}
                 </div>
-              )}
-            </div>
-
-            {/* Confirm Password */}
-            <div>
-              <label className="block text-sm font-medium text-platinum mb-2">Confirm Password</label>
-              <div className="relative">
-                <HiOutlineLockClosed className="absolute left-3.5 top-1/2 -translate-y-1/2 text-platinum text-lg" />
-                <input
-                  type={showPass ? 'text' : 'password'}
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  required
-                  placeholder="Re-enter password"
-                  className="w-full bg-obsidian-700 text-white placeholder-platinum/50 text-sm pl-11 pr-12 py-3.5 rounded-xl border border-white/5 focus:outline-none focus:border-amber/50 focus:ring-1 focus:ring-amber/20 transition-all"
-                />
+                <p className="m-0 text-t3 text-uppercase tracking-widest" style={{ fontSize: '0.55rem' }}>
+                  Security Level: {['Vulnerable', 'Moderate', 'Strong', 'Impermeable'][passStrength-1] || 'Unknown'}
+                </p>
               </div>
-            </div>
-
-            {error && (
-              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-red-400 text-sm text-center bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
-                {error}
-              </motion.p>
             )}
+          </div>
 
+          <div className="col-12">
+            <label className="text-uppercase text-t3 tracking-widest ps-1 mb-2 d-block" style={{ fontSize: '0.65rem' }}>Confirm Passphrase</label>
+            <div className="position-relative">
+              <HiOutlineShieldCheck className="position-absolute start-0 ms-3 top-50 translate-middle-y text-t3" />
+              <input
+                required
+                type="password"
+                className="form-control chronix-input ps-5"
+                placeholder="Re-enter password"
+                value={form.confirmPassword}
+                onChange={e => setForm({...form, confirmPassword: e.target.value})}
+              />
+            </div>
+          </div>
+
+          <div className="col-12 pt-2">
             <button
-              type="submit"
               disabled={loading}
-              className="w-full bg-amber hover:bg-amber-dark disabled:opacity-50 disabled:cursor-not-allowed text-black font-semibold py-3.5 rounded-xl transition-all transform hover:-translate-y-0.5 active:translate-y-0"
+              className="btn-chronix-primary w-100 py-3 d-flex align-items-center justify-content-center gap-3 shadow-lg"
             >
               {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-                  Creating account...
-                </span>
-              ) : 'Sign Up'}
+                <div className="spinner-border spinner-border-sm text-dark" role="status" />
+              ) : 'Request Induction'}
             </button>
-          </form>
+          </div>
+        </form>
 
-          <p className="mt-6 text-center text-sm text-platinum">
-            Already have an account?{' '}
-            <Link to="/login" className="text-amber hover:text-amber-light font-semibold transition-colors">
-              Sign In
-            </Link>
-          </p>
+        <div className="mt-5 text-center">
+           <Link to="/login" className="btn btn-link text-t3 text-uppercase tracking-widest text-decoration-none" style={{ fontSize: '0.7rem' }}>
+             Already a member? Return to Login
+           </Link>
         </div>
       </motion.div>
     </div>
   );
-};
-
-export default Register;
+}

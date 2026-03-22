@@ -7,11 +7,11 @@ const ProtectedRoute = ({ children }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-obsidian-900 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 border-2 border-amber border-t-transparent rounded-full animate-spin" />
-          <p className="text-platinum text-sm">Loading...</p>
+      <div className="min-vh-100 d-flex flex-column align-items-center justify-content-center gap-4" style={{ background: 'var(--bg)' }}>
+        <div className="spinner-border text-gold" role="status" style={{ width: '2.5rem', height: '2.5rem' }}>
+          <span className="visually-hidden">Loading...</span>
         </div>
+        <p className="text-t3 text-uppercase tracking-widest" style={{ fontSize: '0.75rem' }}>Verifying Credentials</p>
       </div>
     );
   }

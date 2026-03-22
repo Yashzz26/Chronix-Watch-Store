@@ -42,6 +42,8 @@ body {
 .font-display { font-family: 'Cormorant Garamond', serif; }
 .font-mono    { font-family: 'DM Mono', monospace; }
 
+.border-dashed { border-style: dashed !important; }
+
 /* Gold text gradient */
 .text-gold-gradient {
   background: linear-gradient(135deg, #D4AF37, #F0D060);

@@ -1,9 +1,10 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { HiOutlineCheckCircle } from 'react-icons/hi2';
 
 export default function Confirmation() {
-  const orderId = `CHX-${Math.random().toString(36).toUpperCase().substring(2, 10)}`;
+  const location = useLocation();
+  const orderId = location.state?.orderId || 'NEW-ACQUISITION';
 
   return (
     <div className="container min-vh-100 d-flex flex-column align-items-center justify-content-center p-4 text-center mx-auto" style={{ maxWidth: 600 }}>

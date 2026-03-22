@@ -82,7 +82,7 @@ export default function Home() {
 
       {/* Grid */}
       <div className="row g-4">
-        <AnimatePresence mode="wait">
+        <AnimatePresence>
           {loading ? (
             Array(8).fill(0).map((_, i) => (
               <div key={i} className="col-12 col-sm-6 col-lg-4 col-xl-3">
@@ -103,13 +103,13 @@ export default function Home() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="py-24 text-center"
+          className="py-5 my-5 text-center"
         >
           <p className="text-t3 font-display h4 fst-italic">No timepieces matching your selection were found.</p>
           <button
             onClick={() => setSearchParams({})}
             className="mt-3 text-gold text-sm text-decoration-underline"
-            style={{ background: 'none', border: 'none' }}
+            style={{ background: 'none', border: 'none', fontSize: '0.875rem' }}
           >
             Reset filters
           </button>

@@ -35,7 +35,7 @@ export default function Profile() {
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
         <div className="text-center text-md-start border-bottom border-border pb-5 mb-5">
           <h1 className="font-display display-3 text-t1 mb-3">Member Dossier</h1>
-          <p className="text-t3 font-mono text-sm uppercase tracking-[0.2em] fw-medium m-0">
+          <p className="text-t3 font-mono text-uppercase tracking-widest fw-medium m-0" style={{ fontSize: '0.8rem', letterSpacing: '0.2em' }}>
             Verified since 2024 • Rank: Premium Collector
           </p>
         </div>
@@ -43,8 +43,8 @@ export default function Profile() {
         <form onSubmit={save} className="row g-5">
           {/* Left: Avatar */}
           <div className="col-12 col-md-4 d-flex flex-column align-items-center">
-            <div className="position-relative overflow-hidden cursor-pointer" style={{ width: 180, height: 180 }} onClick={() => fileRef.current.click()}>
-              <div className="w-100 h-100 rounded-circle border border-2 border-border p-1 bg-s1 transition-all hover-border-gold">
+            <div className="position-relative overflow-hidden cursor-pointer rounded-circle" style={{ width: 180, height: 180 }} onClick={() => fileRef.current.click()}>
+              <div className="w-100 h-100 rounded-circle border border-2 border-border p-1 bg-s1 transition-all">
                 <div className="w-100 h-100 rounded-circle overflow-hidden bg-s2 d-flex align-items-center justify-content-center">
                   {form.photo ? (
                     <img src={form.photo} alt="Profile" className="w-100 h-100 object-fit-cover" />
@@ -53,12 +53,17 @@ export default function Profile() {
                   )}
                 </div>
               </div>
-              <div className="position-absolute inset-0 d-flex align-items-center justify-content-center bg-dark bg-opacity-50 opacity-0 hover-opacity-100 rounded-circle transition-all">
+              <div 
+                className="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-dark bg-opacity-50 opacity-0 rounded-circle transition-all"
+                onMouseEnter={e => e.currentTarget.style.opacity = 1}
+                onMouseLeave={e => e.currentTarget.style.opacity = 0}
+                style={{ transition: 'opacity 0.3s ease' }}
+              >
                 <HiOutlineCamera size={36} className="text-gold" />
               </div>
               <input type="file" hidden ref={fileRef} accept="image/*" onChange={handlePhoto} />
             </div>
-            <p className="mt-4 text-[0.6rem] text-t3 uppercase tracking-widest text-center leading-relaxed">
+            <p className="mt-4 text-t3 text-uppercase tracking-widest text-center lh-lg mb-0" style={{ fontSize: '0.6rem' }}>
               Click circle <br /> to update portrait
             </p>
           </div>
@@ -72,7 +77,7 @@ export default function Profile() {
                 { label: 'Dispatch Address', key: 'address', icon: HiOutlineMapPin, ph: 'Full residence address', area: true }
               ].map((f) => (
                 <div key={f.key} className="col-12">
-                  <label className="text-[0.65rem] uppercase text-t3 tracking-widest ps-1 mb-2 d-block">{f.label}</label>
+                  <label className="text-uppercase text-t3 tracking-widest ps-1 mb-2 d-block" style={{ fontSize: '0.65rem' }}>{f.label}</label>
                   <div className="position-relative">
                     <f.icon className="position-absolute start-0 ms-3 top-50 translate-middle-y text-t3" style={f.area ? {top: 24, transform: 'none'} : {}} size={16} />
                     {f.area ? (
