@@ -2,7 +2,7 @@ export default function SkeletonCard() {
   return (
     <div className="chronix-card h-100 overflow-hidden d-flex flex-column opacity-50" style={{ minHeight: 400 }}>
       <div className="bg-s2 position-relative overflow-hidden" style={{ aspectRatio: '4/5' }}>
-        <div className="position-absolute h-100 w-100" style={{ background: 'linear-gradient(90deg, transparent, rgba(90,86,82,0.1), transparent)', animation: 'shimmer 2s infinite', left: '-100%', top: 0 }} />
+        <div className="position-absolute h-100 w-100" style={{ background: 'linear-gradient(90deg, transparent, rgba(90,86,82,0.1), transparent)', animation: 'shimmer 2s infinite', left: 0, top: 0, transform: 'translateX(-100%)' }} />
       </div>
       <div className="p-4 pt-4">
         <div className="bg-s3 rounded mb-2" style={{ height: 10, width: 60, background: 'var(--s3)' }} />
@@ -15,7 +15,7 @@ export default function SkeletonCard() {
       </div>
       <style>{`
         @keyframes shimmer {
-          100% { left: 100%; }
+          100% { transform: translateX(100%); }
         }
       `}</style>
     </div>

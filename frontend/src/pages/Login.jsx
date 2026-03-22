@@ -10,8 +10,12 @@ export default function Login() {
   const { login, signup, isLoggedIn } = useAuthStore();
 
   useEffect(() => {
-    if (isLoggedIn) navigate('/');
+    if (isLoggedIn) {
+      navigate('/', { replace: true });
+    }
   }, [isLoggedIn, navigate]);
+
+  if (isLoggedIn) return null;
 
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -65,6 +69,7 @@ export default function Login() {
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
                 className="mb-4"
+                style={{ overflow: 'hidden' }}
               >
                 <label className="text-uppercase text-t3 tracking-widest ps-1 mb-2 d-block" style={{ fontSize: '0.65rem' }}>Full Name</label>
                 <div className="position-relative">

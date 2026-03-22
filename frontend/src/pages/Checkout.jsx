@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HiOutlineCreditCard, HiOutlineBanknotes, HiOutlineQrCode, HiCheckBadge } from 'react-icons/hi2';
@@ -12,6 +12,15 @@ export default function Checkout() {
   const { items, totalPrice, clearCart } = useCartStore();
   const [method, setMethod] = useState('cod');
   const [loading, setLoading] = useState(false);
+
+  // Section 2.1 — Guard against empty cart
+  useEffect(() => {
+    if (items.length === 0) {
+      navigate('/cart', { replace: true });
+    }
+  }, [items, navigate]);
+
+  if (items.length === 0) return null; // prevent flash of empty checkout
 
   const handlePlaceOrder = async () => {
     if (!auth.currentUser) {
@@ -156,7 +165,7 @@ export default function Checkout() {
             </div>
           </section>
 
-          <AnimatePresence mode="wait">
+          <AnimatePresence mode="popLayout">
             {method === 'online' ? (
               <motion.section
                 initial={{ opacity: 0, y: 10 }}

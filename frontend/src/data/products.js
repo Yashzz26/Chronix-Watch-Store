@@ -1,3 +1,10 @@
+import galaxyWatch6 from '../assets/products/galaxy-watch-6.png';
+import seiko5 from '../assets/products/seiko-5.png';
+import gshockGa2100 from '../assets/products/gshock-ga2100.png';
+import tudorBlackBay from '../assets/products/tudor-black-bay.png';
+import appleWatchUltra from '../assets/products/apple-watch-ultra.png';
+import rolexSubmariner from '../assets/products/rolex-submariner.png';
+
 export const products = [
   {
     id: 1,
@@ -6,7 +13,7 @@ export const products = [
     category: 'Smart Watch',
     description: 'A stylish and powerful smartwatch with advanced health tracking, a larger screen, and improved performance. Built for those who demand more from every second.',
     imageGallery: [
-      'https://m.media-amazon.com/images/I/61fDRIfPQEL.jpg',
+      galaxyWatch6,
       'https://m.media-amazon.com/images/I/61fDRIfPQEL.jpg',
       'https://m.media-amazon.com/images/I/61fDRIfPQEL.jpg',
       'https://m.media-amazon.com/images/I/61fDRIfPQEL.jpg',
@@ -23,7 +30,7 @@ export const products = [
     category: 'Analog',
     description: 'A reliable and iconic automatic watch, perfect for everyday wear and adventure. Features a durable stainless steel case and Japanese automatic movement.',
     imageGallery: [
-      'https://m.media-amazon.com/images/I/71L5l2A4DPL._AC_UY1000_.jpg',
+      seiko5,
       'https://www.seikowatches.com/in-en/-/media/Images/Global/Seiko/Home/Seiko-5-Sports/lineup/SKX-Sports-Style/img_SRPD55K1/SRPD55K1_bac.png',
       'https://5.imimg.com/data5/ANDROID/Default/2021/4/SF/QB/FP/36395995/product-jpeg-500x500.jpg',
       'https://i.ebayimg.com/images/g/g~QAAOSw-4xka-n1/s-l1200.webp',
@@ -40,7 +47,7 @@ export const products = [
     category: 'Analog',
     description: 'Legendary toughness in a slim, modern octagonal case. Water-resistant up to 200 meters. The carbon core guard structure provides unmatched impact resistance.',
     imageGallery: [
-      'https://m.media-amazon.com/images/I/61-pC3-A8BL._AC_UY1000_.jpg',
+      gshockGa2100,
       'https://www.casio.com/content/dam/casio/product-info/wat/g-shock/ga-2100/ga-2100-1a1/assets/GA-2100-1A1_l-02.png.transform/main-l/image.png',
       'https://www.casio.com/content/dam/casio/product-info/wat/g-shock/ga-2100/ga-2100-1a1/assets/GA-2100-1A1_l-03.png.transform/main-l/image.png',
       'https://media.gq.com/photos/5d5452a20423910008544e31/master/w_1600%2Cc_limit/casio-g-shock-watch.jpg',
@@ -57,7 +64,7 @@ export const products = [
     category: 'Luxury',
     description: 'A vintage-inspired diver watch with modern craftsmanship and a timeless design. Certified chronometer. A modern icon born from a legendary heritage.',
     imageGallery: [
-      'https://content.thewosgroup.com/productimage/17771235/17771235_1.jpg',
+      tudorBlackBay,
       'https://www.tudorwatch.com/-/media/watch-assets/family/black-bay/black-bay-41-mm-steel/m79230n-0005/slides/m79230n-0005-02-watch-case.jpg',
       'https://www.tudorwatch.com/-/media/watch-assets/family/black-bay/black-bay-41-mm-steel/m79230n-0005/slides/m79230n-0005-04-watch-bracelet.jpg',
       'https://images.ethoswatches.com/img/t/tudor-black-bay-m79230n-0005-41-mm-17771235_5.jpg',
@@ -74,7 +81,7 @@ export const products = [
     category: 'Smart Watch',
     description: 'The most rugged and capable Apple Watch ever. Built for exploration, adventure, and endurance athletes who push beyond limits.',
     imageGallery: [
-      'https://store.storeimages.cdn-apple.com/4668/as-images.apple.com/is/MQF03_VW_34FR+watch-49-titanium-ultra_VW_34FR_WF_CO+watch-face-49-alpine-ultra_VW_34FR_WF_CO_GEO_IN?wid=752&hei=720&bgc=fafafa&trim=1&.v=1683226926343',
+      appleWatchUltra,
       'https://store.storeimages.cdn-apple.com/4668/as-images.apple.com/is/MQF03_VW_34FR+watch-49-titanium-ultra_VW_34FR_WF_CO?wid=752&hei=720&bgc=fafafa&trim=1&.v=1683226926343',
       'https://store.storeimages.cdn-apple.com/4668/as-images.apple.com/is/iup-hero-marketing-202209?wid=986&hei=636&fmt=png-alpha&.v=1680126780029',
       'https://m.media-amazon.com/images/I/812cA4I2I3L.jpg',
@@ -91,7 +98,7 @@ export const products = [
     category: 'Luxury',
     description: 'The archetype of the diver\'s watch, a true icon. Unwavering reliability, timeless design, and a legacy that defines what a luxury sports watch should be.',
     imageGallery: [
-      'https://content.rolex.com/v7/dam/new-watches/2023/m126610lv-0002/m126610lv-0002_portrait.jpg?sc_lang=en_in&imwidth=1280',
+      rolexSubmariner,
       'https://content.rolex.com/v7/dam/new-watches/2023/m126610lv-0002/m126610lv-0002_showcase.jpg?sc_lang=en_in&imwidth=1280',
       'https://content.rolex.com/v7/dam/new-watches/2023/m126610lv-0002/m126610lv-0002_0006.jpg?sc_lang=en_in&imwidth=1280',
       'https://content.rolex.com/v7/dam/new-watches/2023/m126610lv-0002/m126610lv-0002_0003.jpg?sc_lang=en_in&imwidth=1280',

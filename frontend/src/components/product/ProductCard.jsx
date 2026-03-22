@@ -19,15 +19,15 @@ export default function ProductCard({ product, index }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.5, delay: index * 0.1 }}
-      className="chronix-card h-100 flex-column overflow-hidden position-relative"
+      className="chronix-card reveal h-100 flex-column overflow-hidden position-relative"
     >
       <Link to={`/product/${product.id}`} className="d-block position-relative overflow-hidden bg-s2" style={{ aspectRatio: '4/5' }}>
-        <motion.img
-          whileHover={{ scale: 1.08 }}
-          transition={{ duration: 0.6, ease: [0.33, 1, 0.68, 1] }}
+        <img
           src={product.imageGallery[0]}
           alt={product.name}
-          className="w-100 h-100 object-fit-contain p-4"
+          className="card-img w-100 h-100 object-fit-contain p-4"
+          loading="lazy"
+          decoding="async"
         />
         {product.isOnDeal && (
           <div className="position-absolute top-0 start-0 m-3 bg-gold text-dark fw-bold px-2 py-1 rounded text-uppercase tracking-wider" style={{ zIndex: 10, fontSize: '0.65rem' }}>
@@ -57,7 +57,7 @@ export default function ProductCard({ product, index }) {
         <div className="mt-4 d-flex gap-2">
           <button
             onClick={handleAdd}
-            className="btn-chronix-primary flex-grow-1 py-2 px-0 d-flex align-items-center justify-content-center gap-2 text-xs"
+            className="btn-chronix-ghost border-gold text-gold flex-grow-1 py-2 px-0 d-flex align-items-center justify-content-center gap-2 text-xs"
           >
             <HiOutlineShoppingCart size={14} /> Add
           </button>

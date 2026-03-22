@@ -14,6 +14,7 @@ const Confirmation   = lazy(() => import('./pages/Confirmation'));
 const Login          = lazy(() => import('./pages/Login'));
 const Profile        = lazy(() => import('./pages/Profile'));
 const Orders         = lazy(() => import('./pages/Orders'));
+const NotFound       = lazy(() => import('./pages/NotFound'));
 
 const Loader = () => (
   <div className="d-flex align-items-center justify-content-center min-vh-50 py-5">
@@ -24,17 +25,50 @@ const Loader = () => (
 );
 
 const Protected = ({ children }) => {
-  const isLoggedIn = useAuthStore(s => s.isLoggedIn);
-  const loading = useAuthStore(s => s.loading);
+  const { isLoggedIn, loading, sessionToken } = useAuthStore();
   
   if (loading) return <Loader />;
-  return isLoggedIn ? children : <Navigate to="/login" replace />;
+
+  // Section 1.5 — Double check: both Zustand flag AND sessionStorage token must match
+  const sessionValid = sessionToken && sessionStorage.getItem('chronix-session') === sessionToken;
+
+  if (!isLoggedIn || !sessionValid) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
 };
 
 export default function App() {
+  const validateSession = useAuthStore(s => s.validateSession);
+
   useEffect(() => {
     initAuthListener();
-  }, []);
+    validateSession();
+
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          observer.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.1 });
+    
+    setTimeout(() => {
+      document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+    }, 100);
+
+    // Section 4.1 — Safety timeout: Never leave the user on a loader for more than 4s
+    const timer = setTimeout(() => {
+      useAuthStore.setState({ loading: false });
+    }, 4000);
+
+    return () => {
+      clearTimeout(timer);
+      observer.disconnect();
+    };
+  }, [validateSession]);
 
   const loading = useAuthStore(s => s.loading);
 
@@ -43,7 +77,7 @@ export default function App() {
   return (
     <div className="min-vh-100 bg-bg text-t1 d-flex flex-column">
       <Navbar />
-      <main className="flex-grow-1">
+      <main className="flex-grow-1 container pb-5 mb-5">
 
         <Suspense fallback={<Loader />}>
           <Routes>
@@ -55,7 +89,7 @@ export default function App() {
             <Route path="/confirmation"       element={<Protected><Confirmation /></Protected>} />
             <Route path="/profile"            element={<Protected><Profile /></Protected>} />
             <Route path="/orders"             element={<Protected><Orders /></Protected>} />
-            <Route path="*"                   element={<Navigate to="/" />} />
+            <Route path="*"                   element={<NotFound />} />
           </Routes>
         </Suspense>
       </main>

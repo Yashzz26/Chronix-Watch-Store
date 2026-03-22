@@ -4,39 +4,62 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { HiOutlineStar, HiStar, HiOutlineShieldCheck, HiOutlineTruck, HiOutlineArrowPath } from 'react-icons/hi2';
 import { getProductById } from '../data/products';
 import useCartStore from '../store/cartStore';
+import useAuthStore from '../store/authStore';
+import { sanitizeText, sanitizeName } from '../utils/sanitize';
 import toast from 'react-hot-toast';
 
 export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const product = getProductById(id);
+  const { user: authUser } = useAuthStore();
   const { addItem, addReview, getProductReviews } = useCartStore();
 
   const [activeImg, setActiveImg] = useState(0);
   const [rating, setRating]       = useState(5);
   const [comment, setComment]     = useState('');
 
-  if (!product) return (
-    <div className="d-flex align-items-center justify-content-center text-t3 font-display fs-2" style={{ minHeight: '60vh' }}>
-      Timepiece not found.
-    </div>
-  );
+  // Section 2.3 — Product not found 404 handling
+  useEffect(() => {
+    if (!product) {
+      navigate('/404', { replace: true });
+    }
+  }, [product, navigate]);
+
+  // Section 2.10 — Image gallery bounds safety
+  useEffect(() => {
+    if (product && activeImg >= (product.imageGallery?.length || 0)) {
+      setActiveImg(0);
+    }
+  }, [product, activeImg]);
+
+  if (!product) return null;
 
   const reviews = getProductReviews(product.id);
 
   const handleReview = (e) => {
     e.preventDefault();
-    if (!comment.trim()) return;
+    if (!comment.trim()) {
+      toast.error('Observation cannot be hollow');
+      return;
+    }
+
+    // Section 1.4 & 2.7 — Sanitization and Validation
+    const sanitizedComment = sanitizeText(comment);
+    const userName = authUser?.displayName || authUser?.email?.split('@')[0] || 'Watch Enthusiast';
+    const sanitizedUser = sanitizeName(userName);
+
     addReview({
-      id: Date.now(),
+      id: `rev-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Section 2.2 stable ID logic
       productId: product.id,
-      user: 'Watch Enthusiast',
+      user: sanitizedUser,
       rating,
-      comment,
-      date: new Date().toLocaleDateString(),
+      comment: sanitizedComment,
+      date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
     });
+
     setComment('');
-    toast.success('Review submitted');
+    toast.success('Your impression has been archived');
   };
 
   const handleBuyNow = () => {
@@ -61,6 +84,8 @@ export default function ProductDetail() {
               alt={product.name}
               className="img-fluid position-relative z-1"
               style={{ maxHeight: '100%', filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.4))' }}
+              loading="lazy"
+              decoding="async"
             />
           </motion.div>
 
@@ -69,17 +94,17 @@ export default function ProductDetail() {
               <button
                 key={i}
                 onClick={() => setActiveImg(i)}
-                className="btn p-2 rounded-3 bg-s1 border border-2 transition-all flex-shrink-0"
+                className="btn p-2 rounded-3 bg-s1 border border-2 flex-shrink-0"
                 style={{ 
                   width: 90, height: 90, 
                   borderColor: activeImg === i ? 'var(--gold)' : 'var(--border)',
                   opacity: activeImg === i ? 1 : 0.5,
-                  transition: 'all 0.3s ease'
+                  transition: 'opacity 150ms ease, border-color 150ms ease'
                 }}
                 onMouseEnter={e => e.currentTarget.style.opacity = 1}
                 onMouseLeave={e => activeImg !== i && (e.currentTarget.style.opacity = 0.5)}
               >
-                <img src={img} alt="" className="w-100 h-100 object-fit-contain" />
+                <img src={img} alt={`Gallery view ${i + 1}`} className="w-100 h-100 object-fit-contain" loading="lazy" decoding="async" />
               </button>
             ))}
           </div>
@@ -211,7 +236,7 @@ export default function ProductDetail() {
                       <HiStar key={s} size={14} className={s <= r.rating ? 'text-gold' : 'text-t3 opacity-25'} />
                     ))}
                   </div>
-                  <p className="text-t2 font-serif fst-italic lh-relaxed fs-5">"{r.comment}"</p>
+                  <p className="text-t2 font-display fst-italic lh-relaxed fs-5">"{r.comment}"</p>
                 </motion.div>
               ))
             )}

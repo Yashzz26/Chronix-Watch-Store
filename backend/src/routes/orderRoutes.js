@@ -54,7 +54,7 @@ router.post('/create-razorpay-order', verifyToken, async (req, res) => {
     const order = await razorpay.orders.create({
       amount: Math.round(amount * 100), // Convert INR to paise
       currency: 'INR',
-      receipt: `receipt_${req.user.uid}_${Date.now()}`,
+      receipt: `rcpt_${Date.now().toString(36)}`,
       notes: {
         userId: req.user.uid,
         email: req.user.email,

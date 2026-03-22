@@ -50,7 +50,7 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="col-12 col-md-auto d-flex align-items-center gap-3">
+        <div className="col-12 col-md-auto d-flex align-items-center flex-wrap gap-3">
           {/* Category Filter */}
           <div className="position-relative flex-grow-1">
             <select

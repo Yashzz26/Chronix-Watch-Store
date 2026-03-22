@@ -1,10 +1,21 @@
-import { Link, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { HiOutlineCheckCircle } from 'react-icons/hi2';
 
 export default function Confirmation() {
   const location = useLocation();
-  const orderId = location.state?.orderId || 'NEW-ACQUISITION';
+  const navigate = useNavigate();
+  const orderId = location.state?.orderId;
+
+  // Section 2.12 — Access guard
+  useEffect(() => {
+    if (!orderId) {
+      navigate('/', { replace: true });
+    }
+  }, [orderId, navigate]);
+
+  if (!orderId) return null;
 
   return (
     <div className="container min-vh-100 d-flex flex-column align-items-center justify-content-center p-4 text-center mx-auto" style={{ maxWidth: 600 }}>

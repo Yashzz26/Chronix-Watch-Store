@@ -22,6 +22,7 @@ export default function Orders() {
 
   useEffect(() => {
     const fetchOrders = async () => {
+      if (!auth.currentUser) return;
       try {
         const token = await auth.currentUser.getIdToken();
         const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/orders/my`, {

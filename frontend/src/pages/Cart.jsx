@@ -4,7 +4,10 @@ import { HiOutlineTrash, HiOutlineShoppingBag, HiPlus, HiMinus, HiArrowLeft } fr
 import useCartStore from '../store/cartStore';
 
 export default function Cart() {
-  const { items, removeItem, updateQty, totalPrice, totalItems } = useCartStore();
+  const { items, removeItem, updateQty } = useCartStore();
+
+  const totalItems = items.reduce((sum, i) => sum + i.qty, 0);
+  const totalPrice = items.reduce((sum, i) => sum + (i.dealPrice || i.price) * i.qty, 0);
 
   if (items.length === 0) {
     return (
@@ -52,7 +55,7 @@ export default function Cart() {
                   className="chronix-card p-4 d-flex flex-column flex-sm-row gap-4 mb-0"
                 >
                   <div className="bg-s2 rounded-3 p-3 flex-shrink-0 d-flex align-items-center justify-content-center" style={{ width: 120, height: 120 }}>
-                    <img src={item.imageGallery[0]} alt={item.name} className="w-100 h-100 object-fit-contain" />
+                    <img src={item.imageGallery[0]} alt={item.name} className="w-100 h-100 object-fit-contain" loading="lazy" decoding="async" />
                   </div>
 
                   <div className="flex-grow-1">
@@ -80,13 +83,20 @@ export default function Cart() {
 
                     <div className="d-flex flex-wrap align-items-center gap-4 mt-3">
                       <div className="d-flex align-items-center bg-s2 border border-border rounded-2 overflow-hidden h-100">
-                        <button onClick={() => updateQty(item.id, item.qty - 1)} className="btn border-0 py-1 px-3 text-t2" disabled={item.qty <= 1}>
-                          <HiMinus size={14} />
+                        <button 
+                          onClick={() => updateQty(item.id, item.qty - 1)} 
+                          className="btn border-0 py-1 px-3 text-t2"
+                        >
+                          {item.qty === 1 ? <HiOutlineTrash size={14} className="text-danger" /> : <HiMinus size={14} />}
                         </button>
                         <span className="px-3 py-1 font-mono fs-6 fw-bold text-t1 border-start border-end border-border border-opacity-25">
                           {item.qty}
                         </span>
-                        <button onClick={() => updateQty(item.id, item.qty + 1)} className="btn border-0 py-1 px-3 text-t2">
+                        <button 
+                          onClick={() => updateQty(item.id, item.qty + 1)} 
+                          className="btn border-0 py-1 px-3 text-t2"
+                          disabled={item.qty >= 99}
+                        >
                           <HiPlus size={14} />
                         </button>
                       </div>
@@ -103,13 +113,13 @@ export default function Cart() {
 
         {/* Summary */}
         <div className="col-12 col-lg-4">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="chronix-card p-4 position-sticky" style={{ top: '100px' }}>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="chronix-card p-4 position-sticky" style={{ top: '80px' }}>
             <h2 className="font-display h4 text-t1 mb-4">Order Summary</h2>
 
             <div className="mb-4 pb-4 border-bottom border-border">
               <div className="d-flex justify-content-between mb-2" style={{ fontSize: '0.875rem' }}>
-                <span className="text-t3">Items ({totalItems()})</span>
-                <span className="text-t2 font-mono fw-medium">₹{totalPrice().toLocaleString('en-IN')}</span>
+                <span className="text-t3">Items ({totalItems})</span>
+                <span className="text-t2 font-mono fw-medium">₹{totalPrice.toLocaleString('en-IN')}</span>
               </div>
               <div className="d-flex justify-content-between" style={{ fontSize: '0.875rem' }}>
                 <span className="text-t3">VIP Shipping</span>
@@ -121,7 +131,7 @@ export default function Cart() {
               <span className="text-t1 fw-semibold">Total Amount</span>
               <div className="text-end">
                 <span className="d-block h3 text-gold font-mono fw-bold m-0">
-                  ₹{totalPrice().toLocaleString('en-IN')}
+                  ₹{totalPrice.toLocaleString('en-IN')}
                 </span>
               </div>
             </div>
@@ -139,4 +149,3 @@ export default function Cart() {
     </div>
   );
 }
-

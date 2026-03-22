@@ -1,6 +1,20 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+// Helper to validate cart items on load (Section 1.6)
+const isValidCartItem = (item) => {
+  return (
+    item &&
+    (typeof item.id === 'number' || typeof item.id === 'string') &&
+    typeof item.name === 'string' &&
+    typeof item.price === 'number' &&
+    typeof item.qty === 'number' &&
+    item.qty > 0 &&
+    item.qty <= 99 &&
+    Array.isArray(item.imageGallery)
+  );
+};
+
 const useCartStore = create(
   persist(
     (set, get) => ({
@@ -21,6 +35,7 @@ const useCartStore = create(
       },
       updateQty(id, qty) {
         if (qty <= 0) return get().removeItem(id);
+        if (qty > 99) qty = 99; // Section 2.4 boundary
         set({ items: get().items.map(i => i.id === id ? { ...i, qty } : i) });
       },
       clearCart() {
@@ -43,7 +58,16 @@ const useCartStore = create(
         return get().reviews.filter(r => r.productId === productId);
       },
     }),
-    { name: 'chronix-cart', partialize: (s) => ({ items: s.items }) }
+    { 
+      name: 'chronix-cart', 
+      partialize: (s) => ({ items: s.items }),
+      onRehydrateStorage: () => (state) => {
+        if (state && Array.isArray(state.items)) {
+          // Filter out any invalid/corrupted items (Section 1.6)
+          state.items = state.items.filter(isValidCartItem);
+        }
+      }
+    }
   )
 );
 
