@@ -1,101 +1,218 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500;600&display=swap');
+/* ============================================================
+   Chronix Admin — Global Styles (Bootstrap 5 Dark Theme)
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,900;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap');
 
+/* ─── CSS Custom Properties ─── */
 :root {
-  --color-bg: #0A0A0F;
-  --color-surface: #111118;
+  --color-bg:        #0A0A0F;
+  --color-surface:   #111118;
   --color-surface-2: #1A1A24;
-  --color-border: rgba(139, 143, 168, 0.15);
-  --color-amber: #F5A623;
-  --color-amber-dark: #D48A0E;
-  --color-platinum: #8B8FA8;
-  --bg: #0A0A0F;
-  --t1: #E8EAF0;
-  --t2: #8B8FA8;
-  --gold: #F5A623;
+  --color-border:    rgba(139, 143, 168, 0.15);
+  --color-amber:     #F5A623;
+  --color-amber-dark:#D48A0E;
+  --color-platinum:  #8B8FA8;
+  --color-text:      #E8EAF0;
 }
 
+/* ─── Base ─── */
 *, *::after, *::before { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
 
 body {
   background-color: var(--color-bg);
-  color: #E8EAF0;
+  color: var(--color-text);
   font-family: 'DM Sans', sans-serif;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   line-height: 1.6;
   min-height: 100vh;
 }
 
-/* Typography */
+/* ─── Typography utilities ─── */
 .font-display { font-family: 'Playfair Display', serif; }
 .font-sans    { font-family: 'DM Sans', sans-serif; }
+.x-small      { font-size: 11px !important; }
+.tracking-widest { letter-spacing: 0.1em; }
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 6px; }
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar       { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: var(--color-bg); }
-::-webkit-scrollbar-thumb { background: var(--color-surface-2); border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: var(--color-surface-2); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--color-platinum); }
+.scrollbar-hide::-webkit-scrollbar { display: none; }
 
-/* Glass card utility */
+/* ─── Color Utility Classes ─── */
+.bg-obsidian-900 { background-color: #0A0A0F !important; }
+.bg-obsidian-800 { background-color: #111118 !important; }
+.bg-obsidian-700 { background-color: #1A1A24 !important; }
+.text-platinum   { color: var(--color-platinum) !important; }
+.text-amber      { color: var(--color-amber) !important; }
+.bg-amber        { background-color: var(--color-amber) !important; }
+.border-amber    { border-color: var(--color-amber) !important; }
+.border-white-5  { border-color: rgba(255, 255, 255, 0.05) !important; }
+
+/* ─── Glass Card ─── */
 .glass {
-  background: rgba(26, 26, 36, 0.6);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(26, 26, 36, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(139, 143, 168, 0.12);
   border-radius: 1rem;
 }
 
-/* Custom classes for Admin */
-.bg-obsidian-900 { background-color: #0A0A0F; }
-.bg-obsidian-800 { background-color: #111118; }
-.bg-obsidian-700 { background-color: #1A1A24; }
-
-.text-platinum { color: var(--color-platinum); }
-.text-amber    { color: var(--color-amber); }
-.bg-amber      { background-color: var(--color-amber); }
-
-.border-white-5 { border-color: rgba(255, 255, 255, 0.05) !important; }
-
-/* Grain texture overlay */
+/* ─── Grain Texture Overlay ─── */
 .grain-overlay::after {
   content: '';
-  position: absolute;
+  position: fixed;
   inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
   pointer-events: none;
-  z-index: 1;
+  z-index: 0;
 }
 
-/* Button variants */
+/* ─── Custom Buttons ─── */
 .btn-amber {
   background-color: var(--color-amber);
-  color: #000;
+  color: #000 !important;
   font-weight: 700;
-  border-radius: 0.75rem;
-  padding: 0.75rem 1.5rem;
   border: none;
   transition: all 0.2s ease;
 }
-.btn-amber:hover {
+.btn-amber:hover, .btn-amber:focus {
   background-color: var(--color-amber-dark);
+  color: #000 !important;
   transform: translateY(-1px);
+  box-shadow: 0 8px 25px rgba(245, 166, 35, 0.3) !important;
+}
+.btn-amber:active { transform: scale(0.98); }
+.btn-amber:disabled { opacity: 0.7; }
+
+.btn-obsidian {
+  background-color: #111118;
+  color: var(--color-text);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+.btn-obsidian:hover { background-color: #1A1A24; color: #fff; }
+
+/* ─── Form Inputs (Dark Override) ─── */
+.chronix-input, .form-control.chronix-input {
+  background-color: #111118 !important;
+  border: 1px solid rgba(139, 143, 168, 0.2) !important;
+  color: var(--color-text) !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.chronix-input:focus, .form-control.chronix-input:focus {
+  background-color: #1A1A24 !important;
+  border-color: rgba(245, 166, 35, 0.5) !important;
+  box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.1) !important;
+  color: var(--color-text) !important;
+  outline: none !important;
+}
+.chronix-input::placeholder { color: var(--color-platinum); opacity: 0.6; }
+
+/* Generic dark form-control override */
+.form-control.bg-obsidian-800,
+.form-select.bg-obsidian-800 {
+  background-color: #111118 !important;
+  border-color: rgba(139, 143, 168, 0.2) !important;
+  color: var(--color-text) !important;
+}
+.form-control.bg-obsidian-800:focus,
+.form-select.bg-obsidian-800:focus {
+  background-color: #1A1A24 !important;
+  border-color: rgba(245, 166, 35, 0.5) !important;
+  box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.1) !important;
+  color: var(--color-text) !important;
+}
+.form-control.bg-obsidian-800::placeholder { color: var(--color-platinum); opacity: 0.6; }
+
+/* Select arrow for dark theme */
+.form-select.bg-obsidian-800 {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%238B8FA8' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
 }
 
-/* Table styles */
+/* ─── Table (Dark Theme) ─── */
 .table-chronix {
   --bs-table-bg: transparent;
-  --bs-table-color: #E8EAF0;
+  --bs-table-color: var(--color-text);
+  --bs-table-hover-bg: rgba(255, 255, 255, 0.03);
 }
 .table-chronix thead th {
   background: rgba(255, 255, 255, 0.03);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  border-top: none !important;
   color: var(--color-platinum);
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  padding: 1rem;
+  padding: 0.85rem 1rem;
+  font-weight: 700;
 }
 .table-chronix tbody td {
-  padding: 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
   vertical-align: middle;
 }
+.table-chronix tbody tr:hover td { background-color: rgba(255, 255, 255, 0.025); }
+.table-chronix tbody tr:last-child td { border-bottom: none !important; }
+
+/* ─── Badge Tweaks ─── */
+.badge { font-weight: 600; }
+
+/* ─── Modal Dark Theme ─── */
+.modal-content.glass { background: rgba(17, 17, 24, 0.95); border: none; }
+.modal-header { border-color: rgba(255, 255, 255, 0.05) !important; }
+.modal-footer { border-color: rgba(255, 255, 255, 0.05) !important; }
+
+/* ─── Hover Utilities ─── */
+.hover-bg-obsidian-700:hover { background-color: #1A1A24 !important; }
+.hover-text-white:hover      { color: #fff !important; }
+.hover-amber:hover           { background-color: rgba(245, 166, 35, 0.15) !important; color: #F5A623 !important; }
+.hover-danger:hover          { background-color: rgba(220, 53, 69, 0.15) !important; color: #dc3545 !important; }
+.hover-opacity-100:hover     { opacity: 1 !important; }
+.hover-glow:hover            { transform: translateY(-2px); border-color: rgba(245, 166, 35, 0.2) !important; }
+
+/* ─── Sidebar Nav ─── */
+.sidebar-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  margin-bottom: 2px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-platinum);
+  text-decoration: none;
+  transition: all 0.15s ease;
+  border-left: 3px solid transparent;
+}
+.sidebar-nav-link:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: #fff;
+}
+.sidebar-nav-link.active {
+  background-color: rgba(245, 166, 35, 0.1);
+  color: var(--color-amber);
+  border-left-color: var(--color-amber);
+  padding-left: calc(1rem - 3px);
+}
+
+/* ─── Spinner color ─── */
+.text-amber.spinner-border { color: var(--color-amber) !important; }
+.border-amber { border-color: var(--color-amber) !important; }
+
+/* ─── Misc ─── */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.object-fit-contain { object-fit: contain; }
+.object-fit-cover   { object-fit: cover; }
+.cursor-pointer     { cursor: pointer; }
+.transition-all     { transition: all 0.2s ease; }
+.active-scale:active { transform: scale(0.98); }
