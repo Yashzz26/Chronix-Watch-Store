@@ -1,10 +1,11 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { HiOutlineShoppingCart, HiArrowRight } from 'react-icons/hi';
+import { HiOutlineShoppingCart, HiOutlineArrowRight } from 'react-icons/hi2';
 import useCartStore from '../../store/cartStore';
 import toast from 'react-hot-toast';
 
 export default function ProductCard({ product, index }) {
+  const navigate = useNavigate();
   const addItem = useCartStore(s => s.addItem);
 
   const handleAdd = (e) => {
@@ -19,55 +20,67 @@ export default function ProductCard({ product, index }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.5, delay: index * 0.1 }}
-      className="chronix-card reveal h-100 flex-column overflow-hidden position-relative"
+      className="chronix-card h-100 d-flex flex-column"
+      style={{ position: 'relative' }}
     >
-      <Link to={`/product/${product.id}`} className="d-block position-relative overflow-hidden bg-s2" style={{ aspectRatio: '4/5' }}>
-        <img
-          src={product.imageGallery[0]}
-          alt={product.name}
-          className="card-img w-100 h-100 object-fit-contain p-4"
-          loading="lazy"
-          decoding="async"
-        />
+      {/* Image Area */}
+      <div 
+        className="d-flex align-items-center justify-content-center p-4 position-relative overflow-hidden"
+        style={{ aspectRatio: '1/1', background: '#161616' }}
+      >
+        <Link to={`/product/${product.id}`} className="w-100 h-100 d-flex align-items-center justify-content-center">
+          <img 
+            src={product.imageGallery[0]} 
+            alt={product.name} 
+            className="card-img img-fluid"
+            style={{ maxHeight: '100%', objectFit: 'contain', transition: 'transform 0.5s ease' }}
+          />
+        </Link>
+        
         {product.isOnDeal && (
-          <div className="position-absolute top-0 start-0 m-3 bg-gold text-dark fw-bold px-2 py-1 rounded text-uppercase tracking-wider" style={{ zIndex: 10, fontSize: '0.65rem' }}>
+          <div 
+            className="position-absolute top-0 start-0 m-3 px-2 py-1 bg-gold text-dark"
+            style={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', borderRadius: '2px', zIndex: 2 }}
+          >
             Deal
           </div>
         )}
-      </Link>
+      </div>
 
-      <div className="p-4 d-flex flex-column flex-grow-1">
-        <div className="mb-auto">
-          <p className="section-label mb-1" style={{ fontSize: '0.6rem' }}>{product.category}</p>
-          <h3 className="font-display h5 text-t1 font-medium mb-2" style={{ transition: 'color 0.3s' }}>
-            {product.name}
-          </h3>
-          <div className="d-flex align-items-center gap-3">
-            <span className="font-mono text-gold font-medium">
-              ₹{(product.dealPrice || product.price).toLocaleString('en-IN')}
+      {/* Info Area */}
+      <div className="p-4 d-flex flex-grow-1 flex-column">
+        <div style={{ fontSize: '0.6rem', color: '#D4AF37', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}>
+          {product.category}
+        </div>
+        
+        <Link to={`/product/${product.id}`} className="text-decoration-none">
+          <h3 className="font-display text-white mb-2" style={{ fontSize: '1.2rem' }}>{product.name}</h3>
+        </Link>
+
+        <div className="mt-auto d-flex align-items-baseline gap-2">
+          <span className="font-mono text-gold h5 m-0">₹{(product.dealPrice || product.price).toLocaleString('en-IN')}</span>
+          {product.isOnDeal && (
+            <span className="font-mono text-t3 text-decoration-line-through" style={{ fontSize: '0.8rem' }}>
+              ₹{product.price.toLocaleString('en-IN')}
             </span>
-            {product.isOnDeal && (
-              <span className="font-mono text-t3 text-sm text-decoration-line-through">
-                ₹{product.price.toLocaleString('en-IN')}
-              </span>
-            )}
-          </div>
+          )}
         </div>
 
         <div className="mt-4 d-flex gap-2">
-          <button
+          <button 
             onClick={handleAdd}
-            className="btn-chronix-ghost border-gold text-gold flex-grow-1 py-2 px-0 d-flex align-items-center justify-content-center gap-2 text-xs"
+            className="btn-ghost flex-grow-1 p-2 d-flex align-items-center justify-content-center gap-2" 
+            style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}
           >
             <HiOutlineShoppingCart size={14} /> Add
           </button>
-          <Link
-            to={`/product/${product.id}`}
-            className="p-2 border border-border rounded text-t2 hover:border-gold hover:text-gold transition-colors d-flex align-items-center justify-content-center"
-            style={{ width: 40, height: 40 }}
+          <button 
+            onClick={() => navigate(`/product/${product.id}`)}
+            className="btn-outline-gold p-0 d-flex align-items-center justify-content-center"
+            style={{ width: '40px', height: '40px' }}
           >
-            <HiArrowRight size={16} />
-          </Link>
+            <HiOutlineArrowRight size={18} />
+          </button>
         </div>
       </div>
     </motion.div>

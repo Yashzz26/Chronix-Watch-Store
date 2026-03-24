@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { HiOutlineClock, HiOutlineTicket, HiArrowRight } from 'react-icons/hi';
+import { HiOutlineClock, HiOutlineTicket } from 'react-icons/hi2';
 
 export default function DealBanner({ product }) {
   const [timeLeft, setTimeLeft] = useState({ h: 0, m: 0, s: 0 });
@@ -28,85 +28,75 @@ export default function DealBanner({ product }) {
   const discountPercent = Math.round((1 - product.dealPrice / product.price) * 100);
 
   return (
-    <section className="position-relative rounded-4 mb-5" style={{ background: 'linear-gradient(180deg, #0F0F0F 0%, #080808 100%)' }}>
-      <div className="position-absolute top-0 start-0 w-100 h-100 overflow-hidden rounded-4">
-        <div className="w-100 h-100 opacity-10" style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/carbon-fibre.png')" }} />
-      </div>
-
-      <div className="position-relative z-1 flex-column flex-md-row d-flex align-items-center gap-5 p-4 p-md-5 p-lg-5">
-        <motion.div
-           initial={{ opacity: 0, x: -20 }}
-           whileInView={{ opacity: 1, x: 0 }}
-           viewport={{ once: true }}
-           className="w-100 w-md-50 order-2 order-md-1"
-        >
-          <div className="d-flex align-items-center gap-3 text-gold mb-3">
-             <HiOutlineTicket size={24} />
-            <span className="section-label" style={{ fontSize: '0.75rem' }}>Limited Time Excellence</span>
-          </div>
-
-          <h2 className="display-hero text-t1 mb-4">
-            Deal of <br /> the <span className="text-gold fst-italic">Day.</span>
-          </h2>
-
-          <p className="text-t2 fs-5 mb-5" style={{ maxWidth: 440 }}>
-            The masterpiece {product.name} is now available at an exclusive appreciation price for the next few hours.
-          </p>
-
-          <div className="d-flex flex-wrap align-items-end gap-5 mb-5">
-            <div>
-              <p className="text-t3 text-uppercase tracking-widest mb-3 d-flex align-items-center gap-2" style={{ fontSize: '0.7rem' }}>
-                <HiOutlineClock size={14} /> Time Remaining
-              </p>
-              <div className="d-flex gap-4 font-mono">
-                {[
-                  { v: timeLeft.h, l: 'Hrs' },
-                  { v: timeLeft.m, l: 'Min' },
-                  { v: timeLeft.s, l: 'Sec' }
-                ].map((t, idx) => (
-                  <div key={idx} className="d-flex flex-column align-items-center">
-                    <span className="h2 text-t1 fw-medium m-0">{pad(t.v)}</span>
-                    <span className="text-gold text-uppercase mt-1" style={{ fontSize: '0.6rem' }}>{t.l}</span>
-                  </div>
-                ))}
+    <section className="position-relative overflow-hidden mb-5" style={{ borderRadius: '16px', border: '1px solid rgba(212,175,55,0.15)' }}>
+      {/* Shimmer Line */}
+      <div 
+        style={{
+          position: 'absolute', top: 0, left: 0, right: 0, height: '2px',
+          background: 'linear-gradient(90deg, transparent, #D4AF37, transparent)',
+          zIndex: 2
+        }}
+      />
+      
+      <div 
+        className="p-5"
+        style={{ 
+          background: 'linear-gradient(135deg, #0c0c0c 0%, #0f0b00 100%)',
+          minHeight: '400px',
+          display: 'flex',
+          alignItems: 'center'
+        }}
+      >
+        <div className="row w-100 g-4 align-items-center">
+          <div className="col-md-6 order-2 order-md-1">
+            <div className="section-label mb-3">Limited Acquisition</div>
+            <h2 className="font-display mb-2" style={{ fontSize: '2.5rem', color: '#fff' }}>Deal of the Day</h2>
+            <h3 className="h4 text-t2 mb-4">{product.name}</h3>
+            
+            <div className="d-flex align-items-center gap-4 mb-5">
+              <div className="d-flex flex-column">
+                <span style={{ fontSize: '0.7rem', color: '#5A5652', textTransform: 'uppercase' }}>Exclusive Price</span>
+                <span className="font-mono text-gold h2 m-0">₹{product.dealPrice.toLocaleString('en-IN')}</span>
+              </div>
+              <div className="d-flex flex-column opacity-50">
+                <span style={{ fontSize: '0.7rem', color: '#5A5652', textTransform: 'uppercase' }}>Standard</span>
+                <span className="font-mono text-t3 h4 m-0 text-decoration-line-through">₹{product.price.toLocaleString('en-IN')}</span>
               </div>
             </div>
 
-            <div className="d-flex flex-column">
-               <span className="text-t3 text-uppercase tracking-widest mb-2" style={{ fontSize: '0.7rem' }}>Reserved Price</span>
-               <span className="h1 text-gold font-mono fw-bold m-0">₹{product.dealPrice.toLocaleString('en-IN')}</span>
+            <div className="d-flex gap-4">
+              <div className="text-center">
+                <div className="font-mono text-white h1 mb-0" style={{ fontSize: '2.5rem' }}>{pad(timeLeft.h)}</div>
+                <div style={{ fontSize: '0.6rem', color: '#5A5652', textTransform: 'uppercase' }}>Hours</div>
+              </div>
+              <div className="text-center">
+                <div className="font-mono text-white h1 mb-0" style={{ fontSize: '2.5rem' }}>{pad(timeLeft.m)}</div>
+                <div style={{ fontSize: '0.6rem', color: '#5A5652', textTransform: 'uppercase' }}>Mins</div>
+              </div>
+              <div className="text-center">
+                <div className="font-mono text-gold h1 mb-0" style={{ fontSize: '2.5rem' }}>{pad(timeLeft.s)}</div>
+                <div style={{ fontSize: '0.6rem', color: '#5A5652', textTransform: 'uppercase' }}>Secs</div>
+              </div>
+            </div>
+
+            <div className="mt-5">
+                <Link to={`/product/${product.id}`} className="btn-gold text-decoration-none">
+                    Acquire Now
+                </Link>
             </div>
           </div>
-
-          <div className="pt-2">
-            <Link to={`/product/${product.id}`} className="btn-chronix-primary d-inline-flex align-items-center gap-3 text-decoration-none">
-              Acquire Now
-              <motion.span whileHover={{ x: 4 }} className="d-inline-block transition-transform">
-                <HiArrowRight />
-              </motion.span>
-            </Link>
+          
+          <div className="col-md-6 order-1 order-md-2 text-center position-relative">
+            <div className="position-absolute top-50 start-50 translate-middle bg-gold opacity-10 rounded-circle" style={{ width: '100%', height: '100%', filter: 'blur(100px)', zIndex: 0 }} />
+            <motion.img 
+              src={product.imageGallery[0]} 
+              alt={product.name}
+              style={{ maxHeight: '340px', filter: 'drop-shadow(0 20px 50px rgba(0,0,0,0.8))', position: 'relative', zIndex: 1 }}
+              animate={{ rotate: [0, 2, 0] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            />
           </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9, rotate: -5 }}
-          whileInView={{ opacity: 1, scale: 1, rotate: 0 }}
-          viewport={{ once: true }}
-          className="position-relative w-100 w-md-50 d-flex justify-content-center order-1 order-md-2"
-        >
-          <div className="position-absolute top-50 start-50 translate-middle bg-gold opacity-10 rounded-circle" style={{ width: '100%', height: '100%', filter: 'blur(100px)', zIndex: 0 }} />
-          <img
-            src={product.imageGallery[0]}
-            alt={product.name}
-            className="position-relative z-1 w-100" style={{ maxWidth: 340, filter: 'drop-shadow(0 20px 50px rgba(0,0,0,0.8))' }}
-            loading="lazy"
-            decoding="async"
-          />
-          <div className="position-absolute top-0 end-0 bg-gold text-dark fw-bold p-3 rounded-circle d-flex flex-column align-items-center justify-content-center" style={{ width: 80, height: 80, boxShadow: '0 10px 30px rgba(212,175,55,0.3)', zIndex: 10 }}>
-            <span className="text-uppercase tracking-tighter" style={{ fontSize: '0.6rem' }}>Save</span>
-            <span className="fs-4 font-mono lh-1">{discountPercent}%</span>
-          </div>
-        </motion.div>
+        </div>
       </div>
     </section>
   );

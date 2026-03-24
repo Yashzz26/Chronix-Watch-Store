@@ -120,141 +120,164 @@ export default function Checkout() {
 
   return (
     <div className="container py-5 my-5">
-      <h1 className="font-display display-3 text-t1 mb-5">Finalize Acquisition</h1>
+      <div className="mb-5 text-center">
+        <div className="section-label mb-3">Secure Acquisition</div>
+        <h1 className="font-display mb-2" style={{ fontSize: 'clamp(2.5rem, 6vw, 4rem)', color: '#fff' }}>
+          Checkout
+        </h1>
+        <p className="text-t3 font-body" style={{ fontSize: '1rem' }}>Finalize your selection of exceptional timepieces.</p>
+      </div>
 
       <div className="row g-5 align-items-start">
         {/* Left: Payment */}
         <div className="col-12 col-lg-7">
           <section className="mb-5">
-            <h2 className="section-label mb-4">Payment Method</h2>
-            <div className="row g-3">
+            <h2 className="font-display mb-4" style={{ fontSize: '1.8rem', color: '#fff' }}>1. Select Payment Method</h2>
+            <div className="row g-4">
               <div className="col-12 col-sm-6">
                 <button
                   onClick={() => setMethod('online')}
-                  className={`btn w-100 p-4 border rounded-4 d-flex flex-column align-items-start gap-4 position-relative overflow-hidden text-start ${
-                    method === 'online' ? 'border-gold' : 'border-border'
-                  }`}
+                  className="w-100 p-4 border rounded-3 text-start position-relative overflow-hidden transition-all"
                   style={{ 
                     background: method === 'online' ? 'rgba(212,175,55,0.05)' : '#0F0F0F',
-                    transition: 'all 0.3s ease',
-                    borderWidth: '2px'
+                    border: method === 'online' ? '2px solid #D4AF37' : '2px solid #1e1e1e',
                   }}
                 >
-                  <div className={`p-3 rounded-3 d-flex ${method === 'online' ? 'bg-gold text-dark' : 'bg-secondary bg-opacity-10 text-t3'}`}>
-                    <HiOutlineCreditCard size={24} />
+                  <div className="d-flex align-items-center justify-content-between mb-4">
+                    <div className={`p-3 rounded-2 ${method === 'online' ? 'bg-gold text-dark' : 'bg-s2 text-t3'}`}>
+                      <HiOutlineCreditCard size={28} />
+                    </div>
+                    {method === 'online' && <HiCheckBadge className="text-gold" size={24} />}
                   </div>
                   <div>
-                    <p className="fw-medium text-t1 m-0">Pay Online</p>
-                    <p className="text-t3 text-uppercase tracking-wider mt-1 mb-0" style={{ fontSize: '0.65rem' }}>UPI / Cards / NetBanking</p>
+                    <p className="font-display h5 text-white mb-1">Electronic Payment</p>
+                    <p className="text-t3 font-body m-0" style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      UPI / Cards / Net Banking
+                    </p>
                   </div>
-                  {method === 'online' && <HiCheckBadge className="position-absolute top-0 end-0 m-3 text-gold" size={20} />}
                 </button>
               </div>
 
               <div className="col-12 col-sm-6">
                 <button
                   onClick={() => setMethod('cod')}
-                  className={`btn w-100 p-4 border rounded-4 d-flex flex-column align-items-start gap-4 position-relative overflow-hidden text-start ${
-                    method === 'cod' ? 'border-gold' : 'border-border'
-                  }`}
+                  className="w-100 p-4 border rounded-3 text-start position-relative overflow-hidden transition-all"
                   style={{ 
                     background: method === 'cod' ? 'rgba(212,175,55,0.05)' : '#0F0F0F',
-                    transition: 'all 0.3s ease',
-                    borderWidth: '2px'
+                    border: method === 'cod' ? '2px solid #D4AF37' : '2px solid #1e1e1e',
                   }}
                 >
-                  <div className={`p-3 rounded-3 d-flex ${method === 'cod' ? 'bg-gold text-dark' : 'bg-secondary bg-opacity-10 text-t3'}`}>
-                    <HiOutlineBanknotes size={24} />
+                  <div className="d-flex align-items-center justify-content-between mb-4">
+                    <div className={`p-3 rounded-2 ${method === 'cod' ? 'bg-gold text-dark' : 'bg-s2 text-t3'}`}>
+                      <HiOutlineBanknotes size={28} />
+                    </div>
+                    {method === 'cod' && <HiCheckBadge className="text-gold" size={24} />}
                   </div>
                   <div>
-                    <p className="fw-medium text-t1 m-0">Pay at Boutique</p>
-                    <p className="text-t3 text-uppercase tracking-wider mt-1 mb-0" style={{ fontSize: '0.65rem' }}>Cash on Delivery</p>
+                    <p className="font-display h5 text-white mb-1">Boutique Pickup/COD</p>
+                    <p className="text-t3 font-body m-0" style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Pay upon delivery/collection
+                    </p>
                   </div>
-                  {method === 'cod' && <HiCheckBadge className="position-absolute top-0 end-0 m-3 text-gold" size={20} />}
                 </button>
               </div>
             </div>
           </section>
 
-          <AnimatePresence mode="popLayout">
+          <AnimatePresence mode="wait">
             {method === 'online' ? (
-              <motion.section
+              <motion.div
+                key="online"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="chronix-card p-5 d-flex flex-column align-items-center text-center gap-4 bg-black"
-                style={{ background: '#0C0C0C', borderStyle: 'dashed' }}
+                className="p-5 border rounded-3 text-center"
+                style={{ background: '#080808', border: '1px dashed #D4AF37' }}
               >
-                <div className="bg-s2 p-4 rounded-circle shadow-lg mb-2">
-                  <HiOutlineCreditCard size={48} className="text-gold" />
+                <div className="d-inline-flex p-4 rounded-circle mb-4" style={{ background: 'rgba(212,175,55,0.05)' }}>
+                  <HiOutlineQrCode size={48} className="text-gold" />
                 </div>
-                <div className="d-flex flex-column gap-2">
-                  <p className="text-t1 fw-medium m-0 fs-5">Secure Payment Gateway</p>
-                  <p className="text-t3 text-sm m-0 px-md-5">
-                    Upon clicking place order, you will be redirected to our encrypted payment portal 
-                    to complete your acquisition securely.
-                  </p>
-                </div>
-                <div className="d-flex gap-4 opacity-50 mt-2">
-                   <img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/UPI-Logo-vector.svg" alt="UPI" style={{ height: 20, filter: 'grayscale(1)' }} />
-                   <div style={{ width: 1, height: 20, background: '#2A2A2A' }} />
-                   <img src="https://upload.wikimedia.org/wikipedia/commons/2/24/Visa.svg" alt="Visa" style={{ height: 16, filter: 'grayscale(1)' }} />
-                   <img src="https://upload.wikimedia.org/wikipedia/commons/b/b7/MasterCard_Logo.svg" alt="MasterCard" style={{ height: 16, filter: 'grayscale(1)' }} />
-                </div>
-              </motion.section>
-            ) : (
-              <motion.section
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="chronix-card p-5 border-dashed text-center"
-              >
-                <p className="text-t2 fs-5 lh-lg m-0">
-                  Our white-glove delivery specialist will collect the amount <br />
-                  <span className="text-gold font-mono fw-bold">₹{totalPrice().toLocaleString('en-IN')}</span> <br />
-                  upon arrival. Please ensure exact change is available.
+                <h3 className="font-display text-white h4 mb-3">Secure Portal Transfer</h3>
+                <p className="font-body text-t3 px-lg-5 mb-0" style={{ lineHeight: 1.7 }}>
+                  You will be securely redirected to our verified payment gateway to complete your transaction using encrypted protocols.
                 </p>
-              </motion.section>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="cod"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="p-5 border rounded-3 text-center"
+                style={{ background: '#080808', border: '1px dashed #1e1e1e' }}
+              >
+                <div className="d-inline-flex p-4 rounded-circle mb-4" style={{ background: 'rgba(212,175,55,0.02)' }}>
+                  <HiOutlineBanknotes size={48} className="text-t3" />
+                </div>
+                <h3 className="font-display text-white h4 mb-3">White-Glove Collection</h3>
+                <p className="font-body text-t3 px-lg-5 mb-0" style={{ lineHeight: 1.7 }}>
+                  Our concierge will facilitate the payment of <span className="text-gold font-mono fw-bold">₹{totalPrice().toLocaleString('en-IN')}</span> at the time of delivery. Exact amount is appreciated.
+                </p>
+              </motion.div>
             )}
           </AnimatePresence>
         </div>
 
         {/* Right: Summary */}
-        <div className="col-12 col-lg-5">
-          <section className="chronix-card p-4">
-            <h2 className="section-label mb-5">Summary</h2>
-            <div className="overflow-auto pe-3 mb-5" style={{ maxHeight: 300 }}>
-              {items.map((item, idx) => (
-                <div key={item.id} className={`d-flex gap-4 mb-4 pb-4 ${idx === items.length - 1 ? '' : 'border-bottom border-border border-opacity-25'}`}>
-                  <div className="bg-s2 rounded-3 p-2 flex-shrink-0 d-flex align-items-center justify-content-center" style={{ width: 64, height: 64 }}>
-                    <img src={item.imageGallery[0]} alt="" className="w-100 h-100 object-fit-contain" />
+        <div className="col-12 col-lg-5 ps-lg-5">
+          <div className="position-sticky" style={{ top: '100px' }}>
+            <div className="chronix-card p-4">
+              <h2 className="section-label mb-5">Order Résumé</h2>
+              
+              <div className="overflow-auto mb-5 pe-2" style={{ maxHeight: '350px' }}>
+                {items.map((item, idx) => (
+                  <div key={item.id} className={`d-flex gap-4 mb-4 pb-4 ${idx !== items.length - 1 ? 'border-bottom border-border border-opacity-50' : ''}`}>
+                    <div className="bg-s2 rounded-2 p-2 flex-shrink-0 d-flex align-items-center justify-content-center" style={{ width: '70px', height: '70px' }}>
+                      <img src={item.imageGallery[0]} alt="" className="w-100 h-100 object-fit-contain" />
+                    </div>
+                    <div className="flex-grow-1">
+                      <p className="text-white fw-medium m-0">{item.name}</p>
+                      <div className="d-flex justify-content-between align-items-center mt-1">
+                        <span className="text-t3" style={{ fontSize: '0.8rem' }}>Qty: {item.qty}</span>
+                        <span className="font-mono text-gold" style={{ fontSize: '0.85rem' }}>
+                          ₹{(item.dealPrice || item.price).toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex-grow-1">
-                    <p className="fs-6 fw-medium text-t1 m-0">{item.name}</p>
-                    <p className="text-t3 font-mono mt-1 mb-0 text-uppercase tracking-tighter" style={{ fontSize: '0.7rem' }}>
-                      ₹{(item.dealPrice || item.price).toLocaleString('en-IN')} × {item.qty}
-                    </p>
+                ))}
+              </div>
+
+              <div className="pt-4 border-top border-border">
+                <div className="d-flex justify-content-between align-items-end mb-5">
+                  <div>
+                    <span className="section-label d-block mb-1">Total Due</span>
+                    <span className="font-mono text-gold" style={{ fontSize: '2.5rem', fontWeight: 600, lineHeight: 1 }}>
+                      ₹{totalPrice().toLocaleString('en-IN')}
+                    </span>
                   </div>
                 </div>
-              ))}
-            </div>
-
-            <div className="pt-4 border-top border-border">
-              <div className="d-flex justify-content-between align-items-center mb-5">
-                <span className="text-t1 fw-semibold">Total Amount</span>
-                <span className="h2 text-gold font-mono fw-bold m-0">₹{totalPrice().toLocaleString('en-IN')}</span>
+                
+                <button
+                  disabled={loading}
+                  onClick={handlePlaceOrder}
+                  className="btn-gold w-100 py-3 text-uppercase fw-bold d-flex align-items-center justify-content-center gap-3"
+                  style={{ fontSize: '0.85rem', letterSpacing: '0.1em' }}
+                >
+                  {loading ? (
+                    <span className="spinner-border spinner-border-sm" />
+                  ) : (
+                    <>
+                      {method === 'online' ? 'Proceed to Gateway' : 'Confirm Reservation'}
+                    </>
+                  )}
+                </button>
+                <p className="text-center mt-4 text-t3" style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  SSL Encrypted & Secured Transaction
+                </p>
               </div>
-              <button
-                disabled={loading}
-                onClick={handlePlaceOrder}
-                className="btn-chronix-primary w-100 py-3 d-flex align-items-center justify-content-center gap-3 position-relative overflow-hidden text-decoration-none"
-              >
-                {loading ? (
-                  <div className="spinner-border spinner-border-sm text-dark" role="status" />
-                ) : method === 'online' ? 'Pay & Place Your Order' : 'Place Your Order'}
-              </button>
             </div>
-          </section>
+          </div>
         </div>
       </div>
     </div>

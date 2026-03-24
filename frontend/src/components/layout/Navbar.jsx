@@ -42,46 +42,52 @@ export default function Navbar() {
 
   return (
     <motion.header
-      initial={{ opacity: 0, y: -16 }}
+      initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
+      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
       style={{
-        position: 'sticky', top: 0, zIndex: 200,
-        background: 'rgba(8,8,8,0.92)',
+        position: 'sticky', top: 0, zIndex: 1000,
+        height: '72px',
+        background: 'rgba(8,8,8,0.95)',
         backdropFilter: 'blur(20px)',
-        borderBottom: '1px solid var(--border)',
+        borderBottom: '1px solid #1e1e1e',
+        display: 'flex',
+        alignItems: 'center'
       }}
     >
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px' }}>
-        <div className="d-flex align-items-center" style={{ height: 64, gap: 24 }}>
+      <div className="container-fluid px-4 w-100">
+        <div className="d-flex align-items-center justify-content-between gap-4">
 
-          {/* Logo */}
-          <Link to="/" style={{ textDecoration: 'none', flexShrink: 0 }}>
+          {/* LEFT: Logo */}
+          <Link to="/" className="text-decoration-none flex-shrink-0">
             <span style={{
               fontFamily: '"Cormorant Garamond", serif',
-              fontSize: '1.6rem',
-              fontWeight: 600,
-              color: '#F0EDE8',
-              letterSpacing: '0.02em',
+              fontSize: '1.8rem',
+              fontWeight: 700,
+              color: '#ffffff',
+              letterSpacing: '-0.01em',
             }}>
               Chronix<span style={{ color: '#D4AF37' }}>.</span>
             </span>
           </Link>
 
-          {/* Search — desktop (Isolated Component Section 3.2) */}
-          <SearchBar />
+          {/* CENTER: Search */}
+          <div className="flex-grow-1 d-none d-md-block" style={{ maxWidth: '480px' }}>
+            <SearchBar />
+          </div>
 
-          {/* Right icons */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
+          {/* RIGHT: Actions */}
+          <div className="d-flex align-items-center gap-2">
 
-            {/* Cart */}
-            <Link to="/cart" className="nav-link" style={{ position: 'relative', padding: 8, borderRadius: 8, display: 'flex' }}>
-              <HiOutlineShoppingCart size={20} />
+            {/* Cart Icon */}
+            <Link to="/cart" className="nav-link p-2 position-relative d-flex align-items-center justify-content-center" style={{ color: '#ffffff', transition: 'color 0.3s ease' }}>
+              <HiOutlineShoppingCart size={22} />
               {totalItems > 0 && (
-                <span className="font-mono bg-gold text-bg" style={{
-                  position: 'absolute', top: 4, right: 4,
-                  fontSize: '0.6rem', fontWeight: 700,
-                  width: 16, height: 16, borderRadius: '50%',
+                <span className="font-mono" style={{
+                  position: 'absolute', top: '0', right: '0',
+                  fontSize: '0.65rem', fontWeight: 700,
+                  width: '18px', height: '18px', borderRadius: '50%',
+                  background: '#D4AF37', color: '#000',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
                   {totalItems > 9 ? '9+' : totalItems}
@@ -89,54 +95,54 @@ export default function Navbar() {
               )}
             </Link>
 
-            {/* User */}
+            {/* Separator */}
+            <div className="d-none d-sm-block mx-2" style={{ width: '1px', height: '20px', background: '#1a1a1a' }}></div>
+
+            {/* User Profile */}
             {isLoggedIn ? (
-              <div style={{ position: 'relative' }}>
+              <div className="position-relative">
                 <button
                   onClick={() => setUserMenu(s => !s)}
-                  className="btn-chronix-ghost d-flex align-items-center gap-2"
-                  style={{ padding: '6px 12px' }}
+                  className="bg-transparent border-0 p-0 overflow-hidden rounded-circle"
+                  style={{ 
+                    width: '32px', height: '32px', 
+                    border: '1px solid #D4AF37',
+                    transition: 'transform 0.3s ease'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
+                  onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
                 >
                   {profilePhoto ? (
-                    <img src={profilePhoto} alt="" style={{ width: 26, height: 26, borderRadius: '50%', objectFit: 'cover' }} />
+                    <img src={profilePhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
-                    <div style={{
-                      width: 26, height: 26, borderRadius: '50%',
-                      background: 'rgba(212,175,55,0.15)', border: '1px solid rgba(212,175,55,0.3)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '0.7rem', fontWeight: 700, color: 'var(--gold)',
-                    }}>
+                    <div className="w-100 h-100 d-flex align-items-center justify-content-center text-gold bg-dark" style={{ fontSize: '0.75rem', fontWeight: 700 }}>
                       {initials}
                     </div>
                   )}
-                  <span className="d-none d-sm-block text-t2" style={{
-                    fontSize: '0.85rem', maxWidth: 80,
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                  }}>
-                    {profile?.name?.split(' ')?.[0] || user?.displayName?.split(' ')?.[0] || user?.email?.split('@')?.[0]}
-                  </span>
                 </button>
 
                 <AnimatePresence>
                   {userMenu && (
                     <motion.div
-                      initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 8 }}
-                      className="bg-s1 border-border"
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
                       style={{
-                        position: 'absolute', top: 'calc(100% + 8px)', right: 0,
-                        width: 180, border: '1px solid', borderRadius: 10,
-                        overflow: 'hidden', boxShadow: 'var(--shadow-lux)',
+                        position: 'absolute', top: 'calc(100% + 12px)', right: 0,
+                        width: '200px', background: '#0f0f0f', 
+                        border: '1px solid #2a2a2a', borderRadius: '10px',
+                        overflow: 'hidden', boxShadow: '0 15px 40px rgba(0,0,0,0.5)',
+                        zIndex: 1001
                       }}
                     >
-                      <Link to="/profile" onClick={() => setUserMenu(false)} className="nav-link border-bottom border-border" style={{ display: 'block', padding: '11px 16px', fontSize: '0.875rem' }}>
+                      <Link to="/profile" onClick={() => setUserMenu(false)} className="nav-link w-100 text-start px-3 py-2 border-bottom border-border" style={{ display: 'block', fontSize: '0.85rem', color: '#9A9690' }}>
                         My Profile
                       </Link>
-                      <Link to="/orders" onClick={() => setUserMenu(false)} className="nav-link border-bottom border-border" style={{ display: 'block', padding: '11px 16px', fontSize: '0.875rem' }}>
+                      <Link to="/orders" onClick={() => setUserMenu(false)} className="nav-link w-100 text-start px-3 py-2 border-bottom border-border" style={{ display: 'block', fontSize: '0.85rem', color: '#9A9690' }}>
                         My Acquisitions
                       </Link>
-                      <button onClick={handleLogout} style={{ width: '100%', textAlign: 'left', padding: '11px 16px', background: 'none', border: 'none', color: '#C0392B', fontSize: '0.875rem', cursor: 'pointer' }}>
+                      <button onClick={handleLogout} className="w-100 text-start px-3 py-2 bg-transparent border-0" style={{ fontSize: '0.85rem', color: '#C0392B' }}>
                         Sign Out
                       </button>
                     </motion.div>
@@ -144,39 +150,45 @@ export default function Navbar() {
                 </AnimatePresence>
               </div>
             ) : (
-              <Link to="/login" className="btn-chronix-primary px-3 py-2 text-decoration-none d-flex align-items-center gap-2" style={{ fontSize: '0.85rem' }}>
-                <HiOutlineUser size={15} /> Sign In
+              <Link to="/login" className="btn-gold py-1 px-3 d-flex align-items-center gap-2" style={{ fontSize: '0.85rem' }}>
+                <HiOutlineUser size={16} /> <span className="d-none d-sm-inline">Sign In</span>
               </Link>
             )}
 
-            {/* Hamburger */}
-            <button className="d-md-none bg-transparent border-0 text-t2 p-2" onClick={() => setMobileOpen(s => !s)}>
-              {mobileOpen ? <HiX size={22} /> : <HiMenu size={22} />}
+            {/* Mobile Menu Toggle */}
+            <button className="d-md-none bg-transparent border-0 text-white p-2" onClick={() => setMobileOpen(s => !s)}>
+              {mobileOpen ? <HiX size={24} /> : <HiMenu size={24} />}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Mobile drawer */}
+      {/* Mobile Drawer */}
       <AnimatePresence>
         {mobileOpen && (
-          <motion.div className="d-md-none bg-s1 border-top border-border"
-            initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }}
-            style={{ overflow: 'hidden' }}
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            style={{
+              position: 'fixed', bottom: 0, left: 0, right: 0,
+              background: '#0f0f0f', borderTop: '1px solid #2a2a2a',
+              padding: '2rem', zIndex: 1002, borderTopLeftRadius: '20px', borderTopRightRadius: '20px'
+            }}
           >
-            <div style={{ padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-              {[['/', 'Home'], ['/cart', `Cart (${totalItems})`]].map(([to, label]) => (
-                <Link key={to} to={to} className="nav-link border-bottom border-border" style={{ padding: '10px 0', fontSize: '0.95rem' }}>
-                  {label}
-                </Link>
-              ))}
+            <div className="d-flex flex-column gap-3">
+              <SearchBar />
+              <Link to="/" className="text-decoration-none py-2 border-bottom border-border" style={{ color: '#F0EDE8', fontSize: '1.2rem', fontFamily: 'Cormorant Garamond' }}>Home</Link>
+              <Link to="/cart" className="text-decoration-none py-2 border-bottom border-border" style={{ color: '#F0EDE8', fontSize: '1.2rem', fontFamily: 'Cormorant Garamond' }}>Collection Cart</Link>
               {isLoggedIn ? (
                 <>
-                  <Link to="/profile" className="nav-link border-bottom border-border" style={{ padding: '10px 0', fontSize: '0.95rem' }}>Profile</Link>
-                  <button onClick={handleLogout} style={{ padding: '10px 0', background: 'none', border: 'none', color: '#C0392B', textAlign: 'left', cursor: 'pointer', fontSize: '0.95rem' }}>Sign Out</button>
+                  <Link to="/profile" className="text-decoration-none py-2 border-bottom border-border" style={{ color: '#F0EDE8', fontSize: '1.2rem', fontFamily: 'Cormorant Garamond' }}>My Profile</Link>
+                  <Link to="/orders" className="text-decoration-none py-2 border-bottom border-border" style={{ color: '#F0EDE8', fontSize: '1.2rem', fontFamily: 'Cormorant Garamond' }}>Orders</Link>
+                  <button onClick={handleLogout} className="text-start bg-transparent border-0 py-2" style={{ color: '#C0392B', fontSize: '1.2rem', fontFamily: 'Cormorant Garamond' }}>Sign Out</button>
                 </>
               ) : (
-                <Link to="/login" className="text-gold" style={{ padding: '10px 0', textDecoration: 'none', fontSize: '0.95rem', fontWeight: 600 }}>Sign In</Link>
+                <Link to="/login" className="text-gold py-2" style={{ fontSize: '1.2rem', fontWeight: 600 }}>Sign In</Link>
               )}
             </div>
           </motion.div>
