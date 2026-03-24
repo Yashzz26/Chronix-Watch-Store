@@ -9,6 +9,13 @@ export default function Login() {
   const navigate = useNavigate();
   const { login, signup, isLoggedIn } = useAuthStore();
 
+  const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [showPass, setShowPass] = useState(false);
+  const [loading, setLoading] = useState(false);
+
   useEffect(() => {
     if (isLoggedIn) {
       navigate('/', { replace: true });
@@ -16,13 +23,6 @@ export default function Login() {
   }, [isLoggedIn, navigate]);
 
   if (isLoggedIn) return null;
-
-  const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [showPass, setShowPass] = useState(false);
-  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

@@ -50,24 +50,35 @@ export default function Checkout() {
           orderData,
           userInfo: { email: auth.currentUser.email },
           onSuccess: async (response) => {
-            const finalResponse = await fetch(`${backendUrl}/api/orders`, {
-              method: 'POST',
-              headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-              },
-              body: JSON.stringify({ 
-                items, 
-                totalPrice: totalPrice(), 
-                paymentMethod: 'online',
-                razorpayDetails: response
-              })
-            });
-            if (finalResponse.ok) {
-              const data = await finalResponse.json();
-              clearCart();
-              toast.success('Acquisition Successful');
-              navigate('/confirmation', { state: { orderId: data.orderId } });
+            const verifyingToast = toast.loading('Verifying payment...');
+            try {
+              const finalResponse = await fetch(`${backendUrl}/api/orders`, {
+                method: 'POST',
+                headers: { 
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ 
+                  items, 
+                  totalPrice: totalPrice(), 
+                  paymentMethod: 'online',
+                  razorpayDetails: response
+                })
+              });
+              
+              if (finalResponse.ok) {
+                const data = await finalResponse.json();
+                toast.success('Payment Verified & Order Placed', { id: verifyingToast });
+                clearCart();
+                navigate('/confirmation', { state: { orderId: data.orderId } });
+              } else {
+                const errorData = await finalResponse.json();
+                toast.error(errorData.error || 'Verification failed', { id: verifyingToast });
+              }
+            } catch (err) {
+              toast.error('Network error during verification', { id: verifyingToast });
+            } finally {
+              setLoading(false);
             }
           },
           onFailure: (err) => {

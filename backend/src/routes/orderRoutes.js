@@ -30,6 +30,31 @@ router.post('/', verifyToken, async (req, res) => {
       updatedAt: new Date().toISOString(),
     };
 
+    // If online payment, verify the signature before saving
+    if (paymentMethod === 'online') {
+      const { razorpayDetails } = req.body;
+      if (!razorpayDetails) {
+        return res.status(400).json({ error: 'Missing payment details' });
+      }
+
+      const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = razorpayDetails;
+      const body = `${razorpay_order_id}|${razorpay_payment_id}`;
+      const expectedSignature = crypto
+        .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+        .update(body)
+        .digest('hex');
+
+      if (expectedSignature === razorpay_signature) {
+        orderData.status = 'paid';
+        orderData.razorpayDetails = {
+          orderId: razorpay_order_id,
+          paymentId: razorpay_payment_id
+        };
+      } else {
+        return res.status(400).json({ error: 'Payment verification failed' });
+      }
+    }
+
     const docRef = await db.collection('orders').add(orderData);
     res.status(201).json({ success: true, orderId: docRef.id });
   } catch (err) {

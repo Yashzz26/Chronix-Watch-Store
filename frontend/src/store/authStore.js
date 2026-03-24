@@ -9,13 +9,6 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
-// Simple token generator — for client-side session validation
-const generateToken = () => {
-  const arr = new Uint8Array(24);
-  window.crypto.getRandomValues(arr);
-  return Array.from(arr, b => b.toString(16).padStart(2, '0')).join('');
-};
-
 const useAuthStore = create(
   persist(
     (set, get) => ({
@@ -23,16 +16,13 @@ const useAuthStore = create(
       user: null,
       profile: {},
       loading: true,
-      sessionToken: null,
 
       setLoading: (loading) => set({ loading }),
 
       async login(email, password) {
         try {
           const userCredential = await signInWithEmailAndPassword(auth, email, password);
-          const token = generateToken();
-          sessionStorage.setItem('chronix-session', token);
-          set({ isLoggedIn: true, sessionToken: token, user: userCredential.user });
+          set({ isLoggedIn: true, user: userCredential.user });
           return { success: true, user: userCredential.user };
         } catch (error) {
           console.error('Login error:', error.message);
@@ -44,8 +34,6 @@ const useAuthStore = create(
         try {
           const userCredential = await createUserWithEmailAndPassword(auth, email, password);
           const user = userCredential.user;
-          const token = generateToken();
-          sessionStorage.setItem('chronix-session', token);
           
           const profileData = {
             uid: user.uid,
@@ -56,7 +44,7 @@ const useAuthStore = create(
           };
 
           await setDoc(doc(db, 'users', user.uid), profileData);
-          set({ isLoggedIn: true, sessionToken: token, user, profile: profileData });
+          set({ isLoggedIn: true, user, profile: profileData });
           return { success: true, user };
         } catch (error) {
           console.error('Signup error:', error.message);
@@ -67,19 +55,9 @@ const useAuthStore = create(
       async logout() {
         try {
           await signOut(auth);
-          sessionStorage.removeItem('chronix-session');
-          set({ isLoggedIn: false, sessionToken: null, user: null, profile: {} });
+          set({ isLoggedIn: false, user: null, profile: {} });
         } catch (error) {
           console.error('Logout error:', error.message);
-        }
-      },
-
-      validateSession() {
-        const storedToken = get().sessionToken;
-        const sessionToken = sessionStorage.getItem('chronix-session');
-        if (!storedToken || !sessionToken || storedToken !== sessionToken) {
-          set({ isLoggedIn: false, sessionToken: null, user: null });
-          sessionStorage.removeItem('chronix-session');
         }
       },
 
@@ -104,21 +82,18 @@ const useAuthStore = create(
             sessionStorage.setItem('chronix-profile-photo', photo);
           } catch (e) {
             console.warn('Profile photo storage failed', e);
-            // toast.error('Storage full or unavailable'); // Removed as 'toast' is not defined
           }
         }
 
         if (get().user) {
           setDoc(doc(db, 'users', get().user.uid), updated, { merge: true });
         }
-        // NOTE: Photo stays in sessionStorage only (handled in Profile.jsx)
       },
     }),
     {
       name: 'chronix-auth',
       partialize: (s) => ({
         isLoggedIn: s.isLoggedIn,
-        sessionToken: s.sessionToken,
         user: s.user,
         profile: s.profile,
       }),
@@ -130,19 +105,11 @@ const useAuthStore = create(
 export const initAuthListener = () => {
   onAuthStateChanged(auth, async (user) => {
     if (user) {
-      // Ensure session token exists on refresh
-      let token = sessionStorage.getItem('chronix-session');
-      if (!token) {
-        token = generateToken();
-        sessionStorage.setItem('chronix-session', token);
-      }
-
       const profileDoc = await getDoc(doc(db, 'users', user.uid));
       useAuthStore.setState({ 
         isLoggedIn: true, 
         user, 
         profile: profileDoc.exists() ? profileDoc.data() : {},
-        sessionToken: token,
         loading: false 
       });
 
@@ -151,8 +118,7 @@ export const initAuthListener = () => {
         lastLogin: new Date().toISOString()
       }, { merge: true });
     } else {
-      useAuthStore.setState({ isLoggedIn: false, user: null, profile: {}, sessionToken: null, loading: false });
-      sessionStorage.removeItem('chronix-session');
+      useAuthStore.setState({ isLoggedIn: false, user: null, profile: {}, loading: false });
     }
   }, (error) => {
     console.error('Auth state change error:', error);
