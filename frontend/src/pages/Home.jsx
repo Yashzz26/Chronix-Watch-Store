@@ -522,7 +522,7 @@ export default function Home() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
               >
-                <Link to="/?cat=All" className="btn-primary-gold">
+                <Link to="/allcollection" className="btn-primary-gold">
                   Explore Collection <HiArrowRight size={18} />
                 </Link>
                 {dealProduct && (
@@ -539,7 +539,7 @@ export default function Home() {
                 transition={{ duration: 0.6, delay: 0.45, ease: [0.16, 1, 0.3, 1] }}
               >
                 <div className="trust-badge">
-                  <HiOutlineClock size={16} color="#D4AF37" /> 6 CURATED PIECES
+                  <HiOutlineClock size={16} color="#D4AF37" /> 120+ PIECES
                 </div>
                 <div className="trust-badge">
                   <HiOutlineShieldCheck size={16} color="#D4AF37" /> 2-YEAR WARRANTY
@@ -579,10 +579,75 @@ export default function Home() {
           <DealBanner product={dealProduct} />
         </div>
 
-        {/* SECTION 3: COLLECTION HEADER + FILTERS */}
+        {/* SECTION 3: GIFT BOXES (Replaces Collection Header) */}
+        <div className="row g-4 mb-5">
+          <div className="col-12 col-md-6">
+            <Link to="/giftsforhim" className="gift-box" style={{
+              height: '340px',
+              background: 'linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.8)), url("https://images.unsplash.com/photo-1547996160-81dfa63595aa?q=80&w=1000&auto=format&fit=crop")',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              borderRadius: '16px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'flex-end',
+              padding: '40px',
+              textDecoration: 'none',
+              border: '1px solid var(--border)',
+              transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
+            }}>
+              <style>{`
+                .gift-box:hover {
+                  transform: translateY(-8px);
+                  border-color: var(--gold);
+                  box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+                }
+                .gift-box h2 {
+                  font-family: 'Cormorant Garamond', serif;
+                  font-size: 2.5rem;
+                  color: #fff;
+                  margin-bottom: 8px;
+                }
+                .gift-box p {
+                  color: var(--gold);
+                  font-weight: 600;
+                  letter-spacing: 0.1em;
+                  text-transform: uppercase;
+                  font-size: 0.8rem;
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
+                }
+              `}</style>
+              <h2>Gifts for Him</h2>
+              <p>Explore Masculine Precision <HiArrowRight /></p>
+            </Link>
+          </div>
+          <div className="col-12 col-md-6">
+            <Link to="/giftsforher" className="gift-box" style={{
+              height: '340px',
+              background: 'linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.8)), url("https://images.unsplash.com/photo-1542496658-e33a6d0d50f6?q=80&w=1000&auto=format&fit=crop")',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              borderRadius: '16px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'flex-end',
+              padding: '40px',
+              textDecoration: 'none',
+              border: '1px solid var(--border)',
+              transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
+            }}>
+              <h2>Gifts for Her</h2>
+              <p>Discover Eternal Elegance <HiArrowRight /></p>
+            </Link>
+          </div>
+        </div>
+
+        {/* New Minimal Header for the rest of collection */}
         <div className="row align-items-end justify-content-between mb-4 gy-4">
           <div className="col-12 col-md-auto">
-            <h2 className="collection-title">The Collection</h2>
+            <h2 className="collection-title">Curated Selection</h2>
             <p className="collection-count">
               Showing <span style={{ color: '#F0EDE8' }}>{filteredProducts.length}</span> exceptional timepieces
             </p>
@@ -616,11 +681,11 @@ export default function Home() {
         <div className="product-grid">
           <AnimatePresence mode="wait">
             {loading ? (
-              Array(8).fill(0).map((_, i) => (
+              Array(6).fill(0).map((_, i) => (
                 <SkeletonCard key={i} />
               ))
             ) : filteredProducts.length > 0 ? (
-              filteredProducts.map((p, idx) => (
+              filteredProducts.slice(0, 6).map((p, idx) => (
                 <ProductCard key={p.id} product={p} index={idx} addItem={addItem} />
               ))
             ) : (
@@ -637,6 +702,14 @@ export default function Home() {
             )}
           </AnimatePresence>
         </div>
+
+        {filteredProducts.length > 6 && (
+          <div className="text-center mt-5 pt-3">
+             <Link to="/allcollection" className="btn-outline-gold px-5 py-3">
+                Explore Full Collection <HiArrowRight className="ms-2" />
+             </Link>
+          </div>
+        )}
       </div>
     </div>
   );

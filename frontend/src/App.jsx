@@ -15,6 +15,7 @@ const Confirmation   = lazy(() => import('./pages/Confirmation'));
 const Login          = lazy(() => import('./pages/Login'));
 const Profile        = lazy(() => import('./pages/Profile'));
 const Orders         = lazy(() => import('./pages/Orders'));
+const Products       = lazy(() => import('./pages/Products'));
 const NotFound       = lazy(() => import('./pages/NotFound'));
 
 const Loader = () => (
@@ -76,6 +77,9 @@ export default function App() {
             <Route path="/confirmation"       element={<Protected><Confirmation /></Protected>} />
             <Route path="/profile"            element={<Protected><Profile /></Protected>} />
             <Route path="/orders"             element={<Protected><Orders /></Protected>} />
+            <Route path="/allcollection"      element={<Products />} />
+            <Route path="/giftsforher"        element={<Products filterCategory="Gifts for Her" />} />
+            <Route path="/giftsforhim"        element={<Products filterCategory="Gifts for Him" />} />
             <Route path="*"                   element={<NotFound />} />
           </Routes>
         </Suspense>

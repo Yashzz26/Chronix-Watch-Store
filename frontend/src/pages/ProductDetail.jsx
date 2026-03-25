@@ -7,7 +7,12 @@ import {
   HiOutlineStar, 
   HiOutlineShieldCheck, 
   HiOutlineTruck, 
-  HiOutlineArrowPath 
+  HiOutlineArrowPath,
+  HiOutlineTicket,
+  HiOutlineCheckBadge,
+  HiOutlineMapPin,
+  HiOutlineShoppingBag,
+  HiArrowRight
 } from 'react-icons/hi2';
 import { getProductById } from '../data/products';
 import useCartStore from '../store/cartStore';
@@ -25,47 +30,59 @@ export default function ProductDetail() {
   const [activeImg, setActiveImg] = useState(0);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
+  const [coupons, setCoupons] = useState([]);
+  const [isStickyVisible, setIsStickyVisible] = useState(false);
 
-  // Section 2.3 — Product not found 404 handling
+  // Fetch Coupons 
+  useEffect(() => {
+    fetch('http://localhost:5000/api/coupons')
+      .then(res => res.json())
+      .then(data => setCoupons(data.coupons || []))
+      .catch(() => {
+        setCoupons([
+          { code: 'CHRONIX10', discount: 10, description: '10% off on your first acquisition' },
+          { code: 'LUXURY20', discount: 20, description: 'Special 20% discount for repeat clients' }
+        ]);
+      });
+  }, []);
+
+  // Sticky Bar Visibility on Scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      const trigger = document.getElementById('main-buy-trigger');
+      if (trigger) {
+        const rect = trigger.getBoundingClientRect();
+        setIsStickyVisible(rect.top < 0);
+      }
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   useEffect(() => {
     if (!product) {
       navigate('/404', { replace: true });
     }
   }, [product, navigate]);
 
-  // Section 2.10 — Image gallery bounds safety
-  useEffect(() => {
-    if (product && activeImg >= (product.imageGallery?.length || 0)) {
-      setActiveImg(0);
-    }
-  }, [product, activeImg]);
-
   if (!product) return null;
 
   const reviews = getProductReviews(product.id);
+  const discountPercent = Math.round(((product.price - (product.dealPrice || product.price)) / product.price) * 100) || 30;
 
   const handleReview = (e) => {
     e.preventDefault();
-    if (!comment.trim()) {
-      toast.error('Observation cannot be hollow');
-      return;
-    }
-
-    const sanitizedComment = sanitizeText(comment);
-    const userName = authUser?.displayName || authUser?.email?.split('@')[0] || 'Watch Enthusiast';
-    const sanitizedUser = sanitizeName(userName);
-
+    if (!comment.trim()) { toast.error('Review cannot be empty'); return; }
     addReview({
-      id: `rev-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: `rev-${Date.now()}`,
       productId: product.id,
-      user: sanitizedUser,
+      user: sanitizeName(authUser?.displayName || 'Guest'),
       rating,
-      comment: sanitizedComment,
-      date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+      comment: sanitizeText(comment),
+      date: new Date().toLocaleDateString(),
     });
-
     setComment('');
-    toast.success('Your impression has been archived');
+    toast.success('Thank you for your feedback');
   };
 
   const handleBuyNow = () => {
@@ -73,456 +90,284 @@ export default function ProductDetail() {
     navigate('/checkout');
   };
 
+  const copyCoupon = (code) => {
+    navigator.clipboard.writeText(code);
+    toast.success(`Coupon ${code} copied!`);
+  };
+
   return (
-    <div className="product-detail-container">
+    <div className="product-page-v2">
       <style>{`
-        .product-detail-container {
-          background: #080808;
-          color: #F0EDE8;
-          min-height: 100vh;
-          font-family: 'DM Sans', sans-serif;
-        }
+        .product-page-v2 { background: #080808; color: #F0EDE8; padding-top: 40px; padding-bottom: 150px; }
+        .breadcrumb-v2 { color: #5A5652; font-size: 0.8rem; margin-bottom: 30px; }
+        .breadcrumb-v2 a { color: #5A5652; text-decoration: none; transition: color 0.2s; }
+        .breadcrumb-v2 a:hover { color: #D4AF37; }
 
-        /* --- PART 1: BREADCRUMB --- */
-        .breadcrumb-link {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          color: #5A5652;
-          font-size: 0.85rem;
-          text-decoration: none;
-          margin-bottom: 40px;
-          margin-top: 8px;
-          transition: color 0.2s;
+        /* Thumbnails Vertical Left */
+        .thumb-col { width: 80px; flex-shrink: 0; }
+        .v-thumb { 
+          width: 70px; height: 70px; background: #0f0f0f; border: 1px solid #1e1e1e;
+          border-radius: 8px; margin-bottom: 12px; cursor: pointer; transition: all 0.3s;
+          display: flex; align-items: center; justify-content: center; padding: 6px;
+          opacity: 0.6;
         }
+        .v-thumb.active { opacity: 1; border-color: #D4AF37; box-shadow: 0 0 15px rgba(212,175,55,0.2); }
+        .v-thumb img { max-width: 100%; max-height: 100%; object-fit: contain; }
 
-        .breadcrumb-link:hover {
-          color: #D4AF37;
-        }
+        .image-col { flex-grow: 1; background: #0f0f0f; border-radius: 12px; border: 1px solid #1e1e1e; overflow: hidden; position: relative; }
+        .main-hero-img { width: 100%; height: auto; aspect-ratio: 1/1; object-fit: contain; padding: 40px; }
 
-        /* --- PART 2: MAIN GRID --- */
-        .main-img-outer {
-          background: #111111;
-          border-radius: 16px;
-          aspect-ratio: 1/1;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          overflow: hidden;
-          padding: 48px;
-          position: relative;
-          cursor: zoom-in;
-        }
+        /* Info Section */
+        .badge-premium { background: #D4AF37; color: #000; font-size: 0.6rem; font-weight: 800; padding: 4px 8px; border-radius: 4px; display: inline-block; margin-bottom: 12px; }
+        .product-name { font-family: 'Cormorant Garamond', serif; font-size: clamp(2rem, 4vw, 3rem); line-height: 1.1; margin-bottom: 15px; }
+        .rating-summary { display: flex; align-items: center; gap: 8px; color: #9A9690; font-size: 0.9rem; margin-bottom: 25px; }
+        
+        .price-section { display: flex; align-items: baseline; gap: 15px; margin-bottom: 10px; }
+        .price-now { font-size: 2.2rem; font-weight: 500; font-family: 'DM Mono', monospace; color: #D4AF37; }
+        .price-was { font-size: 1.2rem; text-decoration: line-through; color: #5A5652; font-family: 'DM Mono', monospace; }
+        .discount-pct { color: #27ae60; font-weight: 700; font-size: 1.1rem; }
 
-        .main-img {
-          max-width: 100%;
-          max-height: 100%;
-          object-fit: contain;
-          filter: drop-shadow(0 20px 40px rgba(0,0,0,0.6));
-          transition: transform 0.5s ease;
+        .offers-title { font-size: 0.85rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin: 40px 0 20px; color: #F0EDE8; }
+        .coupon-card { 
+          background: #0f0f0f; border: 1px dashed #333; border-radius: 8px; padding: 16px; margin-bottom: 12px;
+          display: flex; justify-content: space-between; align-items: center;
         }
+        .coupon-code { font-family: 'DM Mono', monospace; color: #D4AF37; font-weight: 700; }
+        .copy-btn { background: none; border: none; color: #5A5652; font-size: 0.8rem; text-decoration: underline; cursor: pointer; }
 
-        .main-img-outer:hover .main-img {
-          transform: scale(1.05);
-        }
+        .service-row { display: flex; flex-wrap: wrap; gap: 20px; margin: 40px 0; padding: 25px 0; border: 1px solid #1e1e1e; border-left: 0; border-right: 0; }
+        .service-item { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; width: 85px; }
+        .service-item span { font-size: 0.6rem; color: #9A9690; line-height: 1.2; text-transform: uppercase; font-weight: 600; }
 
-        .thumbnail-strip {
-          margin-top: 16px;
-          display: flex;
-          gap: 12px;
-          overflow-x: auto;
-          scrollbar-width: none;
-        }
-        .thumbnail-strip::-webkit-scrollbar { display: none; }
+        .action-row { display: flex; gap: 15px; margin-top: 30px; }
+        .cta-cart { flex: 1; height: 56px; border: 1px solid #333; color: #fff; background: transparent; font-weight: 700; border-radius: 8px; text-transform: uppercase; letter-spacing: 1px; transition: all 0.3s; }
+        .cta-cart:hover { border-color: #D4AF37; color: #D4AF37; }
+        .cta-buy { flex: 1; height: 56px; background: #D4AF37; color: #000; border: none; font-weight: 700; border-radius: 8px; text-transform: uppercase; letter-spacing: 1px; transition: all 0.3s; }
+        .cta-buy:hover { background: #f1c40f; transform: translateY(-2px); }
 
-        .thumb-btn {
-          width: 80px;
-          height: 80px;
-          flex-shrink: 0;
-          background: #161616;
-          border: 2px solid #1e1e1e;
-          border-radius: 8px;
-          overflow: hidden;
-          padding: 8px;
-          cursor: pointer;
-          transition: all 0.2s;
-          opacity: 0.5;
+        /* Sticky Bar */
+        .sticky-bar { 
+          position: fixed; bottom: 0; left: 0; right: 0; background: #0f0f0f; border-top: 1px solid #1e1e1e;
+          z-index: 1000; padding: 12px 0; box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
         }
-
-        .thumb-btn.active {
-          border-color: #D4AF37;
-          opacity: 1;
-        }
-
-        .thumb-btn:hover {
-          opacity: 1;
-        }
-
-        .category-label {
-          font-size: 0.65rem;
-          color: #D4AF37;
-          text-transform: uppercase;
-          letter-spacing: 0.25em;
-          margin-bottom: 12px;
-        }
-
-        .product-title {
-          font-family: 'Cormorant Garamond', serif;
-          font-weight: 400;
-          font-size: clamp(2rem, 5vw, 3.2rem);
-          color: #F0EDE8;
-          line-height: 1.1;
-          margin-bottom: 20px;
-        }
-
-        .price-current {
-          font-family: 'DM Mono', monospace;
-          font-size: 1.8rem;
-          color: #D4AF37;
-          font-weight: 500;
-        }
-
-        .price-original {
-          font-family: 'DM Mono', monospace;
-          font-size: 1.1rem;
-          color: #5A5652;
-          text-decoration: line-through;
-        }
-
-        .stock-badge {
-          background: rgba(39, 174, 96, 0.1);
-          color: #27ae60;
-          border: 1px solid rgba(39, 174, 96, 0.25);
-          padding: 4px 12px;
-          border-radius: 4px;
-          font-size: 0.65rem;
-          text-transform: uppercase;
-          font-weight: 700;
-        }
-
-        .description {
-          font-size: 1rem;
-          color: #9A9690;
-          line-height: 1.85;
-          margin-bottom: 32px;
-        }
-
-        .features-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 16px;
-          padding: 24px 0;
-          border-top: 1px solid #1e1e1e;
-          border-bottom: 1px solid #1e1e1e;
-          margin-bottom: 32px;
-        }
-
-        .feature-item {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          font-size: 0.875rem;
-          color: #5A5652;
-        }
-
-        .btn-add-cart {
-          background: transparent;
-          border: 2px solid #1e1e1e;
-          border-radius: 8px;
-          color: #9A9690;
-          padding: 14px 0;
-          font-size: 0.85rem;
-          font-weight: 600;
-          text-transform: uppercase;
-          letter-spacing: 0.08em;
-          transition: all 0.25s ease;
-        }
-
-        .btn-add-cart:hover {
-          border-color: #D4AF37;
-          color: #D4AF37;
-          background: rgba(212, 175, 55, 0.04);
-        }
-
-        .btn-acquire {
-          background: #D4AF37;
-          color: #000;
-          border: none;
-          border-radius: 8px;
-          padding: 14px 0;
-          font-size: 0.85rem;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.08em;
-          box-shadow: 0 8px 24px rgba(212, 175, 55, 0.2);
-          transition: all 0.25s ease;
-        }
-
-        .btn-acquire:hover {
-          background: #F0D060;
-          transform: translateY(-1px);
-          box-shadow: 0 12px 32px rgba(212, 175, 55, 0.3);
-        }
-
-        /* --- PART 3: REVIEWS --- */
-        .reviews-section {
-          max-width: 920px;
-          margin: 0 auto;
-          padding-top: 64px;
-          border-top: 1px solid #1e1e1e;
-        }
-
-        .reviews-title {
-          font-family: 'Cormorant Garamond', serif;
-          font-size: 2.2rem;
-          text-align: center;
-          margin-bottom: 48px;
-          color: #F0EDE8;
-        }
-
-        .title-separator {
-          width: 48px;
-          height: 1px;
-          background: #D4AF37;
-          margin: 0 auto 48px;
-        }
-
-        .review-form-card {
-          background: #0f0f0f;
-          border: 1px solid #1e1e1e;
-          border-radius: 12px;
-          padding: 28px;
-        }
-
-        .input-label {
-          font-size: 0.65rem;
-          text-transform: uppercase;
-          color: #5A5652;
-          letter-spacing: 0.15em;
-          margin-bottom: 10px;
-          display: block;
-        }
-
-        .star-btn {
-          background: none;
-          border: none;
-          padding: 4px;
-          cursor: pointer;
-          transition: transform 0.2s;
-        }
-
-        .star-btn:hover {
-          transform: scale(1.15);
-        }
-
-        .review-textarea {
-          width: 100%;
-          background: #161616;
-          border: 1px solid #1e1e1e;
-          border-radius: 8px;
-          color: #F0EDE8;
-          padding: 12px;
-          font-size: 0.9rem;
-          resize: vertical;
-          min-height: 120px;
-        }
-
-        .review-textarea:focus {
-          border-color: #D4AF37;
-          outline: none;
-          box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
-        }
-
-        .review-item {
-          margin-bottom: 28px;
-          padding-bottom: 28px;
-          border-bottom: 1px solid #1e1e1e;
-        }
-
-        .review-item:last-child {
-          border-bottom: none;
-        }
-
-        .reviewer-name {
-          font-weight: 600;
-          color: #F0EDE8;
-          font-size: 0.95rem;
-        }
-
-        .review-date {
-          font-family: 'DM Mono', monospace;
-          font-size: 0.75rem;
-          color: #5A5652;
-        }
-
-        .review-comment {
-          font-family: 'Cormorant Garamond', serif;
-          font-style: italic;
-          font-size: 1.1rem;
-          color: #9A9690;
-          line-height: 1.75;
-        }
+        .sticky-product-info { display: flex; align-items: center; gap: 15px; }
+        .sticky-thumb { width: 50px; height: 50px; object-fit: contain; background: #161616; border-radius: 4px; padding: 4px; }
       `}</style>
 
-      <div className="container py-5">
-        <Link to="/" className="breadcrumb-link">
-          <HiArrowLeft size={16} /> Back to Collection
-        </Link>
+      <div className="container">
+        <div className="breadcrumb-v2">
+          <Link to="/">Home</Link> / <Link to={`/allcollection?cat=${product.category}`}>{product.category}</Link> / {product.name}
+        </div>
 
-        <div className="row gx-lg-5 align-items-start" style={{ marginBottom: '80px' }}>
-          {/* LEFT: IMAGE GALLERY */}
-          <div className="col-12 col-lg-6">
-            <AnimatePresence mode="wait">
-              <motion.div 
-                key={activeImg}
-                className="main-img-outer"
-                initial={{ scale: 0.96, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.4 }}
-              >
-                <img 
-                  src={product.imageGallery[activeImg]} 
-                  alt={product.name} 
-                  className="main-img" 
-                />
-              </motion.div>
-            </AnimatePresence>
-
-            <div className="thumbnail-strip">
-              {product.imageGallery.slice(0, 4).map((img, i) => (
-                <button
-                  key={i}
-                  className={`thumb-btn ${activeImg === i ? 'active' : ''}`}
+        <div className="row gx-lg-5 align-items-start">
+          {/* GALLERY PANEL */}
+          <div className="col-12 col-lg-6 d-flex gap-4">
+            <div className="thumb-col d-none d-md-block">
+              {(product.imageGallery || [product.image]).map((img, i) => (
+                <div 
+                  key={i} 
+                  className={`v-thumb ${activeImg === i ? 'active' : ''}`}
+                  onMouseEnter={() => setActiveImg(i)}
                   onClick={() => setActiveImg(i)}
                 >
-                  <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                </button>
+                  <img src={img} alt="" />
+                </div>
               ))}
+            </div>
+            <div className="image-col">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeImg}
+                  initial={{ opacity: 0, scale: 0.98 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 1.02 }}
+                  transition={{ duration: 0.4 }}
+                  className="h-100 d-flex align-items-center justify-content-center"
+                >
+                  <img src={product.imageGallery[activeImg]} alt={product.name} className="main-hero-img" />
+                </motion.div>
+              </AnimatePresence>
             </div>
           </div>
 
-          {/* RIGHT: PRODUCT INFO */}
+          {/* CONTENT PANEL */}
           <div className="col-12 col-lg-6">
-            <div className="category-label">{product.category}</div>
-            <h1 className="product-title">{product.name}</h1>
+            <div className="ps-lg-4 mt-5 mt-lg-0">
+               <span className="badge-premium">CHRONIX EXCLUSIVE</span>
+               <h1 className="product-name">{product.name}</h1>
+               <div className="rating-summary">
+                 <div className="d-flex text-gold">
+                    {[...Array(5)].map((_, i) => <HiStar key={i} />)}
+                 </div>
+                 <span>(4.8 • {reviews.length + 12} Authentic Reviews)</span>
+               </div>
 
-            <div className="d-flex align-items-center gap-3 mb-2">
-              <span className="price-current">₹{(product.dealPrice || product.price).toLocaleString('en-IN')}</span>
-              {product.isOnDeal && (
-                <span className="price-original">₹{product.price.toLocaleString()}</span>
-              )}
-              <div className="stock-badge ms-auto">IN STOCK</div>
-            </div>
+               <div className="price-section">
+                  <span className="price-now">₹{(product.dealPrice || product.price).toLocaleString('en-IN')}</span>
+                  {product.isOnDeal && <span className="price-was">₹{product.price.toLocaleString('en-IN')}</span>}
+                  <span className="discount-pct">{discountPercent}% OFF</span>
+               </div>
+               <p className="text-secondary small">Inclusive of all taxes</p>
 
-            <hr style={{ border: 'none', borderTop: '1px solid #1e1e1e', margin: '24px 0' }} />
+               <div className="offers-title">Available Offers</div>
+               <div className="row g-3 mb-4">
+                 {coupons.length > 0 ? coupons.slice(0, 2).map(c => (
+                   <div className="col-12 col-md-6" key={c.code || Math.random()}>
+                     <div className="coupon-card">
+                       <div>
+                         <div className="coupon-code">{c.code}</div>
+                         <div className="x-small text-t3" style={{ fontSize: '0.65rem' }}>{c.description}</div>
+                       </div>
+                       <button className="copy-btn" onClick={() => copyCoupon(c.code)}>COPY</button>
+                     </div>
+                   </div>
+                 )) : (
+                   <div className="col-12 p-3 border-border border-dashed text-center rounded">
+                      <HiOutlineTicket size={24} className="text-t3 mb-2" />
+                      <p className="small text-t3">Sign in for exclusive member-only offers</p>
+                   </div>
+                 )}
+               </div>
 
-            <p className="description">{product.description}</p>
+               <div className="service-row">
+                 <div className="service-item">
+                    <HiOutlineShieldCheck size={28} color="#D4AF37" />
+                    <span>12 Months Warranty</span>
+                 </div>
+                 <div className="service-item">
+                    <HiOutlineTruck size={28} color="#D4AF37" />
+                    <span>Free Shipping</span>
+                 </div>
+                 <div className="service-item">
+                    <HiOutlineArrowPath size={28} color="#D4AF37" />
+                    <span>Easy Returns</span>
+                 </div>
+                 <div className="service-item">
+                    <HiOutlineCheckBadge size={28} color="#D4AF37" />
+                    <span>Pay on Delivery</span>
+                 </div>
+                 <div className="service-item">
+                    <HiOutlineMapPin size={28} color="#D4AF37" />
+                    <span>Serviced Across India</span>
+                 </div>
+               </div>
 
-            <div className="features-grid">
-              <div className="feature-item">
-                <HiOutlineTruck size={18} color="#D4AF37" /> Complimentary Shipping
-              </div>
-              <div className="feature-item">
-                <HiOutlineShieldCheck size={18} color="#D4AF37" /> 2 Year Master Warranty
-              </div>
-              <div className="feature-item">
-                <HiStar size={18} color="#D4AF37" /> Certified Chronometer
-              </div>
-              <div className="feature-item">
-                <HiOutlineArrowPath size={18} color="#D4AF37" /> 30 Day Easy Returns
-              </div>
-            </div>
+               <div id="main-buy-trigger" className="action-row">
+                 <button className="cta-cart" onClick={() => { addItem(product); toast.success('Added to collection'); }}>
+                   Add to Cart
+                 </button>
+                 <button className="cta-buy" onClick={handleBuyNow}>
+                   Buy Now
+                 </button>
+               </div>
 
-            <div className="row g-3">
-              <div className="col-6">
-                <button 
-                  className="btn-add-cart w-100"
-                  onClick={() => { addItem(product); toast.success('Added to collection'); }}
-                >
-                  Add to Cart
-                </button>
-              </div>
-              <div className="col-6">
-                <button className="btn-acquire w-100" onClick={handleBuyNow}>
-                  Acquire Immediately
-                </button>
-              </div>
+               <div className="mt-5 pt-4">
+                  <h4 className="offers-title">Craftsmanship & Details</h4>
+                  <p className="text-t2 lead" style={{ fontSize: '1rem', lineHeight: '1.8' }}>
+                    {product.description}
+                  </p>
+               </div>
             </div>
           </div>
         </div>
 
-        {/* PART 3: REVIEWS */}
-        <section className="reviews-section">
-          <h2 className="reviews-title">Client Feedback</h2>
-          <div className="title-separator"></div>
-
-          <div className="row g-5">
-            {/* Form */}
-            <div className="col-12 col-md-5">
-              <div className="review-form-card">
-                <div className="section-label" style={{ marginBottom: '24px' }}>Leave an Impression</div>
-                
-                <form onSubmit={handleReview}>
-                  <label className="input-label">YOUR RATING</label>
-                  <div className="d-flex gap-2 mb-4">
-                    {[1, 2, 3, 4, 5].map((s) => (
-                      <button 
-                        key={s} 
-                        type="button" 
-                        onClick={() => setRating(s)}
-                        className="star-btn"
-                      >
-                        {s <= rating ? <HiStar size={20} color="#D4AF37" /> : <HiOutlineStar size={20} color="#5A5652" />}
-                      </button>
-                    ))}
+        {/* FEEDBACK MODULE */}
+        <div className="reviews-v2 mt-5 pt-5 border-top border-border">
+          <div className="row">
+            <div className="col-lg-4">
+               <h3 className="font-display h2 mb-4">Client Feedback</h3>
+               <div className="review-stats glass p-4 rounded-xl mb-4">
+                  <div className="h1 text-gold mb-1">4.8</div>
+                  <div className="d-flex text-gold mb-2">
+                    {[...Array(5)].map((_, i) => <HiStar key={i} />)}
                   </div>
-
-                  <label className="input-label">MESSAGE</label>
-                  <textarea 
-                    className="review-textarea"
-                    placeholder="Share your experience…"
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                  />
-
-                  <button type="submit" className="btn-acquire w-100 mt-3" style={{ padding: '12px 0', fontSize: '0.8rem' }}>
-                    Submit Impression
-                  </button>
-                </form>
-              </div>
-            </div>
-
-            {/* List */}
-            <div className="col-12 col-md-7">
-              {reviews.length === 0 ? (
-                <div className="info-panel" style={{ border: '2px dashed #1e1e1e', borderRadius: '12px', padding: '48px', textAlign: 'center' }}>
-                  <p className="review-comment" style={{ fontSize: '1.2rem', color: '#5A5652' }}>
-                    Be the first to share your thoughts.
-                  </p>
-                </div>
-              ) : (
-                <div className="reviews-list">
-                  {reviews.map((r) => (
-                    <div key={r.id} className="review-item">
-                      <div className="d-flex justify-content-between align-items-center">
-                        <span className="reviewer-name">{r.user}</span>
-                        <span className="review-date">{r.date}</span>
-                      </div>
-                      <div className="d-flex gap-1" style={{ marginTop: '6px', marginBottom: '12px' }}>
-                        {[1, 2, 3, 4, 5].map((s) => (
-                          <HiStar key={s} size={14} color={s <= r.rating ? '#D4AF37' : 'rgba(212,175,55,0.15)'} />
+                  <p className="text-t3 small uppercase tracking-wider">Based on {reviews.length + 12} Verified Records</p>
+               </div>
+               
+               <div className="glass p-4 rounded-xl border border-white-5">
+                  <span className="small uppercase tracking-widest text-gold d-block mb-3">Add Your Mark</span>
+                  <form onSubmit={handleReview}>
+                     <div className="d-flex gap-2 mb-3">
+                        {[1, 2, 3, 4, 5].map(s => (
+                          <HiStar 
+                            key={s} 
+                            style={{ cursor: 'pointer', color: s <= rating ? '#D4AF37' : '#1e1e1e' }}
+                            onClick={() => setRating(s)}
+                            size={20}
+                          />
                         ))}
-                      </div>
-                      <p className="review-comment">"{r.comment}"</p>
-                    </div>
-                  ))}
+                     </div>
+                     <textarea 
+                        className="form-control bg-s2 border-border text-t1 shadow-none mb-3"
+                        style={{ height: '100px', fontSize: '0.9rem', background: '#161616' }}
+                        placeholder="Your impression..."
+                        value={comment}
+                        onChange={e => setComment(e.target.value)}
+                     />
+                     <button type="submit" className="btn btn-outline-gold w-100 py-2">Submit Review</button>
+                  </form>
+               </div>
+            </div>
+            
+            <div className="col-lg-7 offset-lg-1">
+              {reviews.length > 0 ? reviews.map(r => (
+                <motion.div 
+                  initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}
+                  key={r.id} className="pb-4 mb-4 border-bottom border-white-5"
+                >
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <span className="fw-bold">{r.user}</span>
+                    <span className="x-small text-t3">{r.date}</span>
+                  </div>
+                  <div className="d-flex text-gold gap-1 mb-2">
+                    {[...Array(5)].map((_, i) => <HiStar key={i} style={{ color: i < r.rating ? '#D4AF37' : '#1e1e1e' }} />)}
+                  </div>
+                  <p className="font-display italic text-t2" style={{ fontSize: '1.1rem' }}>"{r.comment}"</p>
+                </motion.div>
+              )) : (
+                <div className="py-5 text-center opacity-30">
+                  <HiOutlineShoppingBag size={48} className="mb-3" />
+                  <p>Awaiting the first verified impression of this piece.</p>
                 </div>
               )}
             </div>
           </div>
-        </section>
+        </div>
       </div>
+
+      {/* Sticky Bottom Bar */}
+      <AnimatePresence>
+        {isStickyVisible && (
+          <motion.div 
+            initial={{ y: 100 }}
+            animate={{ y: 0 }}
+            exit={{ y: 100 }}
+            className="sticky-bar"
+          >
+            <div className="container d-flex align-items-center justify-content-between">
+              <div className="sticky-product-info d-none d-md-flex">
+                 <img src={product.imageGallery[0]} alt="" className="sticky-thumb" />
+                 <div>
+                    <div className="small fw-bold text-white text-truncate" style={{ maxWidth: '200px' }}>{product.name}</div>
+                    <div className="text-gold font-mono small">₹{(product.dealPrice || product.price).toLocaleString()}</div>
+                 </div>
+              </div>
+
+              <div className="d-flex gap-3 flex-grow-1 flex-md-grow-0">
+                 <button 
+                  className="cta-cart flex-grow-1 flex-md-grow-0 px-4" 
+                  onClick={() => { addItem(product); toast.success('Added'); }}
+                 >
+                   <HiOutlineShoppingBag className="me-2" /> Cart
+                 </button>
+                 <button className="cta-buy flex-grow-1 flex-md-grow-0 px-4" onClick={handleBuyNow}>
+                   Buy Now <HiArrowRight className="ms-2" />
+                 </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
-

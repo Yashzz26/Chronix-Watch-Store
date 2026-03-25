@@ -4,7 +4,7 @@ import { auth } from '../lib/firebase';
 import useAdminAuthStore from '../store/adminAuthStore';
 import {
   HiOutlineChartBar, HiOutlineShoppingBag, HiOutlineClipboardList,
-  HiOutlineUsers, HiOutlineStar, HiOutlineLogout
+  HiOutlineUsers, HiOutlineStar, HiOutlineLogout, HiOutlineTicket
 } from 'react-icons/hi';
 import toast from 'react-hot-toast';
 
@@ -12,6 +12,7 @@ const NAV = [
   { label: 'Dashboard', icon: HiOutlineChartBar, to: '/' },
   { label: 'Products',  icon: HiOutlineShoppingBag, to: '/products' },
   { label: 'Orders',    icon: HiOutlineClipboardList, to: '/orders' },
+  { label: 'Coupons',   icon: HiOutlineTicket, to: '/coupons' },
   { label: 'Customers', icon: HiOutlineUsers, to: '/customers' },
   { label: 'Reviews',   icon: HiOutlineStar, to: '/reviews' },
 ];

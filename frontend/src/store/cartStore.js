@@ -21,6 +21,8 @@ const useCartStore = create(
       items: [],
       reviews: JSON.parse(localStorage.getItem('chronix-reviews') || '[]'),
 
+      appliedCoupon: null,
+
       // ── Cart ──────────────────────────────────
       addItem(product) {
         const existing = get().items.find(i => i.id === product.id);
@@ -39,13 +41,25 @@ const useCartStore = create(
         set({ items: get().items.map(i => i.id === id ? { ...i, qty } : i) });
       },
       clearCart() {
-        set({ items: [] });
+        set({ items: [], appliedCoupon: null });
       },
       totalItems() {
         return get().items.reduce((s, i) => s + i.qty, 0);
       },
       totalPrice() {
-        return get().items.reduce((s, i) => s + (i.dealPrice || i.price) * i.qty, 0);
+        const subtotal = get().items.reduce((s, i) => s + (i.dealPrice || i.price) * i.qty, 0);
+        if (get().appliedCoupon) {
+            const discount = (subtotal * get().appliedCoupon.discount) / 100;
+            return subtotal - discount;
+        }
+        return subtotal;
+      },
+      
+      applyCoupon(coupon) {
+        set({ appliedCoupon: coupon });
+      },
+      removeCoupon() {
+        set({ appliedCoupon: null });
       },
 
       // ── Reviews (localStorage, matching original script.js) ──

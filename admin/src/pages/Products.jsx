@@ -8,7 +8,7 @@ import { HiOutlinePlus, HiOutlinePencil, HiOutlineTrash, HiOutlinePhotograph, Hi
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const Categories = ['Analog', 'Smart Watch', 'Luxury'];
+const Categories = ['Analog', 'Smart Watch', 'Luxury', 'Gifts for Him', 'Gifts for Her', 'Limited Edition'];
 
 const Products = () => {
   const [showModal, setShowModal] = useState(false);
