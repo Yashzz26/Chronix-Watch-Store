@@ -1,7 +1,14 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { HiOutlineStar, HiStar, HiOutlineShieldCheck, HiOutlineTruck, HiOutlineArrowPath } from 'react-icons/hi2';
+import { 
+  HiArrowLeft, 
+  HiStar, 
+  HiOutlineStar, 
+  HiOutlineShieldCheck, 
+  HiOutlineTruck, 
+  HiOutlineArrowPath 
+} from 'react-icons/hi2';
 import { getProductById } from '../data/products';
 import useCartStore from '../store/cartStore';
 import useAuthStore from '../store/authStore';
@@ -16,8 +23,8 @@ export default function ProductDetail() {
   const { addItem, addReview, getProductReviews } = useCartStore();
 
   const [activeImg, setActiveImg] = useState(0);
-  const [rating, setRating]       = useState(5);
-  const [comment, setComment]     = useState('');
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState('');
 
   // Section 2.3 — Product not found 404 handling
   useEffect(() => {
@@ -44,13 +51,12 @@ export default function ProductDetail() {
       return;
     }
 
-    // Section 1.4 & 2.7 — Sanitization and Validation
     const sanitizedComment = sanitizeText(comment);
     const userName = authUser?.displayName || authUser?.email?.split('@')[0] || 'Watch Enthusiast';
     const sanitizedUser = sanitizeName(userName);
 
     addReview({
-      id: `rev-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Section 2.2 stable ID logic
+      id: `rev-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       productId: product.id,
       user: sanitizedUser,
       rating,
@@ -68,199 +74,453 @@ export default function ProductDetail() {
   };
 
   return (
-    <div className="container py-5 my-5">
-      {/* Breadcrumb / Back */}
-      <button 
-        onClick={() => navigate(-1)}
-        className="bg-transparent border-0 mb-5 d-flex align-items-center gap-2 p-0"
-        style={{ color: '#5A5652', fontSize: '0.8rem', fontFamily: 'DM Sans', textTransform: 'uppercase', letterSpacing: '0.1em' }}
-      >
-        <span>← Back to Collection</span>
-      </button>
+    <div className="product-detail-container">
+      <style>{`
+        .product-detail-container {
+          background: #080808;
+          color: #F0EDE8;
+          min-height: 100vh;
+          font-family: 'DM Sans', sans-serif;
+        }
 
-      <div className="row gx-lg-5 mb-5">
-        {/* LEFT: Gallery */}
-        <div className="col-12 col-lg-6 mb-5 mb-lg-0">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="rounded-4 d-flex align-items-center justify-content-center position-relative overflow-hidden"
-            style={{ 
-              aspectRatio: '1/1', 
-              background: '#111',
-              padding: '60px'
-            }}
-          >
-            <motion.img
-              key={activeImg}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.4 }}
-              src={product.imageGallery[activeImg]}
-              alt={product.name}
-              className="img-fluid"
-              style={{ maxHeight: '100%', filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.5))' }}
-              whileHover={{ scale: 1.04 }}
-            />
-          </motion.div>
+        /* --- PART 1: BREADCRUMB --- */
+        .breadcrumb-link {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          color: #5A5652;
+          font-size: 0.85rem;
+          text-decoration: none;
+          margin-bottom: 40px;
+          margin-top: 8px;
+          transition: color 0.2s;
+        }
 
-          {/* Thumbnails */}
-          <div className="d-flex gap-3 mt-4 overflow-auto pb-2">
-            {product.imageGallery.map((img, i) => (
-              <button
-                key={i}
-                onClick={() => setActiveImg(i)}
-                className="bg-transparent p-0 rounded-3 overflow-hidden border-2"
-                style={{ 
-                  width: '80px', height: '80px', flexShrink: 0,
-                  border: activeImg === i ? '2px solid #D4AF37' : '2px solid #1e1e1e',
-                  transition: 'border-color 0.3s ease'
-                }}
+        .breadcrumb-link:hover {
+          color: #D4AF37;
+        }
+
+        /* --- PART 2: MAIN GRID --- */
+        .main-img-outer {
+          background: #111111;
+          border-radius: 16px;
+          aspect-ratio: 1/1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          overflow: hidden;
+          padding: 48px;
+          position: relative;
+          cursor: zoom-in;
+        }
+
+        .main-img {
+          max-width: 100%;
+          max-height: 100%;
+          object-fit: contain;
+          filter: drop-shadow(0 20px 40px rgba(0,0,0,0.6));
+          transition: transform 0.5s ease;
+        }
+
+        .main-img-outer:hover .main-img {
+          transform: scale(1.05);
+        }
+
+        .thumbnail-strip {
+          margin-top: 16px;
+          display: flex;
+          gap: 12px;
+          overflow-x: auto;
+          scrollbar-width: none;
+        }
+        .thumbnail-strip::-webkit-scrollbar { display: none; }
+
+        .thumb-btn {
+          width: 80px;
+          height: 80px;
+          flex-shrink: 0;
+          background: #161616;
+          border: 2px solid #1e1e1e;
+          border-radius: 8px;
+          overflow: hidden;
+          padding: 8px;
+          cursor: pointer;
+          transition: all 0.2s;
+          opacity: 0.5;
+        }
+
+        .thumb-btn.active {
+          border-color: #D4AF37;
+          opacity: 1;
+        }
+
+        .thumb-btn:hover {
+          opacity: 1;
+        }
+
+        .category-label {
+          font-size: 0.65rem;
+          color: #D4AF37;
+          text-transform: uppercase;
+          letter-spacing: 0.25em;
+          margin-bottom: 12px;
+        }
+
+        .product-title {
+          font-family: 'Cormorant Garamond', serif;
+          font-weight: 400;
+          font-size: clamp(2rem, 5vw, 3.2rem);
+          color: #F0EDE8;
+          line-height: 1.1;
+          margin-bottom: 20px;
+        }
+
+        .price-current {
+          font-family: 'DM Mono', monospace;
+          font-size: 1.8rem;
+          color: #D4AF37;
+          font-weight: 500;
+        }
+
+        .price-original {
+          font-family: 'DM Mono', monospace;
+          font-size: 1.1rem;
+          color: #5A5652;
+          text-decoration: line-through;
+        }
+
+        .stock-badge {
+          background: rgba(39, 174, 96, 0.1);
+          color: #27ae60;
+          border: 1px solid rgba(39, 174, 96, 0.25);
+          padding: 4px 12px;
+          border-radius: 4px;
+          font-size: 0.65rem;
+          text-transform: uppercase;
+          font-weight: 700;
+        }
+
+        .description {
+          font-size: 1rem;
+          color: #9A9690;
+          line-height: 1.85;
+          margin-bottom: 32px;
+        }
+
+        .features-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 16px;
+          padding: 24px 0;
+          border-top: 1px solid #1e1e1e;
+          border-bottom: 1px solid #1e1e1e;
+          margin-bottom: 32px;
+        }
+
+        .feature-item {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-size: 0.875rem;
+          color: #5A5652;
+        }
+
+        .btn-add-cart {
+          background: transparent;
+          border: 2px solid #1e1e1e;
+          border-radius: 8px;
+          color: #9A9690;
+          padding: 14px 0;
+          font-size: 0.85rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          transition: all 0.25s ease;
+        }
+
+        .btn-add-cart:hover {
+          border-color: #D4AF37;
+          color: #D4AF37;
+          background: rgba(212, 175, 55, 0.04);
+        }
+
+        .btn-acquire {
+          background: #D4AF37;
+          color: #000;
+          border: none;
+          border-radius: 8px;
+          padding: 14px 0;
+          font-size: 0.85rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          box-shadow: 0 8px 24px rgba(212, 175, 55, 0.2);
+          transition: all 0.25s ease;
+        }
+
+        .btn-acquire:hover {
+          background: #F0D060;
+          transform: translateY(-1px);
+          box-shadow: 0 12px 32px rgba(212, 175, 55, 0.3);
+        }
+
+        /* --- PART 3: REVIEWS --- */
+        .reviews-section {
+          max-width: 920px;
+          margin: 0 auto;
+          padding-top: 64px;
+          border-top: 1px solid #1e1e1e;
+        }
+
+        .reviews-title {
+          font-family: 'Cormorant Garamond', serif;
+          font-size: 2.2rem;
+          text-align: center;
+          margin-bottom: 48px;
+          color: #F0EDE8;
+        }
+
+        .title-separator {
+          width: 48px;
+          height: 1px;
+          background: #D4AF37;
+          margin: 0 auto 48px;
+        }
+
+        .review-form-card {
+          background: #0f0f0f;
+          border: 1px solid #1e1e1e;
+          border-radius: 12px;
+          padding: 28px;
+        }
+
+        .input-label {
+          font-size: 0.65rem;
+          text-transform: uppercase;
+          color: #5A5652;
+          letter-spacing: 0.15em;
+          margin-bottom: 10px;
+          display: block;
+        }
+
+        .star-btn {
+          background: none;
+          border: none;
+          padding: 4px;
+          cursor: pointer;
+          transition: transform 0.2s;
+        }
+
+        .star-btn:hover {
+          transform: scale(1.15);
+        }
+
+        .review-textarea {
+          width: 100%;
+          background: #161616;
+          border: 1px solid #1e1e1e;
+          border-radius: 8px;
+          color: #F0EDE8;
+          padding: 12px;
+          font-size: 0.9rem;
+          resize: vertical;
+          min-height: 120px;
+        }
+
+        .review-textarea:focus {
+          border-color: #D4AF37;
+          outline: none;
+          box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+        }
+
+        .review-item {
+          margin-bottom: 28px;
+          padding-bottom: 28px;
+          border-bottom: 1px solid #1e1e1e;
+        }
+
+        .review-item:last-child {
+          border-bottom: none;
+        }
+
+        .reviewer-name {
+          font-weight: 600;
+          color: #F0EDE8;
+          font-size: 0.95rem;
+        }
+
+        .review-date {
+          font-family: 'DM Mono', monospace;
+          font-size: 0.75rem;
+          color: #5A5652;
+        }
+
+        .review-comment {
+          font-family: 'Cormorant Garamond', serif;
+          font-style: italic;
+          font-size: 1.1rem;
+          color: #9A9690;
+          line-height: 1.75;
+        }
+      `}</style>
+
+      <div className="container py-5">
+        <Link to="/" className="breadcrumb-link">
+          <HiArrowLeft size={16} /> Back to Collection
+        </Link>
+
+        <div className="row gx-lg-5 align-items-start" style={{ marginBottom: '80px' }}>
+          {/* LEFT: IMAGE GALLERY */}
+          <div className="col-12 col-lg-6">
+            <AnimatePresence mode="wait">
+              <motion.div 
+                key={activeImg}
+                className="main-img-outer"
+                initial={{ scale: 0.96, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.4 }}
               >
-                <div style={{ width: '100%', height: '100%', background: '#111', padding: '8px' }}>
-                  <img src={img} alt="" className="w-100 h-100 object-fit-contain" />
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
+                <img 
+                  src={product.imageGallery[activeImg]} 
+                  alt={product.name} 
+                  className="main-img" 
+                />
+              </motion.div>
+            </AnimatePresence>
 
-        {/* RIGHT: Info */}
-        <div className="col-12 col-lg-6 ps-lg-5">
-          <div className="mb-4">
-            <div className="section-label mb-3">{product.category}</div>
-            <h1 className="font-display mb-4" style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)', color: '#fff', lineHeight: 1.1 }}>
-              {product.name}
-            </h1>
-
-            <div className="d-flex align-items-baseline gap-4 mb-4">
-              <span className="font-mono text-gold d-block" style={{ fontSize: '2.5rem', fontWeight: 500 }}>
-                ₹{(product.dealPrice || product.price).toLocaleString('en-IN')}
-              </span>
-              {product.isOnDeal && (
-                <span className="font-mono text-t3 text-decoration-line-through" style={{ fontSize: '1.2rem' }}>
-                  ₹{product.price.toLocaleString('en-IN')}
-                </span>
-              )}
-              <div 
-                className="ms-auto font-body px-3 py-1"
-                style={{ background: 'rgba(40, 167, 69, 0.1)', color: '#28a745', fontSize: '0.7rem', fontWeight: 700, borderRadius: '4px', textTransform: 'uppercase', letterSpacing: '0.1em' }}
-              >
-                In Stock
-              </div>
-            </div>
-            
-            <div className="mb-5" style={{ height: '1px', background: '#1e1e1e' }}></div>
-
-            <p className="font-body mb-5" style={{ fontSize: '1rem', color: '#9A9690', lineHeight: 1.8 }}>
-              {product.description}
-            </p>
-
-            {/* Features grid */}
-            <div className="row g-4 mb-5">
-              {[
-                { icon: HiOutlineTruck, label: 'Complimentary Shipping' },
-                { icon: HiOutlineShieldCheck, label: '2 Year Master Warranty' },
-                { icon: HiOutlineStar, label: 'Certified Chronometer' },
-                { icon: HiOutlineArrowPath, label: '30 Day Easy Returns' }
-              ].map((item, i) => (
-                <div key={i} className="col-6">
-                  <div className="d-flex align-items-center gap-3">
-                    <item.icon className="text-gold" size={20} />
-                    <span className="font-body" style={{ color: '#5A5652', fontSize: '0.85rem' }}>{item.label}</span>
-                  </div>
-                </div>
+            <div className="thumbnail-strip">
+              {product.imageGallery.slice(0, 4).map((img, i) => (
+                <button
+                  key={i}
+                  className={`thumb-btn ${activeImg === i ? 'active' : ''}`}
+                  onClick={() => setActiveImg(i)}
+                >
+                  <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                </button>
               ))}
             </div>
+          </div>
 
-            <div className="mb-5" style={{ height: '1px', background: '#1e1e1e' }}></div>
+          {/* RIGHT: PRODUCT INFO */}
+          <div className="col-12 col-lg-6">
+            <div className="category-label">{product.category}</div>
+            <h1 className="product-title">{product.name}</h1>
 
-            <div className="d-flex flex-column gap-3">
-              <button
-                onClick={() => { addItem(product); toast.success('Added to collection'); }}
-                className="btn-ghost w-100 py-3 text-uppercase fw-bold"
-                style={{ fontSize: '0.85rem', letterSpacing: '0.1em' }}
-              >
-                Add to Cart
-              </button>
-              <button
-                onClick={handleBuyNow}
-                className="btn-gold w-100 py-3 text-uppercase fw-bold"
-                style={{ fontSize: '0.85rem', letterSpacing: '0.1em' }}
-              >
-                Acquire Immediately
-              </button>
+            <div className="d-flex align-items-center gap-3 mb-2">
+              <span className="price-current">₹{(product.dealPrice || product.price).toLocaleString('en-IN')}</span>
+              {product.isOnDeal && (
+                <span className="price-original">₹{product.price.toLocaleString()}</span>
+              )}
+              <div className="stock-badge ms-auto">IN STOCK</div>
+            </div>
+
+            <hr style={{ border: 'none', borderTop: '1px solid #1e1e1e', margin: '24px 0' }} />
+
+            <p className="description">{product.description}</p>
+
+            <div className="features-grid">
+              <div className="feature-item">
+                <HiOutlineTruck size={18} color="#D4AF37" /> Complimentary Shipping
+              </div>
+              <div className="feature-item">
+                <HiOutlineShieldCheck size={18} color="#D4AF37" /> 2 Year Master Warranty
+              </div>
+              <div className="feature-item">
+                <HiStar size={18} color="#D4AF37" /> Certified Chronometer
+              </div>
+              <div className="feature-item">
+                <HiOutlineArrowPath size={18} color="#D4AF37" /> 30 Day Easy Returns
+              </div>
+            </div>
+
+            <div className="row g-3">
+              <div className="col-6">
+                <button 
+                  className="btn-add-cart w-100"
+                  onClick={() => { addItem(product); toast.success('Added to collection'); }}
+                >
+                  Add to Cart
+                </button>
+              </div>
+              <div className="col-6">
+                <button className="btn-acquire w-100" onClick={handleBuyNow}>
+                  Acquire Immediately
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Reviews Section */}
-      <div className="mx-auto mt-5 pt-5" style={{ maxWidth: '900px' }}>
-        <h2 className="font-display mb-5 text-center" style={{ fontSize: '2.5rem', color: '#fff' }}>
-          Client Feedback
-        </h2>
+        {/* PART 3: REVIEWS */}
+        <section className="reviews-section">
+          <h2 className="reviews-title">Client Feedback</h2>
+          <div className="title-separator"></div>
 
-        <div className="row g-5">
-          {/* Submission */}
-          <div className="col-md-5">
-            <div className="chronix-card p-4 h-100">
-              <div className="section-label mb-4">Leave an Impression</div>
-              <form onSubmit={handleReview}>
-                <div className="mb-4">
-                  <label className="d-block mb-2" style={{ color: '#5A5652', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Your Rating</label>
-                  <div className="d-flex gap-2">
-                    {[1,2,3,4,5].map(s => (
-                      <button key={s} type="button" onClick={() => setRating(s)} className="p-0 border-0 bg-transparent">
-                        {s <= rating ? <HiStar className="text-gold" size={20} /> : <HiOutlineStar className="text-t3" size={20} />}
+          <div className="row g-5">
+            {/* Form */}
+            <div className="col-12 col-md-5">
+              <div className="review-form-card">
+                <div className="section-label" style={{ marginBottom: '24px' }}>Leave an Impression</div>
+                
+                <form onSubmit={handleReview}>
+                  <label className="input-label">YOUR RATING</label>
+                  <div className="d-flex gap-2 mb-4">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <button 
+                        key={s} 
+                        type="button" 
+                        onClick={() => setRating(s)}
+                        className="star-btn"
+                      >
+                        {s <= rating ? <HiStar size={20} color="#D4AF37" /> : <HiOutlineStar size={20} color="#5A5652" />}
                       </button>
                     ))}
                   </div>
-                </div>
-                <div className="mb-4">
-                  <label className="d-block mb-2" style={{ color: '#5A5652', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Message</label>
-                  <textarea
-                    className="form-control"
-                    rows="4"
-                    style={{ background: '#111', border: '1px solid #1e1e1e', color: '#fff', fontSize: '0.9rem' }}
-                    placeholder="Share your experience..."
-                    value={comment}
-                    onChange={e => setComment(e.target.value)}
-                  />
-                </div>
-                <button type="submit" className="btn-gold w-100 py-3 text-uppercase" style={{ fontSize: '0.75rem', letterSpacing: '0.1em' }}>
-                  Submit Impression
-                </button>
-              </form>
-            </div>
-          </div>
 
-          {/* List */}
-          <div className="col-md-7">
-            <div className="d-flex flex-column gap-5">
+                  <label className="input-label">MESSAGE</label>
+                  <textarea 
+                    className="review-textarea"
+                    placeholder="Share your experience…"
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                  />
+
+                  <button type="submit" className="btn-acquire w-100 mt-3" style={{ padding: '12px 0', fontSize: '0.8rem' }}>
+                    Submit Impression
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            {/* List */}
+            <div className="col-12 col-md-7">
               {reviews.length === 0 ? (
-                <div className="py-5 text-center border rounded-4" style={{ borderColor: '#1e1e1e', borderStyle: 'dashed' }}>
-                   <p className="font-display fst-italic fs-5" style={{ color: '#5A5652' }}>Be the first to share your thoughts.</p>
+                <div className="info-panel" style={{ border: '2px dashed #1e1e1e', borderRadius: '12px', padding: '48px', textAlign: 'center' }}>
+                  <p className="review-comment" style={{ fontSize: '1.2rem', color: '#5A5652' }}>
+                    Be the first to share your thoughts.
+                  </p>
                 </div>
               ) : (
-                reviews.map(r => (
-                  <motion.div key={r.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="pb-4 border-bottom border-border">
-                    <div className="d-flex justify-content-between mb-3">
-                      <span className="fw-medium text-white">{r.user}</span>
-                      <span className="font-mono" style={{ fontSize: '0.75rem', color: '#5A5652' }}>{r.date}</span>
+                <div className="reviews-list">
+                  {reviews.map((r) => (
+                    <div key={r.id} className="review-item">
+                      <div className="d-flex justify-content-between align-items-center">
+                        <span className="reviewer-name">{r.user}</span>
+                        <span className="review-date">{r.date}</span>
+                      </div>
+                      <div className="d-flex gap-1" style={{ marginTop: '6px', marginBottom: '12px' }}>
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <HiStar key={s} size={14} color={s <= r.rating ? '#D4AF37' : 'rgba(212,175,55,0.15)'} />
+                        ))}
+                      </div>
+                      <p className="review-comment">"{r.comment}"</p>
                     </div>
-                    <div className="d-flex gap-1 mb-3">
-                      {[1,2,3,4,5].map(s => (
-                        <HiStar key={s} size={14} className={s <= r.rating ? 'text-gold' : 'text-t3 opacity-25'} />
-                      ))}
-                    </div>
-                    <p className="font-display fst-italic lh-relaxed" style={{ fontSize: '1.2rem', color: '#9A9690' }}>"{r.comment}"</p>
-                  </motion.div>
-                ))
+                  ))}
+                </div>
               )}
             </div>
           </div>
-        </div>
+        </section>
       </div>
     </div>
   );

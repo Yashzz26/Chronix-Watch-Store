@@ -1,16 +1,21 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { HiOutlineCreditCard, HiOutlineBanknotes, HiOutlineQrCode, HiCheckBadge } from 'react-icons/hi2';
+import { 
+  HiOutlineCreditCard, 
+  HiOutlineBanknotes, 
+  HiCheckBadge 
+} from 'react-icons/hi2';
 import useCartStore from '../store/cartStore';
 import toast from 'react-hot-toast';
 import { auth } from '../lib/firebase';
 import { initiateRazorpayPayment } from '../lib/razorpay';
+import useAuthStore from '../store/authStore';
 
 export default function Checkout() {
   const navigate = useNavigate();
   const { items, totalPrice, clearCart } = useCartStore();
-  const [method, setMethod] = useState('cod');
+  const [method, setMethod] = useState('online');
   const [loading, setLoading] = useState(false);
 
   // Section 2.1 — Guard against empty cart
@@ -116,165 +121,372 @@ export default function Checkout() {
     }
   };
 
-  if (items.length === 0) return null;
-
   return (
-    <div className="container py-5 my-5">
-      <div className="mb-5 text-center">
-        <div className="section-label mb-3">Secure Acquisition</div>
-        <h1 className="font-display mb-2" style={{ fontSize: 'clamp(2.5rem, 6vw, 4rem)', color: '#fff' }}>
-          Checkout
-        </h1>
-        <p className="text-t3 font-body" style={{ fontSize: '1rem' }}>Finalize your selection of exceptional timepieces.</p>
-      </div>
+    <div className="checkout-container py-5 my-5">
+      <style>{`
+        .checkout-container {
+          background: #080808;
+          color: #F0EDE8;
+          min-height: 100vh;
+          font-family: 'DM Sans', sans-serif;
+        }
 
-      <div className="row g-5 align-items-start">
-        {/* Left: Payment */}
-        <div className="col-12 col-lg-7">
-          <section className="mb-5">
-            <h2 className="font-display mb-4" style={{ fontSize: '1.8rem', color: '#fff' }}>1. Select Payment Method</h2>
-            <div className="row g-4">
-              <div className="col-12 col-sm-6">
-                <button
-                  onClick={() => setMethod('online')}
-                  className="w-100 p-4 border rounded-3 text-start position-relative overflow-hidden transition-all"
-                  style={{ 
-                    background: method === 'online' ? 'rgba(212,175,55,0.05)' : '#0F0F0F',
-                    border: method === 'online' ? '2px solid #D4AF37' : '2px solid #1e1e1e',
-                  }}
-                >
-                  <div className="d-flex align-items-center justify-content-between mb-4">
-                    <div className={`p-3 rounded-2 ${method === 'online' ? 'bg-gold text-dark' : 'bg-s2 text-t3'}`}>
-                      <HiOutlineCreditCard size={28} />
-                    </div>
-                    {method === 'online' && <HiCheckBadge className="text-gold" size={24} />}
-                  </div>
-                  <div>
-                    <p className="font-display h5 text-white mb-1">Electronic Payment</p>
-                    <p className="text-t3 font-body m-0" style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      UPI / Cards / Net Banking
-                    </p>
-                  </div>
-                </button>
-              </div>
+        .checkout-header {
+          font-family: 'Cormorant Garamond', serif;
+          font-weight: 400;
+          font-size: clamp(2.5rem, 5vw, 4rem);
+          color: #F0EDE8;
+          margin-bottom: 48px;
+          margin-top: 40px;
+        }
 
-              <div className="col-12 col-sm-6">
-                <button
-                  onClick={() => setMethod('cod')}
-                  className="w-100 p-4 border rounded-3 text-start position-relative overflow-hidden transition-all"
-                  style={{ 
-                    background: method === 'cod' ? 'rgba(212,175,55,0.05)' : '#0F0F0F',
-                    border: method === 'cod' ? '2px solid #D4AF37' : '2px solid #1e1e1e',
-                  }}
-                >
-                  <div className="d-flex align-items-center justify-content-between mb-4">
-                    <div className={`p-3 rounded-2 ${method === 'cod' ? 'bg-gold text-dark' : 'bg-s2 text-t3'}`}>
-                      <HiOutlineBanknotes size={28} />
-                    </div>
-                    {method === 'cod' && <HiCheckBadge className="text-gold" size={24} />}
-                  </div>
-                  <div>
-                    <p className="font-display h5 text-white mb-1">Boutique Pickup/COD</p>
-                    <p className="text-t3 font-body m-0" style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      Pay upon delivery/collection
-                    </p>
-                  </div>
-                </button>
-              </div>
+        .section-label {
+          font-size: 0.65rem;
+          color: #D4AF37;
+          text-transform: uppercase;
+          letter-spacing: 0.2em;
+          margin-bottom: 20px;
+        }
+
+        .payment-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 16px;
+          margin-bottom: 32px;
+        }
+
+        .payment-card {
+          width: 100%;
+          text-align: left;
+          cursor: pointer;
+          padding: 24px;
+          border-radius: 12px;
+          border: 2px solid #1e1e1e;
+          background: #0f0f0f;
+          transition: all 0.25s ease;
+          position: relative;
+          overflow: hidden;
+          color: inherit;
+        }
+
+        .payment-card.selected {
+          border-color: #D4AF37;
+          background: rgba(212, 175, 55, 0.05);
+        }
+
+        .pay-icon-block {
+          background: #161616;
+          border-radius: 8px;
+          padding: 12px;
+          display: inline-flex;
+          margin-bottom: 16px;
+          transition: all 0.25s ease;
+        }
+
+        .payment-card.selected .pay-icon-block {
+          background: #D4AF37;
+          color: #000;
+        }
+
+        .pay-title {
+          font-weight: 600;
+          font-size: 1rem;
+          color: #F0EDE8;
+          margin-bottom: 4px;
+        }
+
+        .pay-subtitle {
+          font-size: 0.65rem;
+          color: #5A5652;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+        }
+
+        .checkmark-badge {
+          position: absolute;
+          top: 14px;
+          right: 14px;
+          color: #D4AF37;
+        }
+
+        .info-panel {
+          background: #0c0c0c;
+          border: 2px dashed #1e1e1e;
+          border-radius: 12px;
+          padding: 40px;
+          text-align: center;
+        }
+
+        .online-panel {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 20px;
+        }
+
+        .icon-circle {
+          background: #161616;
+          border-radius: 50%;
+          width: 72px;
+          height: 72px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #D4AF37;
+        }
+
+        .logos-row {
+          display: flex;
+          gap: 20px;
+          align-items: center;
+          opacity: 0.45;
+          margin-top: 8px;
+        }
+
+        .summary-card {
+          background: #0f0f0f;
+          border: 1px solid #1e1e1e;
+          border-radius: 14px;
+          padding: 28px;
+          position: sticky;
+          top: 80px;
+        }
+
+        .items-list {
+          max-height: 300px;
+          overflow-y: auto;
+          margin-bottom: 24px;
+        }
+
+        .items-list::-webkit-scrollbar {
+          width: 3px;
+        }
+        .items-list::-webkit-scrollbar-track {
+          background: #080808;
+        }
+        .items-list::-webkit-scrollbar-thumb {
+          background: #1e1e1e;
+        }
+        .items-list::-webkit-scrollbar-thumb:hover {
+          background: #D4AF37;
+        }
+
+        .item-row {
+          display: flex;
+          gap: 14px;
+          padding-bottom: 20px;
+          margin-bottom: 20px;
+          border-bottom: 1px solid rgba(30, 30, 30, 0.8);
+        }
+
+        .item-row:last-child {
+          border-bottom: none;
+        }
+
+        .item-thumb {
+          width: 64px;
+          height: 64px;
+          flex-shrink: 0;
+          background: #161616;
+          border-radius: 8px;
+          padding: 8px;
+        }
+
+        .item-thumb img {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+        }
+
+        .item-name {
+          font-weight: 500;
+          color: #F0EDE8;
+          font-size: 0.9rem;
+          margin-bottom: 6px;
+        }
+
+        .item-price-row {
+          font-family: 'DM Mono', monospace;
+          font-size: 0.78rem;
+          color: #5A5652;
+          text-transform: uppercase;
+        }
+
+        .item-subtotal {
+          font-family: 'DM Mono', monospace;
+          color: #D4AF37;
+          font-size: 0.9rem;
+          font-weight: 500;
+          text-align: right;
+          flex-shrink: 0;
+        }
+
+        .total-amount {
+          font-family: 'DM Mono', monospace;
+          font-size: 1.6rem;
+          color: #D4AF37;
+          font-weight: 500;
+        }
+
+        .place-order-btn {
+          width: 100%;
+          padding: 15px 0;
+          background: #D4AF37;
+          color: #000;
+          font-weight: 700;
+          border: none;
+          border-radius: 8px;
+          font-size: 0.85rem;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          cursor: pointer;
+          box-shadow: 0 8px 24px rgba(212, 175, 55, 0.18);
+          transition: all 0.25s ease;
+        }
+
+        .place-order-btn:hover:not(:disabled) {
+          background: #F0D060;
+          box-shadow: 0 12px 32px rgba(212, 175, 55, 0.3);
+          transform: translateY(-1px);
+        }
+
+        .place-order-btn:disabled {
+          opacity: 0.65;
+          cursor: not-allowed;
+        }
+
+        .security-note {
+          text-align: center;
+          margin-top: 20px;
+          font-size: 0.62rem;
+          color: #5A5652;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          line-height: 2;
+        }
+      `}</style>
+
+      <div className="container">
+        <h1 className="checkout-header">Finalize Acquisition</h1>
+
+        <div className="row g-5 align-items-start">
+          {/* Left Column */}
+          <div className="col-12 col-lg-7">
+            <h2 className="section-label">PAYMENT METHOD</h2>
+            
+            <div className="payment-grid">
+              <button 
+                className={`payment-card ${method === 'online' ? 'selected' : ''}`}
+                onClick={() => setMethod('online')}
+              >
+                <div className="pay-icon-block">
+                  <HiOutlineCreditCard size={26} color={method === 'online' ? '#000' : '#5A5652'} />
+                </div>
+                {method === 'online' && <HiCheckBadge className="checkmark-badge" size={20} />}
+                <div className="pay-title">Pay Online</div>
+                <div className="pay-subtitle">UPI / Cards / NetBanking</div>
+              </button>
+
+              <button 
+                className={`payment-card ${method === 'cod' ? 'selected' : ''}`}
+                onClick={() => setMethod('cod')}
+              >
+                <div className="pay-icon-block">
+                  <HiOutlineBanknotes size={26} color={method === 'cod' ? '#000' : '#5A5652'} />
+                </div>
+                {method === 'cod' && <HiCheckBadge className="checkmark-badge" size={20} />}
+                <div className="pay-title">Pay at Boutique</div>
+                <div className="pay-subtitle">Cash on Delivery</div>
+              </button>
             </div>
-          </section>
 
-          <AnimatePresence mode="wait">
-            {method === 'online' ? (
-              <motion.div
-                key="online"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="p-5 border rounded-3 text-center"
-                style={{ background: '#080808', border: '1px dashed #D4AF37' }}
-              >
-                <div className="d-inline-flex p-4 rounded-circle mb-4" style={{ background: 'rgba(212,175,55,0.05)' }}>
-                  <HiOutlineQrCode size={48} className="text-gold" />
-                </div>
-                <h3 className="font-display text-white h4 mb-3">Secure Portal Transfer</h3>
-                <p className="font-body text-t3 px-lg-5 mb-0" style={{ lineHeight: 1.7 }}>
-                  You will be securely redirected to our verified payment gateway to complete your transaction using encrypted protocols.
-                </p>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="cod"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="p-5 border rounded-3 text-center"
-                style={{ background: '#080808', border: '1px dashed #1e1e1e' }}
-              >
-                <div className="d-inline-flex p-4 rounded-circle mb-4" style={{ background: 'rgba(212,175,55,0.02)' }}>
-                  <HiOutlineBanknotes size={48} className="text-t3" />
-                </div>
-                <h3 className="font-display text-white h4 mb-3">White-Glove Collection</h3>
-                <p className="font-body text-t3 px-lg-5 mb-0" style={{ lineHeight: 1.7 }}>
-                  Our concierge will facilitate the payment of <span className="text-gold font-mono fw-bold">₹{totalPrice().toLocaleString('en-IN')}</span> at the time of delivery. Exact amount is appreciated.
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+            <AnimatePresence mode="wait">
+              {method === 'online' ? (
+                <motion.div 
+                  key="online"
+                  className="info-panel online-panel"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                >
+                  <div className="icon-circle">
+                    <HiOutlineCreditCard size={34} />
+                  </div>
+                  <div className="pay-title" style={{ fontSize: '1.1rem' }}>Secure Payment Gateway</div>
+                  <p style={{ color: '#9A9690', fontSize: '0.9rem', maxWidth: '360px', lineHeight: 1.7 }}>
+                    Upon clicking place order, you will be redirected to our encrypted payment portal to complete your acquisition securely.
+                  </p>
+                  <div className="logos-row">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/UPI-Logo-vector.svg" height="18px" alt="UPI" style={{ filter: 'grayscale(1)' }} />
+                    <div style={{ width: '1px', height: '20px', background: '#2a2a2a' }}></div>
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/2/24/Visa.svg" height="14px" alt="Visa" style={{ filter: 'grayscale(1)' }} />
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/b/b7/MasterCard_Logo.svg" height="16px" alt="Mastercard" style={{ filter: 'grayscale(1)' }} />
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div 
+                  key="cod"
+                  className="info-panel"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                >
+                  <p style={{ fontSize: '1.05rem', color: '#9A9690', lineHeight: 2 }}>
+                    Our white-glove delivery specialist will collect the amount <br />
+                    <span className="total-amount" style={{ fontSize: '1.4rem', fontWeight: 700 }}>₹{totalPrice().toLocaleString('en-IN')}</span> <br />
+                    upon arrival. Please ensure exact change is available.
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
-        {/* Right: Summary */}
-        <div className="col-12 col-lg-5 ps-lg-5">
-          <div className="position-sticky" style={{ top: '100px' }}>
-            <div className="chronix-card p-4">
-              <h2 className="section-label mb-5">Order Résumé</h2>
+          {/* Right Column */}
+          <div className="col-12 col-lg-5">
+            <div className="summary-card">
+              <h2 className="section-label" style={{ marginBottom: '28px' }}>SUMMARY</h2>
               
-              <div className="overflow-auto mb-5 pe-2" style={{ maxHeight: '350px' }}>
-                {items.map((item, idx) => (
-                  <div key={item.id} className={`d-flex gap-4 mb-4 pb-4 ${idx !== items.length - 1 ? 'border-bottom border-border border-opacity-50' : ''}`}>
-                    <div className="bg-s2 rounded-2 p-2 flex-shrink-0 d-flex align-items-center justify-content-center" style={{ width: '70px', height: '70px' }}>
-                      <img src={item.imageGallery[0]} alt="" className="w-100 h-100 object-fit-contain" />
+              <div className="items-list">
+                {items.map((item) => (
+                  <div key={item.id} className="item-row">
+                    <div className="item-thumb">
+                      <img src={item.imageGallery[0]} alt={item.name} />
                     </div>
                     <div className="flex-grow-1">
-                      <p className="text-white fw-medium m-0">{item.name}</p>
-                      <div className="d-flex justify-content-between align-items-center mt-1">
-                        <span className="text-t3" style={{ fontSize: '0.8rem' }}>Qty: {item.qty}</span>
-                        <span className="font-mono text-gold" style={{ fontSize: '0.85rem' }}>
-                          ₹{(item.dealPrice || item.price).toLocaleString('en-IN')}
-                        </span>
+                      <div className="item-name">{item.name}</div>
+                      <div className="item-price-row">
+                        ₹{(item.dealPrice || item.price).toLocaleString()} × {item.qty}
                       </div>
+                    </div>
+                    <div className="item-subtotal">
+                      ₹{((item.dealPrice || item.price) * item.qty).toLocaleString()}
                     </div>
                   </div>
                 ))}
               </div>
 
-              <div className="pt-4 border-top border-border">
-                <div className="d-flex justify-content-between align-items-end mb-5">
-                  <div>
-                    <span className="section-label d-block mb-1">Total Due</span>
-                    <span className="font-mono text-gold" style={{ fontSize: '2.5rem', fontWeight: 600, lineHeight: 1 }}>
-                      ₹{totalPrice().toLocaleString('en-IN')}
-                    </span>
-                  </div>
-                </div>
-                
-                <button
-                  disabled={loading}
-                  onClick={handlePlaceOrder}
-                  className="btn-gold w-100 py-3 text-uppercase fw-bold d-flex align-items-center justify-content-center gap-3"
-                  style={{ fontSize: '0.85rem', letterSpacing: '0.1em' }}
-                >
-                  {loading ? (
-                    <span className="spinner-border spinner-border-sm" />
-                  ) : (
-                    <>
-                      {method === 'online' ? 'Proceed to Gateway' : 'Confirm Reservation'}
-                    </>
-                  )}
-                </button>
-                <p className="text-center mt-4 text-t3" style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  SSL Encrypted & Secured Transaction
-                </p>
+              <div style={{ borderTop: '1px solid #1e1e1e', marginBottom: '24px' }}></div>
+
+              <div className="d-flex justify-content-between align-items-center mb-4">
+                <span style={{ fontWeight: 600, color: '#F0EDE8', fontSize: '1rem' }}>Total Amount</span>
+                <span className="total-amount">₹{totalPrice().toLocaleString('en-IN')}</span>
+              </div>
+
+              <button 
+                className="place-order-btn" 
+                onClick={handlePlaceOrder}
+                disabled={loading}
+              >
+                {loading ? (
+                  <span className="spinner-border spinner-border-sm text-dark"></span>
+                ) : (
+                  method === 'online' ? 'Pay & Place Your Order' : 'Confirm Reservation'
+                )}
+              </button>
+
+              <div className="security-note">
+                Every transaction is protected <br />
+                by institutional-grade encryption.
               </div>
             </div>
           </div>
