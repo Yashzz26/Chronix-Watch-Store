@@ -82,7 +82,7 @@ export default function Home() {
         .product-v2:hover { border-color: rgba(212,175,55,0.4); transform: translateY(-5px); box-shadow: 0 25px 50px rgba(0,0,0,0.5); }
         .pv2-image-box { aspect-ratio: 1; background: radial-gradient(circle at center, #1b1b1b, #0f0f0f); display: flex; align-items: center; justify-content: center; padding: 30px; position: relative; overflow: hidden; }
         .pv2-img { max-width: 90%; max-height: 90%; object-fit: contain; transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
-        .product-v2:hover .pv2-img { transform: scale(1.1) rotate(-3deg); }
+        .product-v2:hover .pv2-img { transform: scale(1.1); }
         .pv2-badge { position: absolute; top: 15px; left: 15px; font-size: 0.6rem; font-weight: 800; background: #D4AF37; color: #000; padding: 5px 10px; border-radius: 4px; text-transform: uppercase; z-index: 5; }
         .pv2-quick { position: absolute; bottom: 0; left: 0; right: 0; background: #D4AF37; color: #000; font-size: 0.75rem; font-weight: 700; padding: 12px; transform: translateY(100%); transition: all 0.3s; text-align: center; text-decoration: none; border: none; cursor: pointer; }
         .product-v2:hover .pv2-quick { transform: translateY(0); }

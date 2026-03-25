@@ -100,7 +100,7 @@ export default function Navbar() {
           background: rgba(8, 8, 8, 0.96);
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
-          border-bottom: 1px solid #1a1a1a;
+          border-bottom: 1px solid rgba(255,255,255,0.05);
           height: 72px;
           font-family: 'DM Sans', sans-serif;
         }
@@ -122,6 +122,9 @@ export default function Navbar() {
           color: #F0EDE8;
           text-decoration: none;
           flex-shrink: 0;
+          border: none !important;
+          outline: none !important;
+          box-shadow: none !important;
         }
 
         .wordmark span {
