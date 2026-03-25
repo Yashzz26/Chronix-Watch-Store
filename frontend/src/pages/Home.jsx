@@ -525,11 +525,6 @@ export default function Home() {
                 <Link to="/allcollection" className="btn-primary-gold">
                   Explore Collection <HiArrowRight size={18} />
                 </Link>
-                {dealProduct && (
-                  <Link to={`/product/${dealProduct.id}`} className="btn-outline-gold">
-                    <HiOutlineTicket size={18} /> Deal of the Day
-                  </Link>
-                )}
               </motion.div>
 
               <motion.div 
@@ -573,11 +568,6 @@ export default function Home() {
       </section>
 
       <div className="container py-5">
-        {/* SECTION 2: DEAL BANNER */}
-        <div className="deal-banner-wrapper">
-          <div className="shimmer-line"></div>
-          <DealBanner product={dealProduct} />
-        </div>
 
         {/* SECTION 3: GIFT BOXES (Replaces Collection Header) */}
         <div className="row g-4 mb-5">

@@ -19,8 +19,8 @@ const useCartStore = create(
   persist(
     (set, get) => ({
       items: [],
+      savedItems: [],
       reviews: JSON.parse(localStorage.getItem('chronix-reviews') || '[]'),
-
       appliedCoupon: null,
 
       // ── Cart ──────────────────────────────────
@@ -42,6 +42,27 @@ const useCartStore = create(
       },
       clearCart() {
         set({ items: [], appliedCoupon: null });
+      },
+      
+      // ── Save for Later ────────────────────────
+      moveToSaved(id) {
+        const item = get().items.find(i => i.id === id);
+        if (!item) return;
+        set({
+          items: get().items.filter(i => i.id !== id),
+          savedItems: [...get().savedItems, item]
+        });
+      },
+      moveToCart(id) {
+        const item = get().savedItems.find(i => i.id === id);
+        if (!item) return;
+        set({
+          savedItems: get().savedItems.filter(i => i.id !== id),
+          items: [...get().items, item]
+        });
+      },
+      removeSaved(id) {
+        set({ savedItems: get().savedItems.filter(i => i.id !== id) });
       },
       totalItems() {
         return get().items.reduce((s, i) => s + i.qty, 0);
@@ -74,7 +95,7 @@ const useCartStore = create(
     }),
     { 
       name: 'chronix-cart', 
-      partialize: (s) => ({ items: s.items }),
+      partialize: (s) => ({ items: s.items, savedItems: s.savedItems }),
       onRehydrateStorage: () => (state) => {
         if (state && Array.isArray(state.items)) {
           // Filter out any invalid/corrupted items (Section 1.6)

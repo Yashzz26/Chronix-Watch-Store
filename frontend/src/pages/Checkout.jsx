@@ -1,31 +1,112 @@
+import React from 'react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   HiOutlineCreditCard, 
   HiOutlineBanknotes, 
-  HiCheckBadge 
+  HiCheckBadge,
+  HiOutlineTruck,
+  HiOutlineMapPin,
+  HiOutlineTag,
+  HiOutlineGift,
+  HiOutlineShieldCheck,
+  HiOutlineChevronDown,
+  HiOutlineChevronUp
 } from 'react-icons/hi2';
 import useCartStore from '../store/cartStore';
 import toast from 'react-hot-toast';
 import { auth } from '../lib/firebase';
 import { initiateRazorpayPayment } from '../lib/razorpay';
-import useAuthStore from '../store/authStore';
+
+// Stepper Component
+const CheckoutStepper = ({ currentStep }) => {
+  const steps = [
+    { label: 'Cart', id: 'cart' },
+    { label: 'Address', id: 'address' },
+    { label: 'Payment', id: 'payment' },
+    { label: 'Review', id: 'review' }
+  ];
+
+  return (
+    <div className="d-flex align-items-center justify-content-center gap-2 mb-5">
+      {steps.map((step, idx) => (
+        <React.Fragment key={step.id}>
+          <div className="d-flex align-items-center gap-2">
+            <div 
+              className={`rounded-circle d-flex align-items-center justify-content-center font-mono`}
+              style={{ 
+                width: 24, height: 24, fontSize: '0.7rem',
+                border: currentStep === step.id ? '2px solid #D4AF37' : '1px solid #1e1e1e',
+                background: currentStep === step.id ? 'rgba(212,175,55,0.1)' : 'transparent',
+                color: currentStep === step.id ? '#D4AF37' : '#5A5652'
+              }}
+            >
+              {idx < steps.findIndex(s => s.id === currentStep) ? <HiCheckBadge size={14} className="text-gold" /> : idx + 1}
+            </div>
+            <span 
+              className="text-uppercase tracking-widest font-body"
+              style={{ 
+                fontSize: '0.65rem', 
+                color: currentStep === step.id ? '#D4AF37' : '#5A5652',
+                fontWeight: currentStep === step.id ? 700 : 400
+              }}
+            >
+              {step.label}
+            </span>
+          </div>
+          {idx < steps.length - 1 && (
+            <div style={{ width: 40, height: 1, background: 'linear-gradient(90deg, #1e1e1e, #111)', margin: '0 8px' }} />
+          )}
+        </React.Fragment>
+      ))}
+    </div>
+  );
+};
 
 export default function Checkout() {
   const navigate = useNavigate();
-  const { items, totalPrice, clearCart } = useCartStore();
+  const { items, totalPrice, clearCart, appliedCoupon, applyCoupon, removeCoupon } = useCartStore();
+  
+  const [currentStep, setCurrentStep] = useState('address');
   const [method, setMethod] = useState('online');
   const [loading, setLoading] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
+  const [promoCode, setPromoCode] = useState('');
+  const [isGift, setIsGift] = useState(false);
+  const [orderNote, setOrderNote] = useState('');
+  const [location, setLocation] = useState('Pune, Maharashtra');
+  const [deliveryDate, setDeliveryDate] = useState('28 March');
 
-  // Section 2.1 — Guard against empty cart
+  const [addressData, setAddressData] = useState({
+    fullName: '',
+    phone: '',
+    address: '',
+    city: 'Pune',
+    zip: ''
+  });
+
   useEffect(() => {
     if (items.length === 0) {
       navigate('/cart', { replace: true });
     }
   }, [items, navigate]);
 
-  if (items.length === 0) return null; // prevent flash of empty checkout
+  if (items.length === 0) return null;
+
+  const subtotal = items.reduce((s, i) => s + (i.dealPrice || i.price) * i.qty, 0);
+  const discountAmount = appliedCoupon ? (subtotal * appliedCoupon.discount) / 100 : 0;
+  const taxes = subtotal * 0.18; // 18% GST example
+  const finalTotal = subtotal - discountAmount;
+
+  const handleApplyPromo = () => {
+    if (promoCode.toUpperCase() === 'CHRONIX10') {
+      applyCoupon({ code: 'CHRONIX10', discount: 10 });
+      toast.success('🎉 You saved ₹' + (subtotal * 0.1).toLocaleString());
+    } else {
+      toast.error('Invalid promo code');
+    }
+  };
 
   const handlePlaceOrder = async () => {
     if (!auth.currentUser) {
@@ -38,6 +119,16 @@ export default function Checkout() {
       const token = await auth.currentUser.getIdToken();
       const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
+      const orderPayload = {
+        items,
+        totalPrice: finalTotal,
+        paymentMethod: method,
+        address: addressData,
+        isGift,
+        orderNote,
+        couponCode: appliedCoupon?.code
+      };
+
       if (method === 'online') {
         const rezResponse = await fetch(`${backendUrl}/api/orders/create-razorpay-order`, {
           method: 'POST',
@@ -45,7 +136,7 @@ export default function Checkout() {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ amount: totalPrice() })
+          body: JSON.stringify({ amount: finalTotal })
         });
         
         const orderData = await rezResponse.json();
@@ -63,12 +154,7 @@ export default function Checkout() {
                   'Content-Type': 'application/json',
                   'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ 
-                  items, 
-                  totalPrice: totalPrice(), 
-                  paymentMethod: 'online',
-                  razorpayDetails: response
-                })
+                body: JSON.stringify({ ...orderPayload, razorpayDetails: response })
               });
               
               if (finalResponse.ok) {
@@ -77,11 +163,10 @@ export default function Checkout() {
                 clearCart();
                 navigate('/confirmation', { state: { orderId: data.orderId } });
               } else {
-                const errorData = await finalResponse.json();
-                toast.error(errorData.error || 'Verification failed', { id: verifyingToast });
+                throw new Error('Verification failed');
               }
             } catch (err) {
-              toast.error('Network error during verification', { id: verifyingToast });
+              toast.error(err.message, { id: verifyingToast });
             } finally {
               setLoading(false);
             }
@@ -98,11 +183,7 @@ export default function Checkout() {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ 
-            items, 
-            totalPrice: totalPrice(), 
-            paymentMethod: 'cod' 
-          })
+          body: JSON.stringify(orderPayload)
         });
 
         if (response.ok) {
@@ -130,363 +211,277 @@ export default function Checkout() {
           min-height: 100vh;
           font-family: 'DM Sans', sans-serif;
         }
-
-        .checkout-header {
-          font-family: 'Cormorant Garamond', serif;
-          font-weight: 400;
-          font-size: clamp(2.5rem, 5vw, 4rem);
-          color: #F0EDE8;
-          margin-bottom: 48px;
-          margin-top: 40px;
-        }
-
-        .section-label {
-          font-size: 0.65rem;
-          color: #D4AF37;
-          text-transform: uppercase;
-          letter-spacing: 0.2em;
-          margin-bottom: 20px;
-        }
-
-        .payment-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 16px;
-          margin-bottom: 32px;
-        }
-
-        .payment-card {
+        .form-input {
           width: 100%;
-          text-align: left;
-          cursor: pointer;
-          padding: 24px;
-          border-radius: 12px;
+          background: #0F0F0F;
+          border: 1px solid #1e1e1e;
+          padding: 14px;
+          border-radius: 8px;
+          color: #fff;
+          outline: none;
+          transition: border-color 0.2s;
+        }
+        .form-input:focus { border-color: #D4AF37; }
+        .payment-card {
+          background: #0F0F0F;
           border: 2px solid #1e1e1e;
-          background: #0f0f0f;
+          border-radius: 12px;
+          padding: 24px;
+          cursor: pointer;
           transition: all 0.25s ease;
           position: relative;
-          overflow: hidden;
-          color: inherit;
         }
-
         .payment-card.selected {
           border-color: #D4AF37;
           background: rgba(212, 175, 55, 0.05);
         }
-
-        .pay-icon-block {
-          background: #161616;
-          border-radius: 8px;
-          padding: 12px;
-          display: inline-flex;
-          margin-bottom: 16px;
-          transition: all 0.25s ease;
-        }
-
-        .payment-card.selected .pay-icon-block {
-          background: #D4AF37;
-          color: #000;
-        }
-
-        .pay-title {
-          font-weight: 600;
-          font-size: 1rem;
-          color: #F0EDE8;
-          margin-bottom: 4px;
-        }
-
-        .pay-subtitle {
-          font-size: 0.65rem;
-          color: #5A5652;
-          text-transform: uppercase;
-          letter-spacing: 0.1em;
-        }
-
-        .checkmark-badge {
-          position: absolute;
-          top: 14px;
-          right: 14px;
-          color: #D4AF37;
-        }
-
-        .info-panel {
-          background: #0c0c0c;
-          border: 2px dashed #1e1e1e;
-          border-radius: 12px;
-          padding: 40px;
-          text-align: center;
-        }
-
-        .online-panel {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 20px;
-        }
-
-        .icon-circle {
-          background: #161616;
-          border-radius: 50%;
-          width: 72px;
-          height: 72px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #D4AF37;
-        }
-
-        .logos-row {
-          display: flex;
-          gap: 20px;
-          align-items: center;
-          opacity: 0.45;
-          margin-top: 8px;
-        }
-
-        .summary-card {
-          background: #0f0f0f;
+        .summary-box {
+          background: #0F0F0F;
           border: 1px solid #1e1e1e;
-          border-radius: 14px;
-          padding: 28px;
-          position: sticky;
-          top: 80px;
+          border-radius: 16px;
+          padding: 32px;
         }
-
-        .items-list {
-          max-height: 300px;
-          overflow-y: auto;
-          margin-bottom: 24px;
+        .delivery-pill {
+          background: rgba(212,175,55,0.05);
+          border: 1px solid rgba(212,175,55,0.1);
+          border-radius: 12px;
+          padding: 16px;
         }
-
-        .items-list::-webkit-scrollbar {
-          width: 3px;
-        }
-        .items-list::-webkit-scrollbar-track {
-          background: #080808;
-        }
-        .items-list::-webkit-scrollbar-thumb {
-          background: #1e1e1e;
-        }
-        .items-list::-webkit-scrollbar-thumb:hover {
-          background: #D4AF37;
-        }
-
-        .item-row {
-          display: flex;
-          gap: 14px;
-          padding-bottom: 20px;
-          margin-bottom: 20px;
-          border-bottom: 1px solid rgba(30, 30, 30, 0.8);
-        }
-
-        .item-row:last-child {
-          border-bottom: none;
-        }
-
-        .item-thumb {
-          width: 64px;
-          height: 64px;
-          flex-shrink: 0;
-          background: #161616;
-          border-radius: 8px;
-          padding: 8px;
-        }
-
-        .item-thumb img {
-          width: 100%;
-          height: 100%;
-          object-fit: contain;
-        }
-
-        .item-name {
-          font-weight: 500;
-          color: #F0EDE8;
-          font-size: 0.9rem;
-          margin-bottom: 6px;
-        }
-
-        .item-price-row {
-          font-family: 'DM Mono', monospace;
-          font-size: 0.78rem;
-          color: #5A5652;
-          text-transform: uppercase;
-        }
-
-        .item-subtotal {
-          font-family: 'DM Mono', monospace;
-          color: #D4AF37;
-          font-size: 0.9rem;
-          font-weight: 500;
-          text-align: right;
-          flex-shrink: 0;
-        }
-
-        .total-amount {
-          font-family: 'DM Mono', monospace;
-          font-size: 1.6rem;
-          color: #D4AF37;
-          font-weight: 500;
-        }
-
-        .place-order-btn {
-          width: 100%;
-          padding: 15px 0;
+        .btn-gold-action {
           background: #D4AF37;
           color: #000;
           font-weight: 700;
           border: none;
           border-radius: 8px;
-          font-size: 0.85rem;
+          padding: 16px;
           text-transform: uppercase;
           letter-spacing: 0.1em;
-          cursor: pointer;
-          box-shadow: 0 8px 24px rgba(212, 175, 55, 0.18);
-          transition: all 0.25s ease;
+          transition: all 0.25s;
         }
-
-        .place-order-btn:hover:not(:disabled) {
-          background: #F0D060;
-          box-shadow: 0 12px 32px rgba(212, 175, 55, 0.3);
-          transform: translateY(-1px);
-        }
-
-        .place-order-btn:disabled {
-          opacity: 0.65;
-          cursor: not-allowed;
-        }
-
-        .security-note {
-          text-align: center;
-          margin-top: 20px;
-          font-size: 0.62rem;
-          color: #5A5652;
-          text-transform: uppercase;
-          letter-spacing: 0.1em;
-          line-height: 2;
-        }
+        .btn-gold-action:hover { background: #F0D060; transform: translateY(-1px); }
       `}</style>
 
       <div className="container">
-        <h1 className="checkout-header">Finalize Acquisition</h1>
-
-        <div className="row g-5 align-items-start">
-          {/* Left Column */}
-          <div className="col-12 col-lg-7">
-            <h2 className="section-label">PAYMENT METHOD</h2>
-            
-            <div className="payment-grid">
-              <button 
-                className={`payment-card ${method === 'online' ? 'selected' : ''}`}
-                onClick={() => setMethod('online')}
-              >
-                <div className="pay-icon-block">
-                  <HiOutlineCreditCard size={26} color={method === 'online' ? '#000' : '#5A5652'} />
-                </div>
-                {method === 'online' && <HiCheckBadge className="checkmark-badge" size={20} />}
-                <div className="pay-title">Pay Online</div>
-                <div className="pay-subtitle">UPI / Cards / NetBanking</div>
-              </button>
-
-              <button 
-                className={`payment-card ${method === 'cod' ? 'selected' : ''}`}
-                onClick={() => setMethod('cod')}
-              >
-                <div className="pay-icon-block">
-                  <HiOutlineBanknotes size={26} color={method === 'cod' ? '#000' : '#5A5652'} />
-                </div>
-                {method === 'cod' && <HiCheckBadge className="checkmark-badge" size={20} />}
-                <div className="pay-title">Pay at Boutique</div>
-                <div className="pay-subtitle">Cash on Delivery</div>
-              </button>
-            </div>
-
+        <CheckoutStepper currentStep={currentStep} />
+        
+        <div className="row g-5">
+          {/* Main Content */}
+          <div className="col-12 col-lg-8">
             <AnimatePresence mode="wait">
-              {method === 'online' ? (
+              {currentStep === 'address' && (
                 <motion.div 
-                  key="online"
-                  className="info-panel online-panel"
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
+                  key="address"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
                 >
-                  <div className="icon-circle">
-                    <HiOutlineCreditCard size={34} />
+                  <h2 className="section-label mb-4">Shipping Destination</h2>
+                  <div className="row g-3 mb-5">
+                    <div className="col-12 col-md-6">
+                      <input type="text" placeholder="Full Name" className="form-input" value={addressData.fullName} onChange={e => setAddressData({...addressData, fullName: e.target.value})} />
+                    </div>
+                    <div className="col-12 col-md-6">
+                      <input type="text" placeholder="Phone Number" className="form-input" value={addressData.phone} onChange={e => setAddressData({...addressData, phone: e.target.value})} />
+                    </div>
+                    <div className="col-12">
+                      <input type="text" placeholder="Street Address" className="form-input" value={addressData.address} onChange={e => setAddressData({...addressData, address: e.target.value})} />
+                    </div>
+                    <div className="col-12 col-md-6">
+                      <input type="text" placeholder="City" className="form-input" value={addressData.city} readOnly />
+                    </div>
+                    <div className="col-12 col-md-6">
+                      <input type="text" placeholder="Zip Code" className="form-input" value={addressData.zip} onChange={e => setAddressData({...addressData, zip: e.target.value})} />
+                    </div>
                   </div>
-                  <div className="pay-title" style={{ fontSize: '1.1rem' }}>Secure Payment Gateway</div>
-                  <p style={{ color: '#9A9690', fontSize: '0.9rem', maxWidth: '360px', lineHeight: 1.7 }}>
-                    Upon clicking place order, you will be redirected to our encrypted payment portal to complete your acquisition securely.
-                  </p>
-                  <div className="logos-row">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/UPI-Logo-vector.svg" height="18px" alt="UPI" style={{ filter: 'grayscale(1)' }} />
-                    <div style={{ width: '1px', height: '20px', background: '#2a2a2a' }}></div>
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/2/24/Visa.svg" height="14px" alt="Visa" style={{ filter: 'grayscale(1)' }} />
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/b/b7/MasterCard_Logo.svg" height="16px" alt="Mastercard" style={{ filter: 'grayscale(1)' }} />
+
+                  <div className="delivery-pill mb-5 d-flex align-items-center justify-content-between">
+                    <div className="d-flex align-items-center gap-3">
+                      <div className="bg-s2 p-3 rounded-circle text-gold"><HiOutlineTruck size={24} /></div>
+                      <div>
+                        <p className="text-white fw-bold mb-0">Express Concierge Delivery</p>
+                        <p className="text-t3 mb-0" style={{ fontSize: '0.8rem' }}>Deliver to {location} — by {deliveryDate}</p>
+                      </div>
+                    </div>
+                    <button className="btn p-0 text-gold fw-bold text-uppercase" style={{ fontSize: '0.7rem' }}>Change</button>
+                  </div>
+
+                  <button 
+                    className="btn-gold-action w-100" 
+                    onClick={() => {
+                      if (!addressData.fullName || !addressData.address) return toast.error('Please fill all fields');
+                      setCurrentStep('payment');
+                    }}
+                  >
+                    Proceed to Payment Options
+                  </button>
+                </motion.div>
+              )}
+
+              {currentStep === 'payment' && (
+                <motion.div 
+                  key="payment"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                >
+                  <h2 className="section-label mb-4">Payment Architecture</h2>
+                  <div className="row g-4 mb-5">
+                    <div className="col-12 col-md-6">
+                      <div className={`payment-card ${method === 'online' ? 'selected' : ''}`} onClick={() => setMethod('online')}>
+                         <HiOutlineCreditCard size={32} className="mb-3 text-gold" />
+                         <h4 className="text-white h5 mb-2">Digital Settlement</h4>
+                         <p className="text-t3 mb-0" style={{ fontSize: '0.8rem' }}>UPI, Cards, Net Banking</p>
+                         {method === 'online' && <HiCheckBadge className="position-absolute top-0 end-0 m-3 text-gold" size={24} />}
+                      </div>
+                    </div>
+                    <div className="col-12 col-md-6">
+                      <div className={`payment-card ${method === 'cod' ? 'selected' : ''}`} onClick={() => setMethod('cod')}>
+                         <HiOutlineBanknotes size={32} className="mb-3 text-gold" />
+                         <h4 className="text-white h5 mb-2">Boutique Pickup/COD</h4>
+                         <p className="text-t3 mb-0" style={{ fontSize: '0.8rem' }}>Pay upon inspection</p>
+                         {method === 'cod' && <HiCheckBadge className="position-absolute top-0 end-0 m-3 text-gold" size={24} />}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mb-5">
+                    <label className="d-flex align-items-center gap-3 cursor-pointer group">
+                      <input type="checkbox" className="d-none" checked={isGift} onChange={e => setIsGift(e.target.checked)} />
+                      <div className={`rounded d-flex align-items-center justify-content-center transition-all ${isGift ? 'bg-gold' : 'border border-border'}`} style={{ width: 20, height: 20 }}>
+                        {isGift && <HiCheckBadge size={14} className="text-black" />}
+                      </div>
+                      <span className="text-t2 font-body">This is a gift acquisition</span>
+                    </label>
+                    {isGift && (
+                      <motion.textarea 
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        placeholder="Add a personalized message for the recipient..."
+                        className="form-input mt-3"
+                        rows="3"
+                        value={orderNote}
+                        onChange={e => setOrderNote(e.target.value)}
+                      />
+                    )}
+                  </div>
+
+                  <div className="d-flex gap-3">
+                    <button className="btn border border-border text-t3 px-4" onClick={() => setCurrentStep('address')}>Back</button>
+                    <button className="btn-gold-action flex-grow-1" onClick={() => setCurrentStep('review')}>Review Order</button>
                   </div>
                 </motion.div>
-              ) : (
+              )}
+
+              {currentStep === 'review' && (
                 <motion.div 
-                  key="cod"
-                  className="info-panel"
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
+                  key="review"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
                 >
-                  <p style={{ fontSize: '1.05rem', color: '#9A9690', lineHeight: 2 }}>
-                    Our white-glove delivery specialist will collect the amount <br />
-                    <span className="total-amount" style={{ fontSize: '1.4rem', fontWeight: 700 }}>₹{totalPrice().toLocaleString('en-IN')}</span> <br />
-                    upon arrival. Please ensure exact change is available.
-                  </p>
+                  <h2 className="section-label mb-4">Final Review</h2>
+                  <div className="chronix-card p-4 mb-5" style={{ background: '#0F0F0F' }}>
+                     <div className="row g-4">
+                        <div className="col-12 col-md-6">
+                           <p className="text-t3 text-uppercase tracking-widest mb-2" style={{ fontSize: '0.6rem' }}>Ship to</p>
+                           <p className="text-white m-0 fw-bold">{addressData.fullName}</p>
+                           <p className="text-t2 m-0" style={{ fontSize: '0.85rem' }}>{addressData.address}</p>
+                           <p className="text-t2 m-0" style={{ fontSize: '0.85rem' }}>{addressData.city}, {addressData.zip}</p>
+                        </div>
+                        <div className="col-12 col-md-6">
+                           <p className="text-t3 text-uppercase tracking-widest mb-2" style={{ fontSize: '0.6rem' }}>Settlement</p>
+                           <p className="text-white m-0 fw-bold">{method === 'online' ? 'Digital Gateway' : 'Pay at Boutique'}</p>
+                           <p className="text-gold m-0" style={{ fontSize: '0.85rem' }}>Secure Transaction</p>
+                        </div>
+                     </div>
+                  </div>
+
+                  <button className="btn-gold-action w-100 py-4 shadow-lg" onClick={handlePlaceOrder} disabled={loading}>
+                    {loading ? <span className="spinner-border spinner-border-sm"></span> : 'Place Absolute Order'}
+                  </button>
+                  
+                  <div className="mt-4 text-center">
+                    <button className="btn p-0 text-t3 text-uppercase tracking-widest" style={{ fontSize: '0.65rem' }} onClick={() => setCurrentStep('payment')}>Modify Selection</button>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
 
-          {/* Right Column */}
-          <div className="col-12 col-lg-5">
-            <div className="summary-card">
-              <h2 className="section-label" style={{ marginBottom: '28px' }}>SUMMARY</h2>
-              
-              <div className="items-list">
-                {items.map((item) => (
-                  <div key={item.id} className="item-row">
-                    <div className="item-thumb">
-                      <img src={item.imageGallery[0]} alt={item.name} />
-                    </div>
-                    <div className="flex-grow-1">
-                      <div className="item-name">{item.name}</div>
-                      <div className="item-price-row">
-                        ₹{(item.dealPrice || item.price).toLocaleString()} × {item.qty}
-                      </div>
-                    </div>
-                    <div className="item-subtotal">
-                      ₹{((item.dealPrice || item.price) * item.qty).toLocaleString()}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div style={{ borderTop: '1px solid #1e1e1e', marginBottom: '24px' }}></div>
-
+          {/* Sidebar Summary */}
+          <div className="col-12 col-lg-4">
+            <div className="summary-box position-sticky" style={{ top: '100px' }}>
               <div className="d-flex justify-content-between align-items-center mb-4">
-                <span style={{ fontWeight: 600, color: '#F0EDE8', fontSize: '1rem' }}>Total Amount</span>
-                <span className="total-amount">₹{totalPrice().toLocaleString('en-IN')}</span>
+                <h3 className="section-label m-0">Consolidated Summary</h3>
+                <button className="btn p-0 text-gold" onClick={() => setShowSummary(!showSummary)}>
+                   {showSummary ? <HiOutlineChevronUp size={20} /> : <HiOutlineChevronDown size={20} />}
+                </button>
               </div>
 
-              <button 
-                className="place-order-btn" 
-                onClick={handlePlaceOrder}
-                disabled={loading}
-              >
-                {loading ? (
-                  <span className="spinner-border spinner-border-sm text-dark"></span>
-                ) : (
-                  method === 'online' ? 'Pay & Place Your Order' : 'Confirm Reservation'
+              <AnimatePresence>
+                {showSummary && (
+                  <motion.div 
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden mb-4 pb-4 border-bottom border-border border-opacity-25"
+                  >
+                    {items.map(item => (
+                      <div key={item.id} className="d-flex justify-content-between mb-3">
+                        <span className="text-t3 text-truncate flex-grow-1 me-3" style={{ fontSize: '0.85rem' }}>{item.name} × {item.qty}</span>
+                        <span className="text-t1 font-mono" style={{ fontSize: '0.85rem' }}>₹{((item.dealPrice || item.price) * item.qty).toLocaleString()}</span>
+                      </div>
+                    ))}
+                  </motion.div>
                 )}
-              </button>
+              </AnimatePresence>
 
-              <div className="security-note">
-                Every transaction is protected <br />
-                by institutional-grade encryption.
+              <div className="d-flex flex-column gap-3 mb-4">
+                <div className="d-flex justify-content-between align-items-center">
+                  <span className="text-t2">Subtotal</span>
+                  <span className="text-white font-mono">₹{subtotal.toLocaleString()}</span>
+                </div>
+                {appliedCoupon && (
+                  <div className="d-flex justify-content-between align-items-center text-success">
+                    <span>Discount ({appliedCoupon.code})</span>
+                    <span className="font-mono">- ₹{discountAmount.toLocaleString()}</span>
+                  </div>
+                )}
+                <div className="d-flex justify-content-between align-items-center">
+                  <span className="text-t2">Shipping & Handling</span>
+                  <span className="text-success font-mono">COMPLIMENTARY</span>
+                </div>
+              </div>
+
+              {/* Promo Code Input */}
+              <div className="mb-4">
+                <div className="position-relative">
+                  <input 
+                    type="text" 
+                    placeholder="ENTER PROMO CODE" 
+                    className="form-input ps-3 text-uppercase" 
+                    style={{ fontSize: '0.75rem', letterSpacing: '0.1em' }}
+                    value={promoCode}
+                    onChange={e => setPromoCode(e.target.value)}
+                  />
+                  <button onClick={handleApplyPromo} className="position-absolute end-0 top-50 translate-middle-y me-3 btn p-0 text-gold fw-bold" style={{ fontSize: '0.7rem' }}>APPLY</button>
+                </div>
+              </div>
+
+              <div className="d-flex justify-content-between align-items-end pt-3 border-top border-border">
+                <span className="section-label m-0">Final Consideration</span>
+                <span className="h2 text-gold font-mono fw-bold m-0">₹{finalTotal.toLocaleString()}</span>
+              </div>
+
+              <div className="mt-5 pt-4">
+                 <div className="d-flex justify-content-around mb-4 opacity-40 grayscale-all">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/UPI-Logo-vector.svg" height="14" alt="UPI" />
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/2/24/Visa.svg" height="12" alt="Visa" />
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/b/b7/MasterCard_Logo.svg" height="14" alt="Mastercard" />
+                 </div>
+                 <div className="d-flex align-items-center justify-content-center gap-2 text-t3" style={{ fontSize: '0.65rem' }}>
+                    <HiOutlineShieldCheck size={14} className="text-gold" />
+                    <span className="text-uppercase tracking-widest">Instituional Encryption Active</span>
+                 </div>
               </div>
             </div>
           </div>
