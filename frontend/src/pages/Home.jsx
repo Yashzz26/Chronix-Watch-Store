@@ -1,16 +1,21 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { 
   HiArrowRight, 
-  HiOutlineTicket, 
-  HiOutlineClock, 
   HiOutlineShieldCheck, 
   HiOutlineTruck,
-  HiOutlineShoppingCart
-} from 'react-icons/hi';
+  HiOutlineShoppingCart,
+  HiStar,
+  HiOutlineCheckBadge,
+  HiOutlineSparkles,
+  HiOutlineGlobeAlt,
+  HiOutlineClock,
+  HiOutlineRocketLaunch,
+  HiOutlineChatBubbleLeftRight,
+  HiOutlineArrowUpRight
+} from 'react-icons/hi2';
 import { products, getDealProduct, categories } from '../data/products';
-import DealBanner from '../components/product/DealBanner';
 import SkeletonCard from '../components/ui/SkeletonCard';
 import useCartStore from '../store/cartStore';
 import toast from 'react-hot-toast';
@@ -18,276 +23,86 @@ import toast from 'react-hot-toast';
 export default function Home() {
   const [searchParams, setSearchParams] = useSearchParams();
   const addItem = useCartStore((s) => s.addItem);
-
-  // States
   const category = searchParams.get('cat') || 'All';
   const sort = searchParams.get('sort') || 'default';
   const [loading, setLoading] = useState(true);
+  
+  const heroRef = useRef(null);
+  const { scrollYProgress } = useScroll({ target: heroRef });
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.4], [1, 0]);
+  const heroScale = useTransform(scrollYProgress, [0, 0.4], [1, 0.95]);
 
-  // Constants
   const dealProduct = getDealProduct();
-  const heroProduct = products[2]; // G-Shock GA2100
+  const heroProduct = products[2]; // G-Shock GA2100 - High Detail choice
 
-  // Filter and Sort Logic
   const filteredProducts = useMemo(() => {
     let result = [...products];
-
-    // Category Filter
-    if (category !== 'All') {
-      result = result.filter(p => p.category === category);
-    }
-
-    // Sorting
-    if (sort === 'price-low') {
-      result.sort((a, b) => (a.dealPrice || a.price) - (b.dealPrice || b.price));
-    } else if (sort === 'price-high') {
-      result.sort((a, b) => (b.dealPrice || b.price) - (a.dealPrice || a.price));
-    }
-
+    if (category !== 'All') result = result.filter(p => p.category === category);
+    if (sort === 'price-low') result.sort((a, b) => (a.dealPrice || a.price) - (b.dealPrice || b.price));
+    else if (sort === 'price-high') result.sort((a, b) => (b.dealPrice || b.price) - (a.dealPrice || a.price));
     return result;
   }, [category, sort]);
 
-  // Loading effect on filter change
   useEffect(() => {
     setLoading(true);
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 500);
+    const timer = setTimeout(() => setLoading(false), 500);
     return () => clearTimeout(timer);
   }, [category, sort]);
 
-  const handleCategoryChange = (cat) => {
-    setSearchParams({ cat, sort });
-  };
-
-  const handleSortChange = (newSort) => {
-    setSearchParams({ cat: category, sort: newSort });
-  };
-
   return (
-    <div className="home-container">
+    <div className="home-luxury">
       <style>{`
-        .home-container {
-          background: #080808;
-          color: #F0EDE8;
-          min-height: 100vh;
-          font-family: 'DM Sans', sans-serif;
-        }
+        .home-luxury { background: #070707; color: #F0EDE8; font-family: 'DM Sans', sans-serif; overflow-x: hidden; }
+        
+        /* --- 1. HERO --- */
+        .hero-cinema { min-height: 95vh; display: flex; align-items: center; position: relative; overflow: hidden; background: radial-gradient(circle at 75% 50%, rgba(212,175,55,0.08) 0%, transparent 50%); }
+        .hero-glow { position: absolute; top: 50%; right: 10%; width: 500px; height: 500px; background: radial-gradient(circle, rgba(212,175,55,0.12) 0%, transparent 70%); filter: blur(100px); pointer-events: none; z-index: 0; }
+        .hero-headline { font-family: 'Cormorant Garamond', serif; font-size: clamp(3.5rem, 8vw, 7.5rem); line-height: 1; letter-spacing: -0.03em; font-weight: 700; margin-bottom: 24px; }
+        .gold-reveal { background: linear-gradient(135deg, #D4AF37, #FBE08F); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero-sub { color: #8F8C88; max-width: 480px; font-size: 1.15rem; line-height: 1.8; margin-bottom: 45px; }
+        .btn-lux-primary { background: #D4AF37; color: #000; padding: 18px 45px; border-radius: 4px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.15em; font-size: 0.85rem; transition: all 0.4s; box-shadow: 0 10px 30px rgba(212,175,55,0.2); border: none; text-decoration: none; }
+        .btn-lux-primary:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 15px 40px rgba(212,175,55,0.4); background: #F0D060; color: #000; }
+        .hero-reflection { position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%) rotateX(60deg); width: 80%; height: 50px; background: radial-gradient(ellipse at center, rgba(212,175,55,0.15) 0%, transparent 70%); filter: blur(20px); pointer-events: none; }
+        
+        /* --- 2. STORY STRIP --- */
+        .story-strip { padding: 100px 0; border-bottom: 1px solid #161616; text-align: center; background: #090909; }
+        .section-label { font-size: 0.7rem; color: #D4AF37; text-transform: uppercase; letter-spacing: 0.4em; border-bottom: 1px solid rgba(212,175,55,0.3); display: inline-block; padding-bottom: 8px; margin-bottom: 24px; }
 
-        /* --- SECTION 1: HERO --- */
-        .hero-section {
-          min-height: 88vh;
-          display: flex;
-          align-items: center;
-          position: relative;
-          background: radial-gradient(ellipse 55% 70% at 68% 50%, rgba(212,175,55,0.07) 0%, transparent 65%);
-          overflow: hidden;
-        }
+        /* --- 3. CATEGORY CARDS --- */
+        .cat-card { position: relative; height: 420px; border-radius: 20px; overflow: hidden; background: #111; cursor: pointer; border: 1px solid #1e1e1e; transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+        .cat-card:hover { border-color: #D4AF37; transform: translateY(-10px); }
+        .cat-img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.8s; opacity: 0.6; }
+        .cat-card:hover .cat-img { transform: scale(1.1); opacity: 0.8; }
+        .cat-overlay { position: absolute; inset: 0; background: linear-gradient(transparent 30%, rgba(0,0,0,0.9)); display: flex; flex-direction: column; justify-content: flex-end; padding: 40px; }
+        .cat-title { font-family: 'Cormorant Garamond', serif; font-size: 2.5rem; color: #fff; transform: translateY(10px); transition: all 0.4s; }
+        .cat-card:hover .cat-title { transform: translateY(0); color: #D4AF37; }
 
-        .hero-section::before {
-          content: "";
-          position: absolute;
-          inset: 0;
-          background-image: url("https://grains.com/noise.png"); /* Placeholder for grain, using opacity instead */
-          background-color: #ffffff;
-          opacity: 0.025;
-          pointer-events: none;
-          z-index: 1;
-        }
+        /* --- 4. PRODUCT CARD V2 --- */
+        .product-v2 { background: #0F0F0F; border: 1px solid #1a1a1a; border-radius: 16px; overflow: hidden; transition: all 0.4s ease; height: 100%; position: relative; }
+        .product-v2:hover { border-color: rgba(212,175,55,0.4); transform: translateY(-5px); box-shadow: 0 25px 50px rgba(0,0,0,0.5); }
+        .pv2-image-box { aspect-ratio: 1; background: radial-gradient(circle at center, #1b1b1b, #0f0f0f); display: flex; align-items: center; justify-content: center; padding: 30px; position: relative; overflow: hidden; }
+        .pv2-img { max-width: 90%; max-height: 90%; object-fit: contain; transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+        .product-v2:hover .pv2-img { transform: scale(1.1) rotate(-3deg); }
+        .pv2-badge { position: absolute; top: 15px; left: 15px; font-size: 0.6rem; font-weight: 800; background: #D4AF37; color: #000; padding: 5px 10px; border-radius: 4px; text-transform: uppercase; z-index: 5; }
+        .pv2-quick { position: absolute; bottom: 0; left: 0; right: 0; background: #D4AF37; color: #000; font-size: 0.75rem; font-weight: 700; padding: 12px; transform: translateY(100%); transition: all 0.3s; text-align: center; text-decoration: none; border: none; cursor: pointer; }
+        .product-v2:hover .pv2-quick { transform: translateY(0); }
 
-        .hero-eyebrow {
-          display: inline-flex;
-          align-items: center;
-          gap: 12px;
-          font-size: 0.65rem;
-          color: #D4AF37;
-          letter-spacing: 0.3em;
-          text-transform: uppercase;
-          margin-bottom: 20px;
-        }
+        /* --- 5. BANNER --- */
+        .featured-banner { height: 500px; background: linear-gradient(to right, #000, transparent), url('https://images.unsplash.com/photo-1547996160-81dfa63595aa?q=80&w=2574&auto=format&fit=crop'); background-size: cover; background-position: center; border-radius: 24px; display: flex; align-items: center; padding: 80px; position: relative; overflow: hidden; }
+        
+        /* --- 6. WHY CHOOSE --- */
+        .why-box { background: #111; border: 1px solid #1e1e1e; padding: 40px; border-radius: 20px; text-align: center; height: 100%; transition: 0.3s; }
+        .why-box:hover { border-color: #D4AF37; transform: translateY(-5px); }
+        .why-icon { color: #D4AF37; margin-bottom: 25px; }
 
-        .hero-eyebrow-line {
-          display: inline-block;
-          width: 24px;
-          height: 1px;
-          background: #D4AF37;
-        }
+        /* --- 7. TESTIMONIALS --- */
+        .review-card { background: #0F0F0F; padding: 40px; border-radius: 24px; border: 1px solid #1e1e1e; position: relative; }
+        .quote-icon { position: absolute; top: 20px; right: 30px; opacity: 0.05; font-size: 4rem; color: #D4AF37; }
 
-        .hero-headline {
-          font-family: 'Cormorant Garamond', serif;
-          font-weight: 400;
-          font-size: clamp(3.2rem, 7vw, 6.5rem);
-          line-height: 1.02;
-          color: #F0EDE8;
-          letter-spacing: -0.02em;
-          margin-bottom: 24px;
-        }
-
-        .hero-headline em {
-          font-style: italic;
-          color: #D4AF37;
-        }
-
-        .hero-subheading {
-          font-size: 1.1rem;
-          color: #9A9690;
-          max-width: 460px;
-          line-height: 1.75;
-          margin-bottom: 40px;
-        }
-
-        .btn-primary-gold {
-          background: #D4AF37;
-          color: #000;
-          font-weight: 700;
-          padding: 14px 32px;
-          border-radius: 6px;
-          font-size: 0.9rem;
-          border: none;
-          text-decoration: none;
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          transition: all 0.25s ease;
-        }
-
-        .btn-primary-gold:hover {
-          background: #F0D060;
-          transform: translateY(-1px);
-          box-shadow: 0 8px 24px rgba(212,175,55,0.2);
-          color: #000;
-        }
-
-        .btn-outline-gold {
-          background: transparent;
-          color: #D4AF37;
-          border: 2px solid rgba(212,175,55,0.4);
-          padding: 12px 28px;
-          border-radius: 6px;
-          font-size: 0.9rem;
-          text-decoration: none;
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          transition: all 0.25s ease;
-        }
-
-        .btn-outline-gold:hover {
-          border-color: #D4AF37;
-          background: rgba(212, 175, 55, 0.06);
-          color: #D4AF37;
-        }
-
-        .trust-badge {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 0.78rem;
-          color: #5A5652;
-          text-transform: uppercase;
-          letter-spacing: 0.08em;
-        }
-
-        .hero-right {
-          position: relative;
-          display: none;
-        }
-
-        @media (min-width: 992px) {
-          .hero-right {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-          }
-        }
-
-        .hero-blob {
-          position: absolute;
-          width: 380px;
-          height: 380px;
-          border-radius: 50%;
-          background: rgba(212,175,55,0.07);
-          filter: blur(80px);
-          z-index: 0;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-        }
-
-        .hero-img {
-          width: 100%;
-          max-width: 360px;
-          position: relative;
-          z-index: 1;
-          filter: drop-shadow(0 30px 60px rgba(0,0,0,0.85));
-        }
-
-        .floating-badge {
-          position: absolute;
-          top: 16px;
-          right: 16px;
-          z-index: 2;
-          background: #D4AF37;
-          color: #000;
-          border-radius: 50%;
-          width: 72px;
-          height: 72px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          font-family: 'DM Mono', monospace;
-          box-shadow: 0 8px 24px rgba(212,175,55,0.35);
-        }
-
-        /* --- SECTION 2: DEAL BANNER --- */
-        .deal-banner-wrapper {
-          margin-bottom: 80px;
-          position: relative;
-          border-radius: 16px;
-          overflow: hidden;
-          border: 1px solid rgba(212,175,55,0.12);
-        }
-
-        .shimmer-line {
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          height: 2px;
-          background: linear-gradient(90deg, transparent, #D4AF37, transparent);
-          opacity: 0.6;
-          z-index: 10;
-        }
-
-        /* --- SECTION 3: COLLECTION HEADER --- */
-        .collection-title {
-          font-family: 'Cormorant Garamond', serif;
-          font-size: clamp(1.8rem, 4vw, 3rem);
-          font-weight: 400;
-          color: #F0EDE8;
-          margin-bottom: 4px;
-        }
-
-        .collection-count {
-          font-size: 0.85rem;
-          color: #5A5652;
-        }
-
-        .sort-select {
-          background: #0f0f0f;
-          border: 1px solid #1e1e1e;
-          color: #9A9690;
-          padding: 8px 36px 8px 14px;
-          border-radius: 6px;
-          font-size: 0.85rem;
-          cursor: pointer;
-          appearance: none;
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%235A5652'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
-          background-repeat: no-repeat;
-          background-position: right 12px center;
-          background-size: 16px;
-        }
+        /* --- 8. URGENCY --- */
+        .urgency-strip { background: #111; padding: 20px 0; border-top: 1px solid #1e1e1e; border-bottom: 1px solid #1e1e1e; }
+        .scrolling-text { white-space: nowrap; animation: scroll 40s linear infinite; display: flex; gap: 60px; }
+        @keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
         .pill-btn {
           padding: 8px 20px;
@@ -301,460 +116,291 @@ export default function Home() {
           white-space: nowrap;
         }
 
-        .pill-btn:hover {
-          border-color: #3a3a3a;
-        }
+        .pill-btn:hover { border-color: #3a3a3a; }
+        .pill-btn.active { background: #D4AF37; color: #000; font-weight: 700; border-color: transparent; }
 
-        .pill-btn.active {
-          background: #D4AF37;
-          color: #000;
-          font-weight: 700;
-          border-color: transparent;
-        }
-
-        /* --- SECTION 4: PRODUCT GRID --- */
-        .product-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-          gap: 24px;
-        }
-
-        /* --- PRODUCT CARD --- */
-        .product-card {
-          background: #0f0f0f;
-          border: 1px solid #1e1e1e;
-          border-radius: 12px;
-          overflow: hidden;
-          display: flex;
-          flex-direction: column;
-          transition: all 0.3s ease;
-        }
-
-        .product-card:hover {
-          border-color: rgba(212, 175, 55, 0.3);
-          transform: translateY(-5px);
-          box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-        }
-
-        .pc-image-area {
-          aspect-ratio: 1/1;
-          background: #161616;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          overflow: hidden;
-          padding: 24px;
-          position: relative;
-        }
-
-        .pc-img {
-          max-width: 100%;
-          max-height: 100%;
-          object-fit: contain;
-          transition: transform 0.5s ease;
-        }
-
-        .product-card:hover .pc-img {
-          transform: scale(1.06);
-        }
-
-        .deal-badge {
-          position: absolute;
-          top: 12px;
-          left: 12px;
-          background: #D4AF37;
-          color: #000;
-          font-size: 0.6rem;
-          font-weight: 700;
-          padding: 4px 8px;
-          border-radius: 4px;
-          text-transform: uppercase;
-        }
-
-        .pc-info {
-          padding: 20px;
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-        }
-
-        .pc-category {
-          font-size: 0.6rem;
-          color: #D4AF37;
-          text-transform: uppercase;
-          letter-spacing: 0.2em;
-        }
-
-        .pc-name {
-          font-family: 'Cormorant Garamond', serif;
-          font-size: 1.2rem;
-          color: #F0EDE8;
-          line-height: 1.3;
-        }
-
-        .pc-price-row {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-
-        .pc-price-current {
-          font-family: 'DM Mono', monospace;
-          color: #D4AF37;
-          font-weight: 500;
-          font-size: 1rem;
-        }
-
-        .pc-price-old {
-          font-family: 'DM Mono', monospace;
-          color: #5A5652;
-          text-decoration: line-through;
-          font-size: 0.85rem;
-        }
-
-        .pc-button-row {
-          margin-top: auto;
-          padding-top: 16px;
-          display: flex;
-          gap: 8px;
-        }
-
-        .pc-add-btn {
-          flex-grow: 1;
-          background: transparent;
-          border: 1px solid #1e1e1e;
-          border-radius: 6px;
-          color: #9A9690;
-          font-size: 0.8rem;
-          padding: 10px 0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 6px;
-          transition: all 0.2s ease;
-          cursor: pointer;
-        }
-
-        .pc-add-btn:hover {
-          border-color: #D4AF37;
-          color: #D4AF37;
-          background: rgba(212, 175, 55, 0.04);
-        }
-
-        .pc-arrow-btn {
-          width: 40px;
-          height: 40px;
-          border: 1px solid #1e1e1e;
-          border-radius: 6px;
-          background: transparent;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: all 0.2s ease;
-          color: #9A9690;
-          text-decoration: none;
-        }
-
-        .pc-arrow-btn:hover {
-          border-color: #D4AF37;
-          color: #D4AF37;
-        }
-
-        .empty-state {
-          text-align: center;
-          padding-top: 80px;
-        }
-
-        .empty-state h3 {
-          font-family: 'Cormorant Garamond', serif;
-          font-style: italic;
-          color: #F0EDE8;
-          font-weight: 400;
-        }
-
-        .reset-btn {
-          color: #D4AF37;
-          background: none;
-          border: none;
-          font-size: 0.875rem;
-          cursor: pointer;
-          margin-top: 12px;
-        }
+        .hover-gold:hover { color: #D4AF37 !important; }
       `}</style>
 
-      {/* SECTION 1: HERO */}
-      <section className="hero-section">
-        <div className="container">
+      {/* 1. HERO SECTION */}
+      <section className="hero-cinema" ref={heroRef}>
+        <div className="hero-glow" />
+        <div className="container position-relative" style={{ zIndex: 1 }}>
           <div className="row align-items-center">
-            {/* Left Column */}
             <div className="col-12 col-lg-7">
-              <motion.div 
-                className="hero-eyebrow"
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-              >
-                <span className="hero-eyebrow-line"></span>
-                SINCE 2024 · PRECISION HOROLOGY
-              </motion.div>
-
-              <motion.h1 
-                className="hero-headline"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-              >
-                Time is the only true <em>luxury.</em>
-              </motion.h1>
-
-              <motion.p 
-                className="hero-subheading"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
-              >
-                Curated timepieces for those who understand that precision is an art form.
-              </motion.p>
-
-              <motion.div 
-                className="d-flex flex-wrap gap-3 mb-5"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
-              >
-                <Link to="/allcollection" className="btn-primary-gold">
-                  Explore Collection <HiArrowRight size={18} />
-                </Link>
-              </motion.div>
-
-              <motion.div 
-                className="d-flex flex-wrap gap-4 mt-5"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.45, ease: [0.16, 1, 0.3, 1] }}
-              >
-                <div className="trust-badge">
-                  <HiOutlineClock size={16} color="#D4AF37" /> 120+ PIECES
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
+                <span className="section-label">Institutional Precision</span>
+                <h1 className="hero-headline text-white">
+                  Crafting Timeless <br /> 
+                  <span className="gold-reveal">Horological Art</span>
+                </h1>
+                <p className="hero-sub">
+                  An elite selection of curated instruments for the modern connoisseur. Engineered for those who understand that perfection is the only standard.
+                </p>
+                <div className="d-flex gap-4 align-items-center mb-5">
+                   <Link to="/allcollection" className="btn-lux-primary shadow-lg d-inline-flex align-items-center gap-2">
+                     Acquire Now <HiArrowRight />
+                   </Link>
+                   <Link to="/allcollection" className="text-white text-decoration-none fw-bold small tracking-widest uppercase hover-gold transition-all">
+                     Our Heritage
+                   </Link>
                 </div>
-                <div className="trust-badge">
-                  <HiOutlineShieldCheck size={16} color="#D4AF37" /> 2-YEAR WARRANTY
-                </div>
-                <div className="trust-badge">
-                  <HiOutlineTruck size={16} color="#D4AF37" /> FREE SHIPPING
+                
+                <div className="d-flex gap-5 pt-4">
+                  <div className="d-flex align-items-center gap-2 small text-t3 uppercase tracking-widest">
+                    <HiStar className="text-gold" /> Trusted by 10k+
+                  </div>
+                  <div className="d-flex align-items-center gap-2 small text-t3 uppercase tracking-widest">
+                    <HiOutlineShieldCheck className="text-gold" /> 2-Year Warranty
+                  </div>
+                  <div className="d-flex align-items-center gap-2 small text-t3 uppercase tracking-widest">
+                    <HiOutlineTruck className="text-gold" /> Free Shipping
+                  </div>
                 </div>
               </motion.div>
             </div>
-
-            {/* Right Column */}
-            <div className="col-12 col-lg-5 hero-right">
-              <div className="hero-blob"></div>
-              {heroProduct && (
-                <motion.div
-                  className="position-relative"
-                  initial={{ opacity: 0, x: 30 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                >
-                  <img src={heroProduct.imageGallery[0]} alt={heroProduct.name} className="hero-img" />
-                  <div className="floating-badge">
-                    <span style={{ fontSize: '0.6rem', marginBottom: '2px' }}>SAVE</span>
-                    <span style={{ fontSize: '1.4rem', fontWeight: 700 }}>93%</span>
-                  </div>
-                </motion.div>
-              )}
+            
+            <div className="col-12 col-lg-5 d-none d-lg-block">
+               <motion.div 
+                 style={{ opacity: heroOpacity, scale: heroScale }}
+                 initial={{ opacity: 0, x: 50 }}
+                 animate={{ opacity: 1, x: 0 }}
+                 transition={{ duration: 1, delay: 0.2 }}
+                 className="position-relative text-center"
+               >
+                 <motion.img 
+                   animate={{ y: [0, -20, 0] }}
+                   transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                   src={heroProduct.imageGallery[0]} 
+                   className="img-fluid position-relative z-1" 
+                   style={{ maxWidth: '420px', filter: 'drop-shadow(0 50px 100px rgba(0,0,0,0.9))' }} 
+                   alt="" 
+                 />
+                 <div className="hero-reflection" />
+               </motion.div>
             </div>
           </div>
         </div>
       </section>
 
-      <div className="container py-5">
+      {/* 2. BRAND STORY STRIP */}
+      <section className="story-strip">
+         <div className="container">
+            <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>
+               <span className="section-label">Foundations of Chronix</span>
+               <h2 className="font-display display-3 text-white mb-4">Established in Absolute <span className="text-gold">Excellence</span></h2>
+               <p className="text-t2 lead mx-auto" style={{ maxWidth: 700, lineHeight: 2 }}>
+                  Since 2024, Chronix has been the sanctuary for horology enthusiasts. We don't just sell watches; we archive moments of engineering brilliance. Every piece in our collection is a testament to the fact that time is the ultimate luxury.
+               </p>
+            </motion.div>
+         </div>
+      </section>
 
-        {/* SECTION 3: GIFT BOXES (Replaces Collection Header) */}
-        <div className="row g-4 mb-5">
-          <div className="col-12 col-md-6">
-            <Link to="/giftsforhim" className="gift-box" style={{
-              height: '340px',
-              background: 'linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.8)), url("https://images.unsplash.com/photo-1547996160-81dfa63595aa?q=80&w=1000&auto=format&fit=crop")',
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              borderRadius: '16px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'flex-end',
-              padding: '40px',
-              textDecoration: 'none',
-              border: '1px solid var(--border)',
-              transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
-            }}>
-              <style>{`
-                .gift-box:hover {
-                  transform: translateY(-8px);
-                  border-color: var(--gold);
-                  box-shadow: 0 20px 40px rgba(0,0,0,0.5);
-                }
-                .gift-box h2 {
-                  font-family: 'Cormorant Garamond', serif;
-                  font-size: 2.5rem;
-                  color: #fff;
-                  margin-bottom: 8px;
-                }
-                .gift-box p {
-                  color: var(--gold);
-                  font-weight: 600;
-                  letter-spacing: 0.1em;
-                  text-transform: uppercase;
-                  font-size: 0.8rem;
-                  display: flex;
-                  align-items: center;
-                  gap: 8px;
-                }
-              `}</style>
-              <h2>Gifts for Him</h2>
-              <p>Explore Masculine Precision <HiArrowRight /></p>
-            </Link>
-          </div>
-          <div className="col-12 col-md-6">
-            <Link to="/giftsforher" className="gift-box" style={{
-              height: '340px',
-              background: 'linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.8)), url("https://images.unsplash.com/photo-1542496658-e33a6d0d50f6?q=80&w=1000&auto=format&fit=crop")',
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              borderRadius: '16px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'flex-end',
-              padding: '40px',
-              textDecoration: 'none',
-              border: '1px solid var(--border)',
-              transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
-            }}>
-              <h2>Gifts for Her</h2>
-              <p>Discover Eternal Elegance <HiArrowRight /></p>
-            </Link>
-          </div>
-        </div>
+      {/* 3. CATEGORY CARDS */}
+      <section className="py-5 bg-black">
+         <div className="container py-5">
+            <div className="row g-4">
+               {[
+                 { title: 'Gifts for Him', img: 'https://images.unsplash.com/photo-1547996160-81dfa63595aa?q=80&w=1000&auto=format&fit=crop', link: '/giftsforhim', label: 'Masculine Precision' },
+                 { title: 'Gifts for Her', img: 'https://images.unsplash.com/photo-1542496658-e33a6d0d50f6?q=80&w=1000&auto=format&fit=crop', link: '/giftsforher', label: 'Eternal Elegance' },
+                 { title: 'New Arrivals', img: 'https://images.unsplash.com/photo-1614164185128-e4ec99c436d7?q=80&w=1000&auto=format&fit=crop', link: '/allcollection', label: '2024 Collection' }
+               ].map((c, i) => (
+                 <div key={i} className="col-12 col-md-4">
+                    <Link to={c.link} className="text-decoration-none">
+                       <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: i*0.1 }} className="cat-card">
+                          <img src={c.img} className="cat-img" alt="" />
+                          <div className="cat-overlay">
+                             <span className="text-gold x-small uppercase tracking-widest mb-2">{c.label}</span>
+                             <h3 className="cat-title">{c.title}</h3>
+                             <div className="mt-3 text-white-50 x-small d-flex align-items-center gap-2 opacity-0 hover-opacity-100 transition-all">
+                                EXPLORE <HiArrowRight />
+                             </div>
+                          </div>
+                       </motion.div>
+                    </Link>
+                 </div>
+               ))}
+            </div>
+         </div>
+      </section>
 
-        {/* New Minimal Header for the rest of collection */}
-        <div className="row align-items-end justify-content-between mb-4 gy-4">
-          <div className="col-12 col-md-auto">
-            <h2 className="collection-title">Curated Selection</h2>
-            <p className="collection-count">
-              Showing <span style={{ color: '#F0EDE8' }}>{filteredProducts.length}</span> exceptional timepieces
-            </p>
-          </div>
-          <div className="col-12 col-md-auto">
-            <select 
-              className="sort-select" 
-              value={sort}
-              onChange={(e) => handleSortChange(e.target.value)}
-            >
-              <option value="default">Relevance</option>
-              <option value="price-low">Price: Low–High</option>
-              <option value="price-high">Price: High–Low</option>
-            </select>
-          </div>
-        </div>
+      {/* 4. CURATED COLLECTION */}
+      <section className="py-5">
+         <div className="container py-5">
+            <div className="d-flex justify-content-between align-items-end mb-5">
+               <div>
+                  <span className="section-label">Curated Portfolio</span>
+                  <h2 className="font-display display-5 text-white m-0">Institutional Selection</h2>
+               </div>
+               <div className="d-flex gap-4">
+                  <div className="d-flex gap-2 bg-s2 p-1 rounded-pill border border-border">
+                     {['All', 'Analog', 'Luxury'].map(cat => (
+                       <button 
+                         key={cat} 
+                         className={`pill-btn ${category === cat ? 'active' : ''}`}
+                         onClick={() => setSearchParams({ cat, sort })}
+                       >
+                         {cat}
+                       </button>
+                     ))}
+                  </div>
+               </div>
+            </div>
 
-        <div className="d-flex gap-2 overflow-auto pb-4 mb-5 no-scrollbar">
-          {['All', 'Analog', 'Smart Watch', 'Luxury'].map((cat) => (
-            <button
-              key={cat}
-              className={`pill-btn ${category === cat ? 'active' : ''}`}
-              onClick={() => handleCategoryChange(cat)}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
+            <div className="row g-4">
+               <AnimatePresence mode="wait">
+                  {loading ? (
+                    Array(8).fill(0).map((_, i) => <div className="col-6 col-lg-3" key={i}><SkeletonCard /></div>)
+                  ) : filteredProducts.length > 0 ? (
+                    filteredProducts.slice(0, 8).map((p, i) => (
+                      <div className="col-6 col-lg-3" key={p.id}>
+                         <ProductCardV2 product={p} index={i} addItem={addItem} />
+                      </div>
+                    ))
+                  ) : (
+                    <div className="col-12 py-5 text-center opacity-30">No instruments recorded for this criteria.</div>
+                  )}
+               </AnimatePresence>
+            </div>
+            
+            <div className="text-center mt-5 pt-4">
+               <Link to="/allcollection" className="text-gold text-decoration-none fw-bold tracking-widest uppercase small d-inline-flex align-items-center gap-3">
+                 View Full Archive <HiArrowRight />
+               </Link>
+            </div>
+         </div>
+      </section>
 
-        {/* SECTION 4: PRODUCT GRID */}
-        <div className="product-grid">
-          <AnimatePresence mode="wait">
-            {loading ? (
-              Array(6).fill(0).map((_, i) => (
-                <SkeletonCard key={i} />
-              ))
-            ) : filteredProducts.length > 0 ? (
-              filteredProducts.slice(0, 6).map((p, idx) => (
-                <ProductCard key={p.id} product={p} index={idx} addItem={addItem} />
-              ))
-            ) : (
-              <div className="grid-span-full">
-                <motion.div 
-                  className="empty-state"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                >
-                  <h3>No timepieces match your selection.</h3>
-                  <button className="reset-btn" onClick={() => handleCategoryChange('All')}>Reset filters</button>
-                </motion.div>
-              </div>
-            )}
-          </AnimatePresence>
-        </div>
+      {/* 5. FEATURED BANNER */}
+      <section className="container py-5">
+         <motion.div initial={{ opacity: 0, scale: 0.98 }} whileInView={{ opacity: 1, scale: 1 }} className="featured-banner">
+            <div className="position-relative z-1" style={{ maxWidth: 500 }}>
+               <span className="section-label">Highlight</span>
+               <h2 className="display-3 font-display text-white mb-4">The Analog <span className="text-gold">Sovereign</span></h2>
+               <p className="text-t2 mb-5 lead">
+                  A masterpiece of mechanical complexity and aesthetic simplicity. Now available in the Chronix Vault.
+               </p>
+               <Link to="/product/1" className="btn-lux-primary d-inline-block">Discover Sovereign</Link>
+            </div>
+         </motion.div>
+      </section>
 
-        {filteredProducts.length > 6 && (
-          <div className="text-center mt-5 pt-3">
-             <Link to="/allcollection" className="btn-outline-gold px-5 py-3">
-                Explore Full Collection <HiArrowRight className="ms-2" />
-             </Link>
-          </div>
-        )}
-      </div>
+      {/* 6. WHY CHOOSE CHRONIX */}
+      <section className="py-5 bg-black">
+         <div className="container py-5">
+            <div className="text-center mb-5 pb-4">
+               <span className="section-label">The Standard</span>
+               <h2 className="font-display display-5 text-white">Why Chronix?</h2>
+            </div>
+            <div className="row g-4">
+               {[
+                 { icon: <HiOutlineSparkles size={40} />, title: 'Pure Engineering', text: 'Calibrated movements that define industry accuracy.' },
+                 { icon: <HiOutlineCheckBadge size={40} />, title: 'Certified Authenthic', text: 'Every instrument is verified by our in-house masters.' },
+                 { icon: <HiOutlineGlobeAlt size={40} />, title: 'Global Heritage', text: 'Sourcing the finest materials from around the world.' },
+                 { icon: <HiOutlineRocketLaunch size={40} />, title: 'Priority Logistics', text: 'White-glove delivery straight to your trunk.' }
+               ].map((it, i) => (
+                 <div key={i} className="col-6 col-lg-3">
+                    <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: i*0.1 }} className="why-box">
+                       <div className="why-icon">{it.icon}</div>
+                       <h3 className="text-white h5 mb-3">{it.title}</h3>
+                       <p className="text-t3 mb-0 small">{it.text}</p>
+                    </motion.div>
+                 </div>
+               ))}
+            </div>
+         </div>
+      </section>
+
+      {/* 7. SOCIAL PROOF / TESTIMONIALS */}
+      <section className="py-5">
+         <div className="container py-5">
+            <div className="row g-5 align-items-center">
+               <div className="col-12 col-lg-4">
+                  <span className="section-label">Reputation</span>
+                  <h2 className="font-display display-4 text-white mb-4">Patron Stories</h2>
+                  <p className="text-t2">Join the league of 10,000+ collectors who have trusted Chronix with their most valuable asset: time.</p>
+                  <div className="d-flex text-gold gap-2 fs-2 mt-4">
+                     {[...Array(5)].map((_, i) => <HiStar key={i} />)}
+                  </div>
+               </div>
+               <div className="col-12 col-lg-8">
+                  <div className="row g-4">
+                     {[
+                       { name: 'Vikram Seth', role: 'Watch Collector', text: 'The attention to detail in the packaging alone was enough to tell me Chronix is different. The watch is a masterpiece.' },
+                       { name: 'Sarah Jones', role: 'Architect', text: 'Clean, minimal, and premium. Exactly what I was looking for in a daily driver. The service was impeccable.' }
+                     ].map((t, i) => (
+                       <div key={i} className="col-12 col-md-6">
+                          <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} transition={{ delay: i*0.2 }} className="review-card">
+                             <HiOutlineChatBubbleLeftRight className="quote-icon" />
+                             <p className="text-white italic fs-5 mb-5" style={{ lineHeight: 1.6 }}>"{t.text}"</p>
+                             <div className="d-flex align-items-center gap-3">
+                                <div className="rounded-circle bg-s2" style={{ width: 44, height: 44 }} />
+                                <div>
+                                   <div className="text-white fw-bold small">{t.name}</div>
+                                   <div className="text-gold x-small tracking-widest uppercase">{t.role}</div>
+                                </div>
+                             </div>
+                          </motion.div>
+                       </div>
+                     ))}
+                  </div>
+               </div>
+            </div>
+         </div>
+      </section>
+
+      {/* 8. URGENCY STRIP */}
+      <section className="urgency-strip mb-5 overflow-hidden">
+         <div className="scrolling-text">
+            {[...Array(10)].map((_, i) => (
+              <span key={i} className="text-white fw-bold tracking-widest uppercase small d-flex align-items-center gap-3">
+                 <HiOutlineSparkles className="text-gold" /> SEASONAL ACQUISITION EVENT · UP TO 20% OFF ALL ANALOG PIECES · SECURE YOUR LEGACY TODAY
+              </span>
+            ))}
+         </div>
+      </section>
+
     </div>
   );
 }
 
-// Internal ProductCard Component
-function ProductCard({ product, index, addItem }) {
+// PRODUCT CARD V2
+function ProductCardV2({ product, index, addItem }) {
   const handleAddToCart = (e) => {
     e.preventDefault();
     addItem(product);
-    toast.success(`${product.name} added to cart!`, {
-      style: {
-        background: '#0f0f0f',
-        color: '#F0EDE8',
-        border: '1px solid #1e1e1e',
-        fontSize: '0.85rem'
-      },
-      iconTheme: {
-        primary: '#D4AF37',
-        secondary: '#000',
-      },
+    toast.success(`${product.name} Archived`, {
+      style: { background: '#0f0f0f', color: '#F0EDE8', border: '1px solid #1e1e1e' }
     });
   };
 
   return (
     <motion.div 
-      className="product-card"
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      transition={{ duration: 0.5, delay: index * 0.08 }}
+      transition={{ delay: index * 0.1 }}
+      className="product-v2"
     >
-      <div className="pc-image-area">
-        {product.isOnDeal && <div className="deal-badge">Deal</div>}
-        <img src={product.imageGallery[0]} alt={product.name} className="pc-img" />
+      <div className="pv2-image-box">
+        {product.isOnDeal && <div className="pv2-badge">Deal of Day</div>}
+        {index < 2 && <div className="pv2-badge" style={{ left: 'auto', right: 15, background: '#000', color: '#D4AF37', border: '1px solid #D4AF37' }}>Limited</div>}
+        <img src={product.imageGallery[0]} alt={product.name} className="pv2-img" />
+        <button className="pv2-quick shadow-lg" onClick={handleAddToCart}>
+           SECURE IN TRUNK <HiOutlineShoppingCart className="ms-1" />
+        </button>
       </div>
-
-      <div className="pc-info">
-        <span className="pc-category">{product.category}</span>
-        <h3 className="pc-name">{product.name}</h3>
-        <div className="pc-price-row">
-          <span className="pc-price-current">₹{(product.dealPrice || product.price).toLocaleString()}</span>
-          {product.isOnDeal && (
-            <span className="pc-price-old">₹{product.price.toLocaleString()}</span>
-          )}
-        </div>
-
-        <div className="pc-button-row">
-          <button className="pc-add-btn" onClick={handleAddToCart}>
-            <HiOutlineShoppingCart size={15} /> Add
-          </button>
-          <Link to={`/product/${product.id}`} className="pc-arrow-btn">
-            <HiArrowRight size={16} />
-          </Link>
-        </div>
+      
+      <div className="p-4 d-flex flex-column gap-2 text-center">
+         <span className="text-gold x-small uppercase tracking-widest">{product.category}</span>
+         <h3 className="text-white h6 m-0 text-truncate font-display">{product.name}</h3>
+         <div className="d-flex align-items-center justify-content-center gap-2 font-mono">
+            <span className="text-white fw-bold">₹{(product.dealPrice || product.price).toLocaleString()}</span>
+            {product.isOnDeal && <span className="text-white-50 small text-decoration-line-through">₹{product.price.toLocaleString()}</span>}
+         </div>
+         <Link to={`/product/${product.id}`} className="mt-2 text-white-50 x-small text-decoration-none border-bottom border-white-10 d-inline-block mx-auto pb-1 hover-gold transition-all">
+            VIEW SPECIFICATIONS
+         </Link>
       </div>
     </motion.div>
   );
