@@ -65,12 +65,12 @@ export default function Footer() {
         .newsletter-box { background: rgba(255,255,255,0.02); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; padding: 35px; position: relative; }
         .newsletter-input { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 12px 18px; color: #fff; font-size: 0.9rem; width: 100%; transition: 0.3s; }
         .newsletter-input:focus { border-color: #D4AF37; outline: none; box-shadow: 0 0 15px rgba(212,175,55,0.1); }
-        .btn-subscribe { background: #D4AF37; color: #000; border: none; padding: 12px 25px; border-radius: 6px; font-weight: 700; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; transition: 0.3s; width: 100%; margin-top: 15px; }
+        .btn-subscribe { background: #D4AF37; color: #000; border: none; padding: 12px 25px; border-radius: 12px; font-weight: 700; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; transition: 0.3s; width: 100%; margin-top: 15px; }
         .btn-subscribe:hover { background: #F0D060; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(212,175,55,0.3); }
 
-        .trust-strip { background: rgba(212,175,55,0.02); border-top: 1px solid rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.03); padding: 50px 0; }
+        .trust-strip { background: rgba(212,175,55,0.015); border-top: 1px solid rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.03); padding: 60px 0; }
         .trust-item { text-align: center; }
-        .trust-icon { color: #D4AF37; margin-bottom: 15px; font-size: 1.8rem; }
+        .trust-icon { color: #D4AF37; margin-bottom: 18px; font-size: 2.2rem; background: rgba(212,175,55,0.05); width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; border-radius: 50%; margin-left: auto; margin-right: auto; border: 1px solid rgba(212,175,55,0.1); }
         .trust-label { font-size: 0.75rem; font-weight: 800; color: #fff; text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 5px; }
         .trust-desc { font-size: 0.7rem; color: #666; }
 
@@ -108,7 +108,7 @@ export default function Footer() {
             {/* 1. Brand Section */}
             <div className="col-12 col-lg-4">
                <Link to="/" className="text-decoration-none d-inline-block mb-4">
-                  <span className="font-display" style={{ fontSize: '2.5rem', fontWeight: 700, color: '#fff', letterSpacing: '-0.04em' }}>
+                  <span className="font-display" style={{ fontSize: '2rem', fontWeight: 700, color: '#fff', letterSpacing: '-0.04em' }}>
                     Chronix<span className="text-gold">.</span>
                   </span>
                </Link>

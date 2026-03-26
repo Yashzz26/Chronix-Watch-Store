@@ -101,7 +101,7 @@ export default function Navbar() {
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
           border-bottom: 1px solid rgba(255,255,255,0.05);
-          height: 72px;
+          height: 76px;
           font-family: 'DM Sans', sans-serif;
         }
 
@@ -154,7 +154,7 @@ export default function Navbar() {
 
         .search-input:focus {
           border-color: #D4AF37;
-          box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+          box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.15);
           outline: none;
         }
 
@@ -383,6 +383,7 @@ export default function Navbar() {
           border-top: 1px solid #1a1a1a;
           overflow: hidden;
           z-index: 150;
+          box-shadow: 0 20px 40px rgba(0,0,0,0.8);
         }
 
         .mobile-link {
@@ -391,7 +392,7 @@ export default function Navbar() {
           font-size: 0.95rem;
           color: #F0EDE8;
           text-decoration: none;
-          border-bottom: 1px solid #111;
+          border-bottom: 1px solid rgba(255,255,255,0.03);
         }
 
         .mobile-link-cart {

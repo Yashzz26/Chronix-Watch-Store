@@ -65,7 +65,7 @@ export default function App() {
   return (
     <div className="min-vh-100 bg-bg text-t1 d-flex flex-column">
       <Navbar />
-      <main className="flex-grow-1 container pb-5 mb-5">
+      <main className="flex-grow-1 pb-5 mb-5">
 
         <Suspense fallback={<Loader />}>
           <Routes>

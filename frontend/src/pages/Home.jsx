@@ -55,53 +55,57 @@ export default function Home() {
         .home-luxury { background: #070707; color: #F0EDE8; font-family: 'DM Sans', sans-serif; overflow-x: hidden; }
         
         /* --- 1. HERO --- */
-        .hero-cinema { min-height: 95vh; display: flex; align-items: center; position: relative; overflow: hidden; background: radial-gradient(circle at 75% 50%, rgba(212,175,55,0.08) 0%, transparent 50%); }
-        .hero-glow { position: absolute; top: 50%; right: 10%; width: 500px; height: 500px; background: radial-gradient(circle, rgba(212,175,55,0.12) 0%, transparent 70%); filter: blur(100px); pointer-events: none; z-index: 0; }
-        .hero-headline { font-family: 'Cormorant Garamond', serif; font-size: clamp(3.5rem, 8vw, 7.5rem); line-height: 1; letter-spacing: -0.03em; font-weight: 700; margin-bottom: 24px; }
+        .hero-cinema { min-height: 95vh; display: flex; align-items: center; position: relative; overflow: hidden; background: radial-gradient(circle at 75% 50%, rgba(212,175,55,0.1) 0%, transparent 60%); }
+        .hero-grain { position: absolute; inset: 0; background: url('https://grains.com/noise.png'); opacity: 0.03; pointer-events: none; z-index: 1; animation: grain 8s steps(10) infinite; }
+        @keyframes grain { 0%, 100% { transform: translate(0,0); } 10% { transform: translate(-1%,-1%); } 20% { transform: translate(1%,1%); } }
+        .hero-glow { position: absolute; top: 50%; right: 5%; width: 600px; height: 600px; background: radial-gradient(circle, rgba(212,175,55,0.15) 0%, transparent 70%); filter: blur(120px); pointer-events: none; z-index: 0; }
+        .hero-headline { font-family: 'Cormorant Garamond', serif; font-size: clamp(4rem, 9vw, 8rem); line-height: 0.95; letter-spacing: -0.04em; font-weight: 700; margin-bottom: 28px; }
         .gold-reveal { background: linear-gradient(135deg, #D4AF37, #FBE08F); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .hero-sub { color: #8F8C88; max-width: 480px; font-size: 1.15rem; line-height: 1.8; margin-bottom: 45px; }
+        .hero-sub { color: #8F8C88; max-width: 520px; font-size: 1.15rem; line-height: 1.8; margin-bottom: 45px; }
         .btn-lux-primary { background: #D4AF37; color: #000; padding: 18px 45px; border-radius: 4px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.15em; font-size: 0.85rem; transition: all 0.4s; box-shadow: 0 10px 30px rgba(212,175,55,0.2); border: none; text-decoration: none; }
         .btn-lux-primary:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 15px 40px rgba(212,175,55,0.4); background: #F0D060; color: #000; }
-        .hero-reflection { position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%) rotateX(60deg); width: 80%; height: 50px; background: radial-gradient(ellipse at center, rgba(212,175,55,0.15) 0%, transparent 70%); filter: blur(20px); pointer-events: none; }
+        .hero-reflection { position: absolute; bottom: -40px; left: 50%; transform: translateX(-50%) rotateX(60deg); width: 100%; height: 80px; background: radial-gradient(ellipse at center, rgba(212,175,55,0.2) 0%, transparent 75%); filter: blur(30px); pointer-events: none; }
         
         /* --- 2. STORY STRIP --- */
-        .story-strip { padding: 100px 0; border-bottom: 1px solid #161616; text-align: center; background: #090909; }
+        .story-strip { padding: 80px 0; border-bottom: 1px solid #161616; text-align: center; background: #090909; }
         .section-label { font-size: 0.7rem; color: #D4AF37; text-transform: uppercase; letter-spacing: 0.4em; border-bottom: 1px solid rgba(212,175,55,0.3); display: inline-block; padding-bottom: 8px; margin-bottom: 24px; }
 
         /* --- 3. CATEGORY CARDS --- */
         .cat-card { position: relative; height: 420px; border-radius: 20px; overflow: hidden; background: #111; cursor: pointer; border: 1px solid #1e1e1e; transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+        @media (max-width: 768px) { .cat-card { height: 280px; } }
         .cat-card:hover { border-color: #D4AF37; transform: translateY(-10px); }
         .cat-img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.8s; opacity: 0.6; }
         .cat-card:hover .cat-img { transform: scale(1.1); opacity: 0.8; }
-        .cat-overlay { position: absolute; inset: 0; background: linear-gradient(transparent 30%, rgba(0,0,0,0.9)); display: flex; flex-direction: column; justify-content: flex-end; padding: 40px; }
-        .cat-title { font-family: 'Cormorant Garamond', serif; font-size: 2.5rem; color: #fff; transform: translateY(10px); transition: all 0.4s; }
+        .cat-overlay { position: absolute; inset: 0; background: linear-gradient(transparent 20%, rgba(0,0,0,0.95)); display: flex; flex-direction: column; justify-content: flex-end; padding: 40px; }
+        .cat-title { font-family: 'Cormorant Garamond', serif; font-size: clamp(1.8rem, 3vw, 2.5rem); color: #fff; transform: translateY(10px); transition: all 0.4s; }
         .cat-card:hover .cat-title { transform: translateY(0); color: #D4AF37; }
 
         /* --- 4. PRODUCT CARD V2 --- */
         .product-v2 { background: #0F0F0F; border: 1px solid #1a1a1a; border-radius: 16px; overflow: hidden; transition: all 0.4s ease; height: 100%; position: relative; }
-        .product-v2:hover { border-color: rgba(212,175,55,0.4); transform: translateY(-5px); box-shadow: 0 25px 50px rgba(0,0,0,0.5); }
-        .pv2-image-box { aspect-ratio: 1; background: radial-gradient(circle at center, #1b1b1b, #0f0f0f); display: flex; align-items: center; justify-content: center; padding: 30px; position: relative; overflow: hidden; }
+        .product-v2:hover { border-color: rgba(212,175,55,0.5); transform: translateY(-5px); box-shadow: 0 25px 50px rgba(0,0,0,0.5); }
+        .pv2-image-box { aspect-ratio: 1; background: radial-gradient(circle at center, #1b1b1b, #0a0a0a); display: flex; align-items: center; justify-content: center; padding: 30px; position: relative; overflow: hidden; }
         .pv2-img { max-width: 90%; max-height: 90%; object-fit: contain; transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
         .product-v2:hover .pv2-img { transform: scale(1.1); }
         .pv2-badge { position: absolute; top: 15px; left: 15px; font-size: 0.6rem; font-weight: 800; background: #D4AF37; color: #000; padding: 5px 10px; border-radius: 4px; text-transform: uppercase; z-index: 5; }
-        .pv2-quick { position: absolute; bottom: 0; left: 0; right: 0; background: #D4AF37; color: #000; font-size: 0.75rem; font-weight: 700; padding: 12px; transform: translateY(100%); transition: all 0.3s; text-align: center; text-decoration: none; border: none; cursor: pointer; }
+        .pv2-quick { position: absolute; bottom: 0; left: 0; right: 0; background: #D4AF37; color: #000; font-size: 0.75rem; font-weight: 700; padding: 12px; transform: translateY(100%); transition: all 0.3s; text-align: center; text-decoration: none; border: none; cursor: pointer; z-index: 10; }
         .product-v2:hover .pv2-quick { transform: translateY(0); }
 
         /* --- 5. BANNER --- */
         .featured-banner { height: 500px; background: linear-gradient(to right, #000, transparent), url('https://images.unsplash.com/photo-1547996160-81dfa63595aa?q=80&w=2574&auto=format&fit=crop'); background-size: cover; background-position: center; border-radius: 24px; display: flex; align-items: center; padding: 80px; position: relative; overflow: hidden; }
         
         /* --- 6. WHY CHOOSE --- */
-        .why-box { background: #111; border: 1px solid #1e1e1e; padding: 40px; border-radius: 20px; text-align: center; height: 100%; transition: 0.3s; }
-        .why-box:hover { border-color: #D4AF37; transform: translateY(-5px); }
-        .why-icon { color: #D4AF37; margin-bottom: 25px; }
+        .why-box { background: #0d0d0d; border: 1px solid #1a1a1a; padding: 40px; border-radius: 20px; text-align: center; height: 100%; transition: 0.3s; }
+        .why-box:hover { border-color: #D4AF37; transform: translateY(-5px); background: #111; }
+        .why-icon-wrap { width: 80px; height: 80px; background: rgba(212,175,55,0.05); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 25px; color: #D4AF37; border: 1px solid rgba(212,175,55,0.1); }
 
         /* --- 7. TESTIMONIALS --- */
-        .review-card { background: #0F0F0F; padding: 40px; border-radius: 24px; border: 1px solid #1e1e1e; position: relative; }
-        .quote-icon { position: absolute; top: 20px; right: 30px; opacity: 0.05; font-size: 4rem; color: #D4AF37; }
+        .review-card { background: #0F0F0F; padding: 40px; border-radius: 24px; border: 1px solid #1e1e1e; position: relative; border-left: 4px solid #D4AF37; }
+        .quote-icon { position: absolute; top: 20px; right: 30px; opacity: 0.08; font-size: 4rem; color: #D4AF37; }
 
         /* --- 8. URGENCY --- */
-        .urgency-strip { background: #111; padding: 20px 0; border-top: 1px solid #1e1e1e; border-bottom: 1px solid #1e1e1e; }
-        .scrolling-text { white-space: nowrap; animation: scroll 40s linear infinite; display: flex; gap: 60px; }
+        .urgency-strip { background: #0a0a0a; padding: 25px 0; border-top: 1px solid #161616; border-bottom: 1px solid #161616; }
+        .scrolling-text { white-space: nowrap; animation: scroll 60s linear infinite; display: flex; gap: 80px; }
+        .ticker-dot { width: 6px; height: 6px; background: #D4AF37; border-radius: 50%; opacity: 0.5; }
         @keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
         .pill-btn {
@@ -124,6 +128,7 @@ export default function Home() {
 
       {/* 1. HERO SECTION */}
       <section className="hero-cinema" ref={heroRef}>
+        <div className="hero-grain" />
         <div className="hero-glow" />
         <div className="container position-relative" style={{ zIndex: 1 }}>
           <div className="row align-items-center">
@@ -141,12 +146,12 @@ export default function Home() {
                    <Link to="/allcollection" className="btn-lux-primary shadow-lg d-inline-flex align-items-center gap-2">
                      Acquire Now <HiArrowRight />
                    </Link>
-                   <Link to="/allcollection" className="text-white text-decoration-none fw-bold small tracking-widest uppercase hover-gold transition-all">
+                   <Link to="/allcollection" className="text-decoration-none fw-bold small tracking-widest uppercase hover-gold transition-all" style={{ color: '#D4AF37' }}>
                      Our Heritage
                    </Link>
                 </div>
                 
-                <div className="d-flex gap-5 pt-4">
+                <div className="d-flex flex-wrap gap-4 gap-md-5 pt-4 mt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                   <div className="d-flex align-items-center gap-2 small text-t3 uppercase tracking-widest">
                     <HiStar className="text-gold" /> Trusted by 10k+
                   </div>
@@ -166,14 +171,14 @@ export default function Home() {
                  initial={{ opacity: 0, x: 50 }}
                  animate={{ opacity: 1, x: 0 }}
                  transition={{ duration: 1, delay: 0.2 }}
-                 className="position-relative text-center"
+                 className="position-relative text-end"
                >
                  <motion.img 
-                   animate={{ y: [0, -20, 0] }}
-                   transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                   animate={{ y: [0, -25, 0] }}
+                   transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
                    src={heroProduct.imageGallery[0]} 
                    className="img-fluid position-relative z-1" 
-                   style={{ maxWidth: '420px', filter: 'drop-shadow(0 50px 100px rgba(0,0,0,0.9))' }} 
+                   style={{ maxWidth: '480px', filter: 'drop-shadow(0 50px 100px rgba(0,0,0,0.9))' }} 
                    alt="" 
                  />
                  <div className="hero-reflection" />
@@ -188,8 +193,8 @@ export default function Home() {
          <div className="container">
             <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>
                <span className="section-label">Foundations of Chronix</span>
-               <h2 className="font-display display-3 text-white mb-4">Established in Absolute <span className="text-gold">Excellence</span></h2>
-               <p className="text-t2 lead mx-auto" style={{ maxWidth: 700, lineHeight: 2 }}>
+               <h2 className="font-display display-4 text-white mb-4">Established in Absolute <span className="text-gold">Excellence</span></h2>
+               <p className="text-t2 mx-auto" style={{ maxWidth: 800, fontSize: '1.05rem', lineHeight: 1.9 }}>
                   Since 2024, Chronix has been the sanctuary for horology enthusiasts. We don't just sell watches; we archive moments of engineering brilliance. Every piece in our collection is a testament to the fact that time is the ultimate luxury.
                </p>
             </motion.div>
@@ -301,7 +306,7 @@ export default function Home() {
                ].map((it, i) => (
                  <div key={i} className="col-6 col-lg-3">
                     <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: i*0.1 }} className="why-box">
-                       <div className="why-icon">{it.icon}</div>
+                       <div className="why-icon-wrap">{it.icon}</div>
                        <h3 className="text-white h5 mb-3">{it.title}</h3>
                        <p className="text-t3 mb-0 small">{it.text}</p>
                     </motion.div>
@@ -332,9 +337,11 @@ export default function Home() {
                        <div key={i} className="col-12 col-md-6">
                           <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} transition={{ delay: i*0.2 }} className="review-card">
                              <HiOutlineChatBubbleLeftRight className="quote-icon" />
-                             <p className="text-white italic fs-5 mb-5" style={{ lineHeight: 1.6 }}>"{t.text}"</p>
+                             <p className="italic fs-5 mb-5" style={{ lineHeight: 1.6, color: '#D4CE98' }}>"{t.text}"</p>
                              <div className="d-flex align-items-center gap-3">
-                                <div className="rounded-circle bg-s2" style={{ width: 44, height: 44 }} />
+                                <div className="rounded-circle bg-s2 overflow-hidden" style={{ width: 44, height: 44 }}>
+                                   <img src={`https://i.pravatar.cc/100?img=${i+10}`} alt="" className="w-100 h-100 object-fit-cover" />
+                                </div>
                                 <div>
                                    <div className="text-white fw-bold small">{t.name}</div>
                                    <div className="text-gold x-small tracking-widest uppercase">{t.role}</div>
@@ -352,10 +359,13 @@ export default function Home() {
       {/* 8. URGENCY STRIP */}
       <section className="urgency-strip mb-5 overflow-hidden">
          <div className="scrolling-text">
-            {[...Array(10)].map((_, i) => (
-              <span key={i} className="text-white fw-bold tracking-widest uppercase small d-flex align-items-center gap-3">
-                 <HiOutlineSparkles className="text-gold" /> SEASONAL ACQUISITION EVENT · UP TO 20% OFF ALL ANALOG PIECES · SECURE YOUR LEGACY TODAY
-              </span>
+            {[...Array(8)].map((_, i) => (
+              <React.Fragment key={i}>
+                <span className="text-white-50 fw-bold tracking-widest uppercase x-small d-flex align-items-center gap-3">
+                   SEASONAL ACQUISITION EVENT · UP TO 20% OFF ALL ANALOG PIECES · SECURE YOUR LEGACY TODAY
+                </span>
+                <div className="ticker-dot" />
+              </React.Fragment>
             ))}
          </div>
       </section>
@@ -393,9 +403,9 @@ function ProductCardV2({ product, index, addItem }) {
       
       <div className="p-4 d-flex flex-column gap-2 text-center">
          <span className="text-gold x-small uppercase tracking-widest">{product.category}</span>
-         <h3 className="text-white h6 m-0 text-truncate font-display">{product.name}</h3>
+         <h3 className="text-white h5 m-0 text-truncate font-display" style={{ fontSize: '1rem' }}>{product.name}</h3>
          <div className="d-flex align-items-center justify-content-center gap-2 font-mono">
-            <span className="text-white fw-bold">₹{(product.dealPrice || product.price).toLocaleString()}</span>
+            <span className="fw-bold" style={{ color: '#F0D060' }}>₹{(product.dealPrice || product.price).toLocaleString()}</span>
             {product.isOnDeal && <span className="text-white-50 small text-decoration-line-through">₹{product.price.toLocaleString()}</span>}
          </div>
          <Link to={`/product/${product.id}`} className="mt-2 text-white-50 x-small text-decoration-none border-bottom border-white-10 d-inline-block mx-auto pb-1 hover-gold transition-all">

@@ -59,6 +59,9 @@ button { font-family: inherit; }
 .tracking-wide { letter-spacing: 0.08em; }
 .tracking-wider { letter-spacing: 0.15em; }
 .tracking-widest { letter-spacing: 0.25em; }
+.x-small { font-size: 0.7rem !important; }
+.min-vh-50 { min-height: 50vh !important; }
+.hover-gold:hover { color: var(--gold) !important; }
 
 /* --- 6. BACKGROUND UTILITIES --- */
 .bg-gold { background-color: var(--gold) !important; }
@@ -143,6 +146,29 @@ button { font-family: inherit; }
   background: rgba(212,175,55,0.04);
 }
 
+.btn-gold {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--gold);
+  color: #000;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.875rem;
+  padding: 13px 28px;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: var(--transition);
+  text-decoration: none;
+}
+.btn-gold:hover {
+  background: var(--gold-light);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(212, 175, 55, 0.3);
+}
+
 /* --- 10. CARD SYSTEM --- */
 .chronix-card {
   background: var(--s1);
@@ -151,8 +177,9 @@ button { font-family: inherit; }
   transition: border-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
 }
 .chronix-card:hover {
-  border-color: rgba(212,175,55,0.25);
-  box-shadow: 0 16px 40px rgba(0,0,0,0.4);
+  border-color: rgba(212,175,55,0.4);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.6);
+  transform: translateY(-4px);
 }
 .chronix-card.no-hover:hover {
   border-color: var(--border);
@@ -245,3 +272,22 @@ button { font-family: inherit; }
 .object-fit-contain { object-fit: contain !important; }
 .object-fit-cover { object-fit: cover !important; }
 .cursor-pointer { cursor: pointer; }
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.animate-float { animation: float 6s ease-in-out infinite; }
+
+/* --- 10. SCROLLBAR --- */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--s3); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--gold-dim); }
+
+/* --- 11. RESPONSIVE HELPERS --- */
+.mobile-only { display: block; }
+@media (min-width: 768px) { .mobile-only { display: none; } }
+.desktop-only { display: none; }
+@media (min-width: 768px) { .desktop-only { display: block; } }
+
