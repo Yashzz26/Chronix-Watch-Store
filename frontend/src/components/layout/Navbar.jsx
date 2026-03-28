@@ -19,7 +19,6 @@ export default function Navbar() {
   const totalItems = cartItems.reduce((sum, i) => sum + i.qty, 0);
   const { isLoggedIn, user, profile, logout } = useAuthStore();
 
-  // State
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -27,11 +26,9 @@ export default function Navbar() {
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState(null);
 
-  // Refs
   const userMenuRef = useRef(null);
   const searchRef = useRef(null);
 
-  // Close mobile menu on route change
   useEffect(() => {
     setMobileOpen(false);
     setUserMenuOpen(false);
@@ -39,7 +36,6 @@ export default function Navbar() {
     setSearchQuery('');
   }, [location.pathname]);
 
-  // Click outside to close menus
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
@@ -53,14 +49,12 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Sync profile photo
   useEffect(() => {
     const photo = sessionStorage.getItem('chronix-profile-photo');
     if (photo) setProfilePhoto(photo);
     else setProfilePhoto(null);
   }, [isLoggedIn, profile?.photo]);
 
-  // Search logic
   useEffect(() => {
     if (searchQuery.trim().length > 1) {
       const filtered = products.filter(p => 
@@ -91,18 +85,14 @@ export default function Navbar() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@700&family=DM+Sans:wght@400;500;700&family=DM+Mono&display=swap');
-
         .nav-wrapper {
           position: sticky;
           top: 0;
           z-index: 200;
-          background: rgba(8, 8, 8, 0.96);
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
-          border-bottom: 1px solid rgba(255,255,255,0.05);
-          height: 76px;
-          font-family: 'DM Sans', sans-serif;
+          background: var(--s1);
+          border-bottom: 1px solid var(--border);
+          height: 72px;
+          font-family: var(--font-body);
         }
 
         .nav-container {
@@ -116,67 +106,66 @@ export default function Navbar() {
         }
 
         .wordmark {
-          font-family: 'Cormorant Garamond', serif;
+          font-family: var(--font-display);
           font-weight: 700;
-          font-size: 1.75rem;
-          color: #F0EDE8;
+          font-size: 1.8rem;
+          color: var(--t1);
           text-decoration: none;
           flex-shrink: 0;
-          border: none !important;
-          outline: none !important;
-          box-shadow: none !important;
+          letter-spacing: -0.02em;
         }
 
         .wordmark span {
-          color: #D4AF37;
+          color: var(--gold);
         }
 
         .search-container {
           flex-grow: 1;
-          max-width: 480px;
+          max-width: 440px;
           position: relative;
         }
 
         .search-input {
           width: 100%;
-          background: #111111;
-          border: 1px solid #1e1e1e;
-          border-radius: 8px;
-          padding: 10px 16px 10px 42px;
+          background: var(--bg-2);
+          border: 1px solid var(--border);
+          border-radius: 99px;
+          padding: 9px 16px 9px 42px;
           font-size: 0.875rem;
-          color: #F0EDE8;
-          transition: all 0.2s ease;
+          color: var(--t1);
+          transition: var(--transition);
         }
 
         .search-input::placeholder {
-          color: #5A5652;
+          color: var(--t3);
         }
 
         .search-input:focus {
-          border-color: #D4AF37;
-          box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.15);
+          border-color: var(--gold);
+          background: var(--s1);
+          box-shadow: 0 0 0 4px var(--gold-glow);
           outline: none;
         }
 
         .search-icon {
           position: absolute;
-          left: 14px;
+          left: 16px;
           top: 50%;
           transform: translateY(-50%);
-          color: #5A5652;
+          color: var(--t3);
           pointer-events: none;
         }
 
         .search-dropdown {
           position: absolute;
-          top: calc(100% + 8px);
+          top: calc(100% + 12px);
           left: 0;
           right: 0;
-          background: #0f0f0f;
-          border: 1px solid #2a2a2a;
-          border-radius: 10px;
+          background: var(--s1);
+          border: 1px solid var(--border);
+          border-radius: 12px;
           overflow: hidden;
-          box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+          box-shadow: var(--shadow-lg);
           z-index: 210;
         }
 
@@ -184,105 +173,108 @@ export default function Navbar() {
           display: flex;
           align-items: center;
           gap: 12px;
-          padding: 8px 12px;
+          padding: 10px 16px;
           text-decoration: none;
-          border-left: 2px solid transparent;
-          transition: all 0.2s ease;
+          transition: var(--transition);
+          border-bottom: 1px solid var(--bg-2);
+        }
+
+        .search-result-row:last-child {
+          border-bottom: none;
         }
 
         .search-result-row:hover {
-          background: rgba(255, 255, 255, 0.03);
-          border-left-color: #D4AF37;
+          background: var(--bg-2);
         }
 
         .search-thumb {
-          width: 40px;
-          height: 40px;
-          background: #161616;
+          width: 44px;
+          height: 44px;
+          background: var(--bg-3);
           border-radius: 6px;
           object-fit: contain;
-        }
-
-        .search-info {
-          display: flex;
-          flex-direction: column;
+          padding: 4px;
         }
 
         .search-name {
           font-size: 0.85rem;
-          color: #F0EDE8;
+          font-weight: 500;
+          color: var(--t1);
+          display: block;
         }
 
         .search-price {
-          font-size: 0.8rem;
-          color: #D4AF37;
-          font-family: 'DM Mono', monospace;
+          font-size: 0.75rem;
+          color: var(--gold);
+          font-family: var(--font-mono);
+          font-weight: 600;
         }
 
         .icon-group {
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 12px;
         }
 
         .cart-btn {
           position: relative;
-          color: #F0EDE8;
+          color: var(--t1);
           padding: 8px;
-          border-radius: 8px;
-          transition: background 0.2s ease;
-          text-decoration: none;
+          border-radius: 99px;
+          transition: var(--transition);
         }
 
         .cart-btn:hover {
-          background: rgba(255, 255, 255, 0.05);
+          background: var(--bg-2);
+          color: var(--gold);
         }
 
         .cart-badge {
           position: absolute;
-          top: 2px;
-          right: 2px;
-          width: 17px;
-          height: 17px;
-          border-radius: 50%;
-          background: #D4AF37;
-          color: #000;
-          font-size: 0.6rem;
+          top: 0;
+          right: 0;
+          min-width: 18px;
+          height: 18px;
+          border-radius: 99px;
+          background: var(--gold);
+          color: #fff;
+          font-size: 0.65rem;
           font-weight: 700;
           display: flex;
           align-items: center;
           justify-content: center;
+          padding: 0 4px;
+          border: 2px solid var(--s1);
         }
 
         .user-btn-logged {
           display: flex;
           align-items: center;
-          gap: 8px;
-          padding: 6px 12px;
+          gap: 10px;
+          padding: 5px 14px 5px 6px;
           background: transparent;
-          border: 1px solid #1e1e1e;
-          border-radius: 8px;
+          border: 1.5px solid var(--border);
+          border-radius: 99px;
           cursor: pointer;
-          transition: all 0.2s ease;
+          transition: var(--transition);
         }
 
         .user-btn-logged:hover {
-          border-color: #D4AF37;
-          background: rgba(212, 175, 55, 0.02);
+          border-color: var(--gold);
+          background: var(--bg-2);
         }
 
         .avatar-circle {
-          width: 30px;
-          height: 30px;
+          width: 32px;
+          height: 32px;
           border-radius: 50%;
           overflow: hidden;
-          background: rgba(212, 175, 55, 0.12);
-          border: 1px solid rgba(212, 175, 55, 0.25);
+          background: var(--bg-3);
           display: flex;
           align-items: center;
           justify-content: center;
-          color: #D4AF37;
-          font-size: 0.7rem;
+          color: var(--t2);
+          font-size: 0.75rem;
           font-weight: 700;
         }
 
@@ -293,58 +285,52 @@ export default function Navbar() {
         }
 
         .username-text {
-          max-width: 80px;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
           font-size: 0.85rem;
-          color: #9A9690;
+          font-weight: 600;
+          color: var(--t1);
         }
 
         .user-btn-signin {
-          background: #D4AF37;
-          color: #000 !important;
-          font-weight: 700;
-          padding: 8px 18px;
-          border-radius: 6px;
+          background: var(--t1);
+          color: #fff !important;
+          font-weight: 600;
+          padding: 9px 22px;
+          border-radius: 99px;
           font-size: 0.85rem;
-          text-decoration: none;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          transition: all 0.2s ease;
+          transition: var(--transition);
         }
 
         .user-btn-signin:hover {
-          background: #F0D060;
+          background: var(--gold);
           transform: translateY(-1px);
+          box-shadow: var(--shadow-sm);
         }
 
         .user-dropdown {
           position: absolute;
-          top: calc(100% + 8px);
+          top: calc(100% + 10px);
           right: 0;
-          width: 180px;
-          background: #0f0f0f;
-          border: 1px solid #2a2a2a;
-          border-radius: 10px;
+          width: 200px;
+          background: var(--s1);
+          border: 1px solid var(--border);
+          border-radius: 12px;
           overflow: hidden;
-          box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+          box-shadow: var(--shadow-lg);
           z-index: 220;
         }
 
         .dropdown-item {
           display: block;
-          padding: 11px 16px;
+          padding: 12px 16px;
           font-size: 0.875rem;
-          color: #9A9690;
+          color: var(--t2);
           text-decoration: none;
           background: transparent;
           border: none;
           width: 100%;
           text-align: left;
-          transition: all 0.2s ease;
-          border-bottom: 1px solid #1e1e1e;
+          transition: var(--transition);
+          border-bottom: 1px solid var(--bg-2);
         }
 
         .dropdown-item:last-child {
@@ -352,26 +338,27 @@ export default function Navbar() {
         }
 
         .dropdown-item:hover {
-          color: #F0EDE8;
-          background: rgba(255, 255, 255, 0.03);
+          color: var(--gold);
+          background: var(--bg-2);
         }
 
         .logout-btn {
-          color: #C0392B !important;
+          color: #c0392b !important;
         }
 
         .logout-btn:hover {
-          background: rgba(192, 57, 43, 0.08);
+          background: #fdf2f2 !important;
         }
 
         .hamburger {
           background: transparent;
           border: none;
-          color: #F0EDE8;
-          padding: 4px;
+          color: var(--t1);
+          padding: 6px;
           display: flex;
           align-items: center;
           justify-content: center;
+          border-radius: 8px;
         }
 
         .mobile-drawer {
@@ -379,58 +366,47 @@ export default function Navbar() {
           top: 72px;
           left: 0;
           right: 0;
-          background: #0f0f0f;
-          border-top: 1px solid #1a1a1a;
+          background: var(--s1);
+          border-top: 1px solid var(--border);
           overflow: hidden;
           z-index: 150;
-          box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+          box-shadow: var(--shadow-lg);
         }
 
         .mobile-link {
           display: block;
-          padding: 12px 24px;
+          padding: 16px 24px;
           font-size: 0.95rem;
-          color: #F0EDE8;
+          font-weight: 500;
+          color: var(--t1);
           text-decoration: none;
-          border-bottom: 1px solid rgba(255,255,255,0.03);
+          border-bottom: 1px solid var(--bg-2);
         }
 
-        .mobile-link-cart {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-
-        .mobile-cart-count {
-          background: #D4AF37;
-          color: #000;
-          font-size: 0.7rem;
-          padding: 2px 8px;
-          border-radius: 10px;
-          font-weight: 700;
+        .mobile-link:last-child {
+          border-bottom: none;
         }
 
         @media (max-width: 768px) {
           .nav-container {
             padding: 0 20px;
+            gap: 16px;
           }
         }
       `}</style>
 
       <header className="nav-wrapper">
         <div className="nav-container">
-          {/* LEFT: WORDMARK */}
           <Link to="/" className="wordmark">
             Chronix<span>.</span>
           </Link>
 
-          {/* CENTER: SEARCH (Desktop) */}
           <div className="search-container d-none d-md-flex" ref={searchRef}>
-            <HiOutlineSearch className="search-icon" size={20} />
+            <HiOutlineSearch className="search-icon" size={18} />
             <input 
               type="text" 
               className="search-input"
-              placeholder="Search timepieces…"
+              placeholder="Search timepieces..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => searchQuery.length > 1 && setShowSearchDropdown(true)}
@@ -440,9 +416,9 @@ export default function Navbar() {
               {showSearchDropdown && (
                 <motion.div 
                   className="search-dropdown"
-                  initial={{ opacity: 0, y: 8 }}
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 8 }}
+                  exit={{ opacity: 0, y: 10 }}
                 >
                   {searchResults.length > 0 ? (
                     searchResults.map(p => (
@@ -460,7 +436,7 @@ export default function Navbar() {
                       </Link>
                     ))
                   ) : (
-                    <div className="p-3 text-center text-muted" style={{ fontSize: '0.8rem' }}>
+                    <div className="p-4 text-center text-muted" style={{ fontSize: '0.8rem' }}>
                       No timepieces found
                     </div>
                   )}
@@ -469,10 +445,8 @@ export default function Navbar() {
             </AnimatePresence>
           </div>
 
-          {/* RIGHT: ICON GROUP */}
           <div className="icon-group ms-auto">
-            {/* CART ICON */}
-            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Link to="/cart" className="cart-btn">
                 <HiOutlineShoppingCart size={22} />
                 {totalItems > 0 && (
@@ -487,7 +461,6 @@ export default function Navbar() {
               </Link>
             </motion.div>
 
-            {/* USER BUTTON */}
             <div className="position-relative" ref={userMenuRef}>
               {isLoggedIn ? (
                 <>
@@ -507,9 +480,9 @@ export default function Navbar() {
                     {userMenuOpen && (
                       <motion.div 
                         className="user-dropdown"
-                        initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                        initial={{ opacity: 0, y: 10, scale: 0.96 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.96 }}
                         transition={{ duration: 0.2 }}
                       >
                         <Link to="/profile" className="dropdown-item">My Profile</Link>
@@ -526,13 +499,11 @@ export default function Navbar() {
                 </>
               ) : (
                 <Link to="/login" className="user-btn-signin d-none d-md-flex">
-                  <HiOutlineUser size={16} />
-                  <span>Sign In</span>
+                  Sign In
                 </Link>
               )}
             </div>
 
-            {/* HAMBURGER (Mobile) */}
             <button 
               className="hamburger d-md-none" 
               onClick={() => setMobileOpen(!mobileOpen)}
@@ -542,7 +513,6 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* MOBILE DRAWER */}
         <AnimatePresence>
           {mobileOpen && (
             <motion.div 
@@ -552,23 +522,20 @@ export default function Navbar() {
               exit={{ height: 0 }}
               transition={{ duration: 0.3, ease: "easeInOut" }}
             >
-              <div className="p-3">
-                <div className="search-container w-100 mb-3" ref={searchRef}>
-                  <HiOutlineSearch className="search-icon" size={20} />
+              <div className="p-4">
+                <div className="mb-4">
                   <input 
                     type="text" 
-                    className="search-input"
-                    placeholder="Search timepieces…"
+                    className="search-input w-100"
+                    placeholder="Search timepieces..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
-                  {/* Reuse search dropdown in mobile if needed, but standard is often simple links */}
                 </div>
                 
                 <Link to="/" className="mobile-link">Home</Link>
-                <Link to="/cart" className="mobile-link mobile-link-cart">
-                  <span>Cart</span>
-                  {totalItems > 0 && <span className="mobile-cart-count">{totalItems}</span>}
+                <Link to="/cart" className="mobile-link">
+                  Cart ({totalItems})
                 </Link>
 
                 {isLoggedIn ? (
@@ -577,13 +544,13 @@ export default function Navbar() {
                     <Link to="/orders" className="mobile-link">Orders</Link>
                     <button 
                       onClick={handleLogout} 
-                      className="mobile-link w-100 text-start bg-transparent border-0 border-bottom logout-btn"
+                      className="mobile-link w-100 text-start bg-transparent border-0 logout-btn"
                     >
                       Sign Out
                     </button>
                   </>
                 ) : (
-                  <Link to="/login" className="mobile-link" style={{ color: '#D4AF37', fontWeight: 700 }}>Sign In</Link>
+                  <Link to="/login" className="mobile-link" style={{ color: 'var(--gold)' }}>Sign In</Link>
                 )}
               </div>
             </motion.div>

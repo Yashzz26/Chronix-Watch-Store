@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { HiArrowRight, HiOutlineShoppingCart, HiAdjustments, HiX } from 'react-icons/hi';
+import { HiAdjustments, HiX } from 'react-icons/hi';
 import { products, categories } from '../data/products';
 import SkeletonCard from '../components/ui/SkeletonCard';
 import useCartStore from '../store/cartStore';
@@ -17,40 +17,40 @@ export default function Products({ filterCategory }) {
   const sort = searchParams.get('sort') || 'default';
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 9;
 
   // Filter and Sort Logic
   const filteredProducts = useMemo(() => {
     let result = [...products];
-
-    // Category Filter
     if (activeCategory !== 'All') {
       result = result.filter(p => p.category === activeCategory);
     }
-
-    // Sorting
     if (sort === 'price-low') {
       result.sort((a, b) => (a.dealPrice || a.price) - (b.dealPrice || b.price));
     } else if (sort === 'price-high') {
       result.sort((a, b) => (b.dealPrice || b.price) - (a.dealPrice || a.price));
     }
-
     return result;
   }, [activeCategory, sort]);
 
-  // Loading effect
+  // Pagination Logic
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+  const currentProducts = filteredProducts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  // Reset to page 1 on filter change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeCategory, sort]);
+
   useEffect(() => {
     setLoading(true);
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 600);
+    const timer = setTimeout(() => setLoading(false), 600);
     return () => clearTimeout(timer);
-  }, [activeCategory, sort]);
+  }, [activeCategory, sort, currentPage]);
 
   const handleCategoryChange = (cat) => {
     setSearchParams({ cat, sort });
-    if (!filterCategory) {
-      // If we are on /allcollection, we update the URL
-    }
   };
 
   const handleSortChange = (newSort) => {
@@ -58,178 +58,192 @@ export default function Products({ filterCategory }) {
   };
 
   return (
-    <div className="collection-page pt-5 mt-4">
+    <div className="collection-page pb-5">
       <style>{`
-        .collection-page { min-height: 100vh; }
-        .page-header { margin-bottom: 60px; }
-        .page-title { 
-          font-family: 'Cormorant Garamond', serif; 
-          font-size: clamp(2.5rem, 5vw, 4rem);
-          font-weight: 400;
-          color: #F0EDE8;
-          margin-bottom: 12px;
-        }
-        .breadcrumb {
-          font-size: 0.75rem;
-          color: #5A5652;
-          text-transform: uppercase;
-          letter-spacing: 0.15em;
-          margin-bottom: 24px;
-        }
-        .breadcrumb a { color: #D4AF37; text-decoration: none; }
+        .collection-page { background: var(--bg); min-height: 100vh; font-family: var(--font-body); }
         
-        .filter-sidebar {
-          position: sticky;
-          top: 100px;
+        .collection-hero { padding: 120px 0 60px; border-bottom: 1px solid var(--border); margin-bottom: 60px; }
+        .collection-title { font-family: var(--font-display); font-size: 3.5rem; font-weight: 700; color: var(--t1); }
+        
+        .sidebar { position: sticky; top: 120px; }
+        .sidebar-title { 
+          font-size: 0.75rem; 
+          font-weight: 700; 
+          letter-spacing: 0.15em; 
+          text-transform: uppercase; 
+          color: var(--t1); 
+          margin-bottom: 30px; 
+          display: block; 
+          border-bottom: 1px solid var(--border);
+          padding-bottom: 15px;
         }
-        .filter-group { margin-bottom: 32px; }
-        .filter-label {
-          font-size: 0.65rem;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.2em;
-          color: #D4AF37;
-          margin-bottom: 20px;
-          display: block;
-        }
-        .cat-list { list-style: none; padding: 0; }
-        .cat-item {
-          padding: 8px 0;
-          color: #9A9690;
-          cursor: pointer;
-          transition: all 0.2s ease;
+
+        .filter-list { list-style: none; padding: 0; margin-bottom: 50px; }
+        .filter-item {
           font-size: 0.9rem;
+          color: var(--t2);
+          padding: 12px 0;
+          cursor: pointer;
+          transition: var(--transition);
           display: flex;
           align-items: center;
           justify-content: space-between;
         }
-        .cat-item:hover { color: #F0EDE8; transform: translateX(4px); }
-        .cat-item.active { color: #D4AF37; font-weight: 600; }
-        .cat-count { font-family: 'DM Mono', monospace; font-size: 0.7rem; opacity: 0.5; }
+        .filter-item:hover { color: var(--gold); padding-left: 5px; }
+        .filter-item.active { color: var(--gold); font-weight: 700; }
+        .filter-count { font-size: 0.7rem; opacity: 0.5; color: var(--t1); }
 
-        .product-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-          gap: 32px;
+        .sort-select {
+          width: 100%;
+          padding: 12px;
+          border: 1px solid var(--border);
+          background: var(--bg-2);
+          font-size: 0.85rem;
+          color: var(--t1);
+          border-radius: 4px;
         }
 
+        .pagination { display: flex; gap: 12px; justify-content: center; margin-top: 80px; }
+        .page-btn {
+          width: 40px;
+          height: 40px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid var(--border);
+          background: #fff;
+          font-size: 0.85rem;
+          color: var(--t1);
+          cursor: pointer;
+          transition: var(--transition);
+        }
+        .page-btn.active { background: var(--t1); color: #fff; border-color: var(--t1); }
+        .page-btn:hover:not(.active) { border-color: var(--gold); color: var(--gold); }
+
         @media (max-width: 991.98px) {
-          .filter-sidebar { display: none; }
+          .sidebar { display: none; }
         }
       `}</style>
 
-      <div className="container">
-        <div className="page-header text-center text-lg-start">
-          <div className="breadcrumb">
-            <Link to="/">Home</Link> / {filterCategory ? filterCategory : 'Collection'}
-          </div>
-          <h1 className="page-title">
-            {filterCategory ? filterCategory : (urlCategory === 'All' ? 'Complete Collection' : urlCategory)}
+      <div className="collection-hero">
+        <div className="container">
+          <span className="section-label">Institutional Archive</span>
+          <h1 className="collection-title">
+            {activeCategory === 'All' ? 'Technical Inventory' : activeCategory}
           </h1>
-          <p className="text-t2 max-w-600">
-            Discover our curated selection of 120+ exceptional timepieces, from heritage mechanicals to modern icons.
-          </p>
+          <p className="text-t2 max-w-600 m-0">Discover our curated selection of horological instruments, engineered for precision and aesthetic restraint.</p>
         </div>
+      </div>
 
+      <div className="container">
         <div className="row g-5">
           {/* Sidebar */}
-          <div className="col-lg-3 d-none d-lg-block">
-            <div className="filter-sidebar">
-              <div className="filter-group">
-                <span className="filter-label">Categories</span>
-                <ul className="cat-list">
-                  {categories.map((cat) => (
-                    <li 
-                      key={cat} 
-                      className={`cat-item ${activeCategory === cat ? 'active' : ''}`}
-                      onClick={() => handleCategoryChange(cat)}
-                    >
-                      {cat}
-                      <span className="cat-count">
-                        {cat === 'All' ? products.length : products.filter(p => p.category === cat).length}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+          <div className="col-lg-3">
+            <aside className="sidebar">
+              <span className="sidebar-title">Categories</span>
+              <ul className="filter-list">
+                {categories.map((cat) => (
+                  <li 
+                    key={cat} 
+                    className={`filter-item ${activeCategory === cat ? 'active' : ''}`}
+                    onClick={() => handleCategoryChange(cat)}
+                  >
+                    {cat}
+                    <span className="filter-count">
+                      ({cat === 'All' ? products.length : products.filter(p => p.category === cat).length})
+                    </span>
+                  </li>
+                ))}
+              </ul>
 
-              <div className="filter-group">
-                <span className="filter-label">Sort Order</span>
-                <select 
-                  className="form-select bg-s2 border-border text-t2 shadow-none" 
-                  style={{ borderRadius: '6px', fontSize: '0.85rem' }}
-                  value={sort}
-                  onChange={(e) => handleSortChange(e.target.value)}
-                >
-                  <option value="default">Newest Arrivals</option>
-                  <option value="price-low">Price: Low to High</option>
-                  <option value="price-high">Price: High to Low</option>
-                </select>
-              </div>
-            </div>
+              <span className="sidebar-title">Sort By</span>
+              <select 
+                className="sort-select shadow-none"
+                value={sort}
+                onChange={(e) => handleSortChange(e.target.value)}
+              >
+                <option value="default">Newest Additions</option>
+                <option value="price-low">Price: Low to High</option>
+                <option value="price-high">Price: High to Low</option>
+              </select>
+            </aside>
           </div>
 
-          {/* Main Grid */}
+          {/* Grid */}
           <div className="col-lg-9">
-            {/* Mobile Filter Trigger */}
-            <div className="d-lg-none mb-4 d-flex justify-content-between align-items-center">
-               <span className="text-t3 small uppercase tracking-wider">{filteredProducts.length} Items</span>
-               <button 
-                className="btn btn-outline-gold d-flex align-items-center gap-2 py-2"
+            {/* Mobile Actions */}
+            <div className="d-lg-none d-flex justify-content-between align-items-center mb-4">
+              <span className="small uppercase fw-bold tracking-wider">{filteredProducts.length} Items</span>
+              <button 
+                className="btn btn-outline-gold d-flex align-items-center gap-2"
                 onClick={() => setShowFilters(true)}
-               >
-                 <HiAdjustments /> Filters
-               </button>
+              >
+                <HiAdjustments /> Filter
+              </button>
             </div>
 
-            <div className="product-grid">
+            <div className="row g-4">
               <AnimatePresence mode="wait">
                 {loading ? (
-                  Array(6).fill(0).map((_, i) => <SkeletonCard key={i} />)
-                ) : filteredProducts.length > 0 ? (
-                  filteredProducts.map((p, idx) => (
-                    <ProductCard key={p.id} product={p} index={idx} addItem={addItem} />
+                  Array(6).fill(0).map((_, i) => <div className="col-md-6 col-xl-4" key={i}><SkeletonCard /></div>)
+                ) : currentProducts.length > 0 ? (
+                  currentProducts.map((p, idx) => (
+                    <div className="col-md-6 col-xl-4" key={p.id}>
+                      <ProductCardElite product={p} index={idx} addItem={addItem} />
+                    </div>
                   ))
                 ) : (
                   <div className="col-12 py-5 text-center">
-                    <h3 className="font-display italic text-t2">No timepieces found in this archive.</h3>
+                    <h3 className="font-display italic text-t3">No instruments recorded in this sector.</h3>
                   </div>
                 )}
               </AnimatePresence>
             </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="pagination">
+                {[...Array(totalPages)].map((_, i) => (
+                  <button 
+                    key={i} 
+                    className={`page-btn ${currentPage === i + 1 ? 'active' : ''}`}
+                    onClick={() => setCurrentPage(i + 1)}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Mobile Filter Modal */}
+      {/* Mobile Filter */}
       <AnimatePresence>
         {showFilters && (
           <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed-inset glass z-100 p-4 d-flex flex-column"
-            style={{ position: 'fixed', inset: 0, zIndex: 1000 }}
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            className="fixed-inset"
+            style={{ position: 'fixed', inset: 0, zIndex: 1100, background: '#fff', padding: '40px' }}
           >
             <div className="d-flex justify-content-between align-items-center mb-5">
-              <span className="font-display h3 text-white mb-0">Refine Search</span>
-              <button className="btn text-white p-0" onClick={() => setShowFilters(false)}><HiX size={28} /></button>
+              <h2 className="font-display">Refine Search</h2>
+              <button className="btn p-0" onClick={() => setShowFilters(false)}><HiX size={28} /></button>
             </div>
-            
-            <div className="flex-grow-1 overflow-auto">
-               <span className="filter-label">Categories</span>
-                <ul className="cat-list mb-5">
-                  {categories.map((cat) => (
-                    <li 
-                      key={cat} 
-                      className={`cat-item h3 font-display ${activeCategory === cat ? 'active' : ''}`}
-                      onClick={() => { handleCategoryChange(cat); setShowFilters(false); }}
-                    >
-                      {cat}
-                    </li>
-                  ))}
-                </ul>
-            </div>
+            <span className="sidebar-title">Categories</span>
+            <ul className="filter-list">
+              {categories.map((cat) => (
+                <li 
+                  key={cat} 
+                  className={`filter-item h4 font-display ${activeCategory === cat ? 'active' : ''}`}
+                  onClick={() => { handleCategoryChange(cat); setShowFilters(false); }}
+                >
+                  {cat}
+                </li>
+              ))}
+            </ul>
           </motion.div>
         )}
       </AnimatePresence>
@@ -237,40 +251,40 @@ export default function Products({ filterCategory }) {
   );
 }
 
-// Reusing ProductCard UI
-function ProductCard({ product, index, addItem }) {
-  const handleAddToCart = (e) => {
-    e.preventDefault();
-    addItem(product);
-    toast.success(`${product.name} added to cart!`);
-  };
-
-  return (
-    <motion.div 
-      className="chronix-card overflow-hidden"
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.5, delay: (index % 6) * 0.05 }}
-    >
-      <Link to={`/product/${product.id}`} className="text-decoration-none h-100 d-flex flex-column">
-        <div className="product-img-wrap p-4 bg-s2 d-flex align-items-center justify-content-center" style={{ aspectRatio: '1/1' }}>
-          <img src={product.imageGallery[0]} alt={product.name} className="img-fluid object-fit-contain" style={{ maxHeight: '200px' }} />
-        </div>
-        <div className="p-4 d-flex flex-column flex-grow-1">
-          <span className="section-label mb-2">{product.category}</span>
-          <h3 className="h5 text-white mb-3 font-display">{product.name}</h3>
-          <div className="mt-auto d-flex justify-content-between align-items-center">
-            <span className="font-mono text-gold">₹{(product.dealPrice || product.price).toLocaleString()}</span>
-            <button 
-              onClick={handleAddToCart}
-              className="btn bg-white bg-opacity-5 text-white border-0 p-2 rounded-circle hover-gold transition-all"
-            >
-              <HiOutlineShoppingCart size={20} />
-            </button>
+function ProductCardElite({ product, index, addItem }) {
+    const handleAddToCart = (e) => {
+      e.preventDefault();
+      addItem(product);
+      toast.success(`${product.name} Archived`, {
+        style: { background: '#fff', color: '#111', border: '1px solid var(--border)' }
+      });
+    };
+  
+    return (
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ delay: (index % 3) * 0.1 }}
+        className="chronix-card p-0"
+      >
+        <Link to={`/product/${product.id}`} className="text-decoration-none">
+          <div className="product-img-wrap p-5" style={{ background: 'var(--bg-2)' }}>
+            <img src={product.imageGallery[0]} alt={product.name} className="img-fluid" />
           </div>
-        </div>
-      </Link>
-    </motion.div>
-  );
-}
+          <div className="p-4 text-center">
+             <span className="section-label" style={{ fontSize: '0.6rem', color: 'var(--gold)' }}>{product.category}</span>
+             <h3 className="font-display h4 text-t1 mb-2">{product.name}</h3>
+             <div className="text-gold font-mono fw-bold mb-3">₹{product.price.toLocaleString()}</div>
+             <button 
+               className="btn-gold w-100" 
+               style={{ fontSize: '0.7rem', padding: '10px' }}
+               onClick={handleAddToCart}
+             >
+               Secure Delivery
+             </button>
+          </div>
+        </Link>
+      </motion.div>
+    );
+  }

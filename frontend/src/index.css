@@ -1,25 +1,29 @@
 /* --- 1. CSS CUSTOM PROPERTIES (:root) --- */
 :root {
-  --bg: #080808;
-  --s1: #0f0f0f;
-  --s2: #161616;
-  --s3: #1e1e1e;
-  --border: #1e1e1e;
+  --bg: #FAFAF8;
+  --bg-2: #F4F3EF;
+  --bg-3: #EEECEA;
+  --s1: #FFFFFF;
+  --s2: #F0EEE9;
+  --s3: #E5E3DE;
+  --border: #E0DED9;
   --gold: #D4AF37;
-  --gold-light: #F0D060;
-  --gold-dim: #8A7020;
+  --gold-light: #E8C97A;
+  --gold-dim: #B8952A;
   --gold-glow: rgba(212,175,55,0.12);
-  --t1: #F0EDE8;
-  --t2: #9A9690;
-  --t3: #5A5652;
+  --t1: #111111;
+  --t2: #444444;
+  --t3: #888888;
   --font-display: 'Cormorant Garamond', Georgia, serif;
   --font-body: 'DM Sans', system-ui, sans-serif;
   --font-mono: 'DM Mono', 'Courier New', monospace;
   --transition: all 0.25s ease;
-  --radius: 8px;
+  --radius: 6px;
   --radius-lg: 12px;
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+  --shadow-md: 0 8px 24px rgba(0,0,0,0.08);
+  --shadow-lg: 0 20px 40px rgba(0,0,0,0.10);
   --shadow-gold: 0 8px 24px rgba(212,175,55,0.18);
-  --shadow-dark: 0 20px 40px rgba(0,0,0,0.5);
 }
 
 /* --- 2. RESET & BASE --- */
@@ -39,11 +43,11 @@ a { color: inherit; text-decoration: none; }
 button { font-family: inherit; }
 
 /* --- 3. SCROLLBAR --- */
-::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--s3); border-radius: 10px; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--gold-dim); }
-* { scrollbar-width: thin; scrollbar-color: var(--s3) var(--bg); }
+* { scrollbar-width: thin; scrollbar-color: var(--border) var(--bg); }
 
 /* --- 4. SELECTION --- */
 ::selection { background: rgba(212,175,55,0.2); color: var(--t1); }
@@ -68,105 +72,105 @@ button { font-family: inherit; }
 .bg-bg { background-color: var(--bg) !important; }
 .bg-s1 { background-color: var(--s1) !important; }
 .bg-s2 { background-color: var(--s2) !important; }
+.bg-s3 { background-color: var(--s3) !important; }
 
 /* --- 7. BORDER UTILITIES --- */
 .border-gold { border-color: var(--gold) !important; }
 .border-border { border-color: var(--border) !important; }
 .border-dashed { border-style: dashed !important; }
 
-/* --- 8. FORM OVERRIDES (Bootstrap dark theme fixes) --- */
+/* --- 8. FORM OVERRIDES --- */
 .form-control, .form-select {
-  background-color: var(--s2) !important;
+  background: var(--s1) !important;
   color: var(--t1) !important;
-  border: 1px solid var(--border) !important;
+  border: 1.5px solid var(--border) !important;
   border-radius: var(--radius) !important;
   font-family: var(--font-body) !important;
   padding: 12px 16px !important;
   transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
 }
 .form-control:focus, .form-select:focus {
-  background-color: var(--s2) !important;
-  color: var(--t1) !important;
   border-color: var(--gold) !important;
-  box-shadow: 0 0 0 3px rgba(212,175,55,0.1) !important;
+  box-shadow: 0 0 0 3px var(--gold-glow) !important;
+  background: var(--s1) !important;
+  color: var(--t1) !important;
   outline: none !important;
 }
 .form-control::placeholder { color: var(--t3) !important; opacity: 1 !important; }
 .form-select {
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%235A5652' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23888888' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") !important;
 }
 
 /* --- 9. CHRONIX BUTTON SYSTEM --- */
-.btn-primary-gold {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  background: var(--gold);
-  color: #000;
-  font-family: var(--font-body);
-  font-weight: 700;
-  font-size: 0.875rem;
-  padding: 13px 28px;
-  border: none;
-  border-radius: var(--radius);
-  cursor: pointer;
-  transition: var(--transition);
-  text-decoration: none;
-  letter-spacing: 0.05em;
-}
-.btn-primary-gold:hover {
-  background: var(--gold-light);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-gold);
-  color: #000;
-}
-.btn-primary-gold:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
-
-.btn-ghost-gold {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  background: transparent;
-  color: var(--t2);
-  font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 0.875rem;
-  padding: 11px 28px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  cursor: pointer;
-  transition: var(--transition);
-  text-decoration: none;
-}
-.btn-ghost-gold:hover {
-  border-color: var(--gold);
-  color: var(--gold);
-  background: rgba(212,175,55,0.04);
-}
-
 .btn-gold {
+  background: var(--gold);
+  color: #fff;
+  border: none;
+  padding: 13px 32px;
+  border-radius: var(--radius);
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: var(--transition);
+  text-decoration: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: var(--gold);
-  color: #000;
-  font-family: var(--font-body);
-  font-weight: 700;
-  font-size: 0.875rem;
-  padding: 13px 28px;
-  border: none;
-  border-radius: var(--radius);
-  cursor: pointer;
-  transition: var(--transition);
-  text-decoration: none;
 }
 .btn-gold:hover {
-  background: var(--gold-light);
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(212, 175, 55, 0.3);
+  background: var(--gold-dim);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-gold);
+  color: #fff;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--t1);
+  border: 1.5px solid var(--t1);
+  padding: 11px 32px;
+  border-radius: var(--radius);
+  font-weight: 600;
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: var(--transition);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btn-ghost:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.btn-outline-gold {
+  background: transparent;
+  color: var(--gold);
+  border: 1.5px solid var(--gold);
+  padding: 11px 32px;
+  border-radius: var(--radius);
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: var(--transition);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-outline-gold:hover {
+  background: var(--gold);
+  color: #fff;
 }
 
 /* --- 10. CARD SYSTEM --- */
@@ -177,9 +181,9 @@ button { font-family: inherit; }
   transition: border-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
 }
 .chronix-card:hover {
-  border-color: rgba(212,175,55,0.4);
-  box-shadow: 0 16px 40px rgba(0,0,0,0.6);
-  transform: translateY(-4px);
+  border-color: var(--gold);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-3px);
 }
 .chronix-card.no-hover:hover {
   border-color: var(--border);
@@ -189,29 +193,22 @@ button { font-family: inherit; }
 
 /* --- 11. SECTION LABEL --- */
 .section-label {
-  font-family: var(--font-body);
   font-size: 0.65rem;
-  font-weight: 600;
-  letter-spacing: 0.25em;
+  font-weight: 700;
+  letter-spacing: 0.3em;
   text-transform: uppercase;
-  color: var(--gold);
+  color: var(--t3);
+  display: block;
+  margin-bottom: 8px;
 }
 
-/* --- 12. NAV LINKS --- */
+/* --- 12. NAV & FOOTER LINKS --- */
 .nav-link, .footer-link {
-  color: var(--t3);
+  color: var(--t2);
   text-decoration: none;
   transition: color 0.2s ease;
 }
 .nav-link:hover, .footer-link:hover { color: var(--gold) !important; }
-
-/* --- 13. GLASS EFFECT --- */
-.glass {
-  background: rgba(15,15,15,0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255,255,255,0.06);
-}
 
 /* --- 14. GOLD GRADIENT TEXT --- */
 .text-gold-gradient {
@@ -224,34 +221,30 @@ button { font-family: inherit; }
 /* --- 15. REVEAL ANIMATIONS --- */
 .reveal {
   opacity: 0;
-  transform: translateY(24px);
-  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateY(20px);
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .reveal.visible { opacity: 1; transform: translateY(0); }
 .reveal-delay-1 { transition-delay: 100ms; }
 .reveal-delay-2 { transition-delay: 200ms; }
 .reveal-delay-3 { transition-delay: 300ms; }
-.reveal-delay-4 { transition-delay: 300ms; }
 
-/* --- 16. SHIMMER SKELETON ANIMATION --- */
+/* --- 16. SHIMMER SKELETON --- */
 @keyframes shimmer {
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
 .skeleton {
-  background: linear-gradient(90deg, var(--s2) 25%, var(--s3) 50%, var(--s2) 75%);
+  background: linear-gradient(90deg, var(--bg-2) 25%, var(--bg-3) 50%, var(--bg-2) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.8s infinite;
   border-radius: 4px;
 }
 
 /* --- 17. PRODUCT IMAGE ZOOM --- */
-.product-img-wrap { overflow: hidden; }
-.product-img-wrap img { transition: transform 0.5s cubic-bezier(0.33, 1, 0.68, 1); }
+.product-img-wrap { overflow: hidden; background: var(--bg-2); border-radius: var(--radius-lg); }
+.product-img-wrap img { transition: transform 0.5s cubic-bezier(0.33, 1, 0.68, 1); mix-blend-mode: multiply; }
 .product-img-wrap:hover img { transform: scale(1.06); }
-
-/* --- 18. TOAST OVERRIDE (react-hot-toast) --- */
-/* Applied via toastOptions in App.jsx — no CSS needed, just confirm defaults */
 
 /* --- 19. REDUCED MOTION --- */
 @media (prefers-reduced-motion: reduce) {
@@ -279,13 +272,6 @@ button { font-family: inherit; }
 }
 .animate-float { animation: float 6s ease-in-out infinite; }
 
-/* --- 10. SCROLLBAR --- */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--s3); border-radius: 10px; }
-::-webkit-scrollbar-thumb:hover { background: var(--gold-dim); }
-
-/* --- 11. RESPONSIVE HELPERS --- */
 .mobile-only { display: block; }
 @media (min-width: 768px) { .mobile-only { display: none; } }
 .desktop-only { display: none; }
