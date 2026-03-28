@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { 
   HiArrowRight, 
@@ -24,7 +24,7 @@ export default function Home() {
   const heroOpacity = useTransform(scrollYProgress, [0, 0.4], [1, 0]);
   const heroScale = useTransform(scrollYProgress, [0, 0.4], [1, 0.95]);
 
-  const newArrivals = useMemo(() => products.slice(0, 3), []);
+  const newArrivals = useMemo(() => products.slice(0, 4), []);
 
   useEffect(() => {
     setLoading(true);
@@ -168,53 +168,64 @@ export default function Home() {
         }
       `}</style>
 
-      {/* 1. HERO SECTION */}
-      <section className="hero-cinema" ref={heroRef}>
-        <div className="hero-grain" />
-        <div className="hero-glow" />
-        <div className="container position-relative" style={{ zIndex: 2 }}>
-          <div className="row align-items-center">
-            <div className="col-12 col-lg-7">
+      {/* 1. HERO SECTION V2 */}
+      <section className="hero-cinematic-v2" ref={heroRef}>
+        <div className="hero-v2-glow" />
+        <div className="container position-relative" style={{ zIndex: 10 }}>
+          <div className="row align-items-center min-vh-100 py-5">
+            <div className="col-12 col-lg-6">
               <motion.div 
-                initial={{ opacity: 0, x: -30 }} 
-                animate={{ opacity: 1, x: 0 }} 
-                transition={{ duration: 1 }}
+                initial={{ opacity: 0, y: 30 }} 
+                whileInView={{ opacity: 1, y: 0 }} 
+                viewport={{ once: true }}
+                transition={{ duration: 1, ease: "easeOut" }}
               >
-                <div className="review-avatar-group">
-                  <div className="review-avatar">
-                    <img src="https://i.pravatar.cc/100?img=33" alt="Reviewer" className="w-100 h-100 object-fit-cover" />
+                <div className="review-pill">
+                  <div className="d-flex gap-1 text-gold">
+                    <HiStar size={14} /><HiStar size={14} /><HiStar size={14} /><HiStar size={14} /><HiStar size={14} />
                   </div>
-                  <div className="review-text">“THE ULTIMATE INSTRUMENT” — J. DOE</div>
+                  <span className="x-small fw-bold tracking-widest text-white opacity-75">4.9/5 FROM 1200+ REVIEWS</span>
                 </div>
 
-                <h1 className="hero-headline">
-                  Crafting Timeless <br /> 
-                  <span className="text-gold-gradient">Horological Art</span>
+                <h1 className="hero-headline text-white mb-4">
+                  Timeless Elegance <br /> 
+                  <span className="text-gold-gradient">on Your Wrist</span>
                 </h1>
-                <p className="hero-sub">
-                  An elite selection of curated timepieces for the modern connoisseur. Engineered for those who understand that perfection is the only standard.
+                <p className="hero-sub text-white opacity-50 mb-5 pe-lg-5">
+                  Discover timepieces curated with absolute precision, premium materials, and designs that define generations of horological mastery.
                 </p>
-                <div className="cta-group">
-                  <Link to="/allcollection" className="btn-gold">Explore Archive</Link>
-                  <Link to="/allcollection" className="btn-ghost" style={{ color: '#D4AF37', border: 'none', padding: '0px' }}>
-                    Shop Collection <HiArrowRight className="ms-1" />
-                  </Link>
+                <div className="d-flex flex-wrap gap-4">
+                  <Link to="/allcollection" className="btn-gold px-5 py-3">Explore Collection</Link>
+                  <motion.div 
+                    initial={{ opacity: 0 }} 
+                    animate={{ opacity: 1 }} 
+                    transition={{ delay: 0.5 }}
+                    className="d-none d-md-flex align-items-center gap-3"
+                  >
+                    <div className="d-flex -space-x-2">
+                       <img src="https://i.pravatar.cc/100?img=1" className="rounded-circle border border-2 border-dark" style={{ width: 32, height: 32 }} alt="User" />
+                       <img src="https://i.pravatar.cc/100?img=2" className="rounded-circle border border-2 border-dark" style={{ width: 32, height: 32, marginLeft: -12 }} alt="User" />
+                       <img src="https://i.pravatar.cc/100?img=3" className="rounded-circle border border-2 border-dark" style={{ width: 32, height: 32, marginLeft: -12 }} alt="User" />
+                    </div>
+                    <span className="x-small text-white opacity-50 fw-bold">JOIN 10K+ COLLECTORS</span>
+                  </motion.div>
                 </div>
               </motion.div>
             </div>
             
-            <div className="col-12 col-lg-5 d-none d-lg-block">
+            <div className="col-12 col-lg-6 mt-5 mt-lg-0 text-center text-lg-end">
                <motion.div 
-                 style={{ opacity: heroOpacity, scale: heroScale }}
-                 className="text-end"
+                 initial={{ opacity: 0, scale: 0.8 }}
+                 whileInView={{ opacity: 1, scale: 1 }}
+                 viewport={{ once: true }}
+                 transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+                 className="animate-float"
                >
-                 <motion.img 
-                   animate={{ y: [0, -20, 0] }}
-                   transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+                 <img 
                    src={products[2].imageGallery[0]} 
                    className="img-fluid" 
-                   style={{ maxWidth: '480px', filter: 'drop-shadow(0 40px 80px rgba(0,0,0,0.8))' }} 
-                   alt="Featured Watch" 
+                   style={{ maxHeight: '700px', filter: 'drop-shadow(0 40px 100px rgba(212,175,55,0.15))' }} 
+                   alt="Luxury Watch Hero" 
                  />
                </motion.div>
             </div>
@@ -222,106 +233,162 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 2. NEW ARRIVALS */}
-      <section className="container">
-        <div className="section-header">
-          <span className="section-label">Seasonal Drops</span>
+      {/* 2. NEW ARRIVALS V2 */}
+      <section className="section-padding container">
+        <div className="text-center mb-5 pb-3">
+          <span className="section-label">THE NEW ERA</span>
           <h2 className="section-title">New Arrivals</h2>
         </div>
         <div className="row g-4">
           <AnimatePresence mode="wait">
             {loading ? (
-              [1, 2, 3].map(i => <div key={i} className="col-12 col-md-4"><SkeletonCard /></div>)
+              [1, 2, 3, 4].map(i => <div key={i} className="col-12 col-md-6 col-lg-3"><SkeletonCard /></div>)
             ) : (
               newArrivals.map((p, i) => (
-                <div key={p.id} className="col-12 col-md-4">
-                  <ProductCardElite product={p} index={i} addItem={addItem} />
+                <div key={p.id} className="col-12 col-md-6 col-lg-3">
+                  <ProductCardEditorial product={p} index={i} addItem={addItem} />
                 </div>
               ))
             )}
           </AnimatePresence>
         </div>
         <div className="text-center mt-5 pt-4">
-           <Link to="/allcollection" className="btn-outline-gold">View Full Archive</Link>
+           <Link to="/allcollection" className="btn-ghost px-5">View All Products</Link>
         </div>
       </section>
 
-      {/* 3. FEATURES GRID */}
-      <section className="features-grid mt-5">
+      {/* 3. FEATURE FOCUS SECTION */}
+      <section className="feature-focus-system bg-white">
         <div className="container">
-          <div className="row align-items-center g-0">
+          <div className="text-center mb-5 pb-5">
+            <span className="section-label">THE ARCHITECTURE</span>
+            <h2 className="section-title">Designed for Excellence</h2>
+          </div>
+          <div className="row align-items-center">
             <div className="col-12 col-md-4">
-              <div className="feature-item text-md-end">
-                <h3 className="feature-title">Institutional Precision</h3>
-                <p className="feature-desc">Calibrated movements that define industry accuracy standards, ensuring every second counts.</p>
+              <div className="feature-block-item text-md-end">
+                <span className="feature-block-num">01.</span>
+                <h3 className="feature-title">Trusted Precision</h3>
+                <p className="feature-desc">High-quality quartz movement ensures accurate and dependable timekeeping in every environment.</p>
               </div>
-              <div className="feature-item text-md-end">
-                <h3 className="feature-title">Institutional Grading</h3>
-                <p className="feature-desc">Every timepiece undergoes rigorous verification by our archival group before release.</p>
+              <div className="feature-block-item text-md-end">
+                <span className="feature-block-num">02.</span>
+                <h3 className="feature-title">Elegant Craftsmanship</h3>
+                <p className="feature-desc">Refined designs with premium finishes, crafted for the modern professional and daily elegance.</p>
               </div>
             </div>
-            <div className="col-12 col-md-4 text-center">
-              <motion.img 
-                whileInView={{ scale: [0.9, 1], opacity: [0, 1] }}
-                src={products[5].imageGallery[0]} 
-                alt="Feature Focus" 
-                className="img-fluid p-4"
-                style={{ maxHeight: '500px' }}
-              />
+            
+            <div className="col-12 col-md-4 text-center my-4 my-md-0">
+               <motion.img 
+                 whileInView={{ y: [20, 0], opacity: [0, 1] }}
+                 viewport={{ once: true }}
+                 src={products[5].imageGallery[0]} 
+                 className="img-fluid animate-float" 
+                 style={{ maxHeight: '550px' }}
+                 alt="Main Feature Product" 
+               />
             </div>
+
             <div className="col-12 col-md-4">
-              <div className="feature-item">
-                <h3 className="feature-title">Technical Mastery</h3>
-                <p className="feature-desc">Sourcing the rarest materials worldwide to craft skeletal structures of immense durability.</p>
+              <div className="feature-block-item">
+                <span className="feature-block-num">03.</span>
+                <h3 className="feature-title">Water Resistant</h3>
+                <p className="feature-desc">Engineered to handle life's elements with ease, providing durability without compromising on style.</p>
               </div>
-              <div className="feature-item">
-                <h3 className="feature-title">Priority Logistics</h3>
-                <p className="feature-desc">White-glove delivery experience designed for the protection of archival assets.</p>
+              <div className="feature-block-item">
+                <span className="feature-block-num">04.</span>
+                <h3 className="feature-title">Durable Materials</h3>
+                <p className="feature-desc">Strong cases and scratch-resistant glass ensure your timepiece remains pristine for years to come.</p>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 4. LIFESTYLE GRID */}
-      <section className="lifestyle-section container">
-        <div className="section-header">
-          <span className="section-label">Editorial</span>
-          <h2 className="section-title">In Proper Context</h2>
-        </div>
-        <div className="lifestyle-grid">
-          <motion.div 
-            whileInView={{ opacity: [0,1], y: [20,0] }}
-            className="lifestyle-item col-12 col-md-8" style={{ gridColumn: 'span 8' }}
-          >
-            <img src="https://images.unsplash.com/photo-1547996160-81dfa63595aa?q=80&w=2574&auto=format&fit=crop" alt="Lifestyle" />
-            <div className="lifestyle-overlay">
-              <h3 className="font-display h2">The Modern Maison</h3>
-              <p className="small">Redefining the standard of daily instruments.</p>
-            </div>
-          </motion.div>
-          <motion.div 
-            whileInView={{ opacity: [0,1], y: [20,0] }}
-            className="lifestyle-item col-12 col-md-4" style={{ gridColumn: 'span 4' }}
-          >
-            <img src="https://images.unsplash.com/photo-1614164185128-e4ec99c436d7?q=80&w=2574&auto=format&fit=crop" alt="Lifestyle" />
-            <div className="lifestyle-overlay">
-              <h3 className="font-display h3">Vault Archives</h3>
-              <p className="small">Limited seasonal technical releases.</p>
-            </div>
-          </motion.div>
+      {/* 4. CATEGORY STORYTELLING */}
+      <section className="section-padding container">
+        <div className="row g-4">
+          <div className="col-12 col-md-6">
+            <Link to="/allcollection?cat=classic" className="category-story-card">
+              <img src="https://images.unsplash.com/photo-1547996160-81dfa63595aa?q=80&w=2574&auto=format&fit=crop" alt="Classic Collection" />
+              <div className="category-story-content">
+                <span className="section-label text-white opacity-75">LIMITED EDITION</span>
+                <h3 className="hero-headline h2 text-white">The Classic <br /> Series</h3>
+                <p className="small text-white opacity-50">Explore the foundation of our archival collection.</p>
+              </div>
+            </Link>
+          </div>
+          <div className="col-12 col-md-6">
+            <Link to="/allcollection?cat=modern" className="category-story-card">
+              <img src="https://images.unsplash.com/photo-1523170335258-f5ed11844a49?q=80&w=2680&auto=format&fit=crop" alt="Modern Collection" />
+              <div className="category-story-content">
+                <span className="section-label text-white opacity-75">TECHNICAL CRAFT</span>
+                <h3 className="hero-headline h2 text-white">Modern <br /> Minimalism</h3>
+                <p className="small text-white opacity-50">Engineered for the contemporary landscape.</p>
+              </div>
+            </Link>
+          </div>
         </div>
       </section>
 
-      {/* 5. ARCHIVE BANNER */}
-      <section className="archive-banner">
-        <div className="container position-relative z-1">
-          <span className="section-label">The Absolute Archive</span>
-          <h2 className="display-3 font-display mb-4">A Sanctuary for Horological Art.</h2>
-          <p className="mx-auto mb-5" style={{ maxWidth: 600, opacity: 0.7 }}>
-            Experience the curation of silence and precision. Every piece tells a story of engineering brilliance and aesthetic restraint.
-          </p>
-          <Link to="/allcollection" className="btn-gold">Access the Collection</Link>
+      {/* 5. EDITORIAL STORY BLOCKS */}
+      <section className="bg-white overflow-hidden">
+        <div className="story-block">
+          <div className="story-img-wrap">
+            <img src="https://images.unsplash.com/photo-1622353382113-838c93f4129b?q=80&w=2670&auto=format&fit=crop" alt="Precision" />
+          </div>
+          <div className="story-content">
+            <span className="section-label">HOROLOGICAL STORY</span>
+            <h2 className="hero-headline h1">Crafting the <br /> Second.</h2>
+            <p className="hero-sub opacity-75 pe-md-5">
+              Every Chronix watch is a result of hundreds of hours of design and engineering. We believe that a timepiece shouldn't just tell time—it should embody it. From the micro-vibrations of the movement to the hand-polished bezel, every detail is a testament to our pursuit of perfection.
+            </p>
+            <Link to="/about" className="btn-ghost mt-4">Read Our Story</Link>
+          </div>
+        </div>
+
+        <div className="story-block" style={{ gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)' }}>
+          <div className="story-content order-2 order-md-1">
+            <span className="section-label">MATERIAL MASTERY</span>
+            <h2 className="hero-headline h1">Built to <br /> Last.</h2>
+            <p className="hero-sub opacity-75 pe-md-5">
+              We source the world's most resilient materials—316L stainless steel, scratch-resistant sapphire crystal, and premium Italian leathers. Our watches are designed to survive the elements while maintaining an air of effortless sophisticated luxury.
+            </p>
+            <div className="d-flex gap-4 mt-5">
+              <div className="text-center">
+                <span className="font-display h3 d-block text-gold">10ATM</span>
+                <span className="x-small tracking-widest opacity-50 fw-bold">WATER DEPTH</span>
+              </div>
+              <div className="text-center">
+                <span className="font-display h3 d-block text-gold">72HRS</span>
+                <span className="x-small tracking-widest opacity-50 fw-bold">POWER RESERVE</span>
+              </div>
+            </div>
+          </div>
+          <div className="story-img-wrap order-1 order-md-2">
+            <img src="https://images.unsplash.com/photo-1548171916-c0ea9869685e?q=80&w=2672&auto=format&fit=crop" alt="Materials" />
+          </div>
+        </div>
+      </section>
+
+      {/* 6. FINAL FINAL CTA SECTION */}
+      <section className="final-cta-section">
+        <div className="container">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+          >
+            <span className="section-label text-gold">THE FINAL WORD</span>
+            <h2 className="display-4 font-display mb-4 text-white">Own the Moment.</h2>
+            <p className="mx-auto mb-5 opacity-50" style={{ maxWidth: 600 }}>
+              Join thousands of collectors who refuse to settle for anything less than horological excellence. Your next legacy piece is waiting.
+            </p>
+            <Link to="/allcollection" className="btn-gold px-5 py-3">Access the Collection</Link>
+            <div className="mt-5 pt-4">
+              <span className="x-small tracking-widest opacity-25 fw-bold">CHRONIX. GENÈVE — SINCE 2024</span>
+            </div>
+          </motion.div>
         </div>
       </section>
 
@@ -329,12 +396,13 @@ export default function Home() {
   );
 }
 
-// ELITE PRODUCT CARD
-function ProductCardElite({ product, index, addItem }) {
+// EDITORIAL PRODUCT CARD
+function ProductCardEditorial({ product, index, addItem }) {
+  const navigate = useNavigate();
   const handleAddToCart = (e) => {
     e.preventDefault();
     addItem(product);
-    toast.success(`${product.name} Archived`, {
+    toast.success(`${product.name} added to cart`, {
       style: { background: '#fff', color: '#111', border: '1px solid var(--border)' }
     });
   };
@@ -344,24 +412,29 @@ function ProductCardElite({ product, index, addItem }) {
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      transition={{ delay: index * 0.15 }}
-      className="chronix-card p-0"
+      transition={{ delay: index * 0.1 }}
+      className="editorial-product-card"
     >
       <Link to={`/product/${product.id}`} className="text-decoration-none">
-        <div className="product-img-wrap p-5" style={{ background: 'var(--bg-2)' }}>
-          <img src={product.imageGallery[0]} alt={product.name} className="img-fluid" />
+        <div className="product-img-wrap p-4" style={{ background: 'var(--bg-2)', minHeight: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <img 
+            src={product.imageGallery[0]} 
+            alt={product.name} 
+            className="img-fluid" 
+            style={{ maxHeight: '240px', objectFit: 'contain' }}
+          />
+          <div className="card-quick-actions">
+             <button onClick={(e) => { e.preventDefault(); navigate(`/product/${product.id}`); }} className="btn-gold flex-grow-1" style={{ fontSize: '0.65rem' }}>View Details</button>
+             <button onClick={handleAddToCart} className="btn-ghost" style={{ fontSize: '0.65rem', padding: '10px' }}>
+                <HiOutlineShoppingCart size={16} />
+             </button>
+          </div>
         </div>
         <div className="p-4 text-center">
-           <span className="section-label" style={{ fontSize: '0.6rem', color: 'var(--gold)' }}>{product.category}</span>
-           <h3 className="font-display h4 text-t1 mb-2">{product.name}</h3>
-           <div className="text-gold font-mono fw-bold mb-3">₹{product.price.toLocaleString()}</div>
-           <button 
-             className="btn-gold w-100" 
-             style={{ fontSize: '0.7rem', padding: '10px' }}
-             onClick={handleAddToCart}
-           >
-             Secure Delivery
-           </button>
+           <span className="section-label" style={{ fontSize: '0.55rem', color: 'var(--gold)' }}>{product.category || "LUXURY SERIES"}</span>
+           <h3 className="font-display h5 text-t1 mb-1">{product.name}</h3>
+           <div className="x-small tracking-widest text-t3 mb-2">42 MM · CHRONOGRAPH</div>
+           <div className="text-gold font-mono fw-bold">₹{product.price.toLocaleString()}</div>
         </div>
       </Link>
     </motion.div>

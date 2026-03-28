@@ -136,7 +136,7 @@ export default function Footer() {
 
         .footer-link:hover {
           color: var(--gold);
-          padding-left: 5px;
+          transform: translateX(4px);
         }
 
         .newsletter-input-group {
@@ -175,8 +175,8 @@ export default function Footer() {
         }
 
         .footer-bottom {
-          border-top: 1px solid rgba(255,255,255,0.05);
-          padding: 40px 0;
+          border-top: 1px solid rgba(255,255,255,0.08);
+          padding: 60px 0;
         }
 
         .payment-icons {
@@ -210,25 +210,25 @@ export default function Footer() {
       {/* Trust Strip */}
       <div className="trust-strip">
         <div className="container">
-          <div className="row g-4">
+          <div className="row g-5">
             <div className="col-6 col-md-3 trust-item">
               <HiOutlineShieldCheck className="trust-icon" />
-              <div className="trust-label">Secure Payment</div>
-              <div className="trust-desc">Institutional Encryption</div>
+              <div className="trust-label mb-2">Secure Payment</div>
+              <div className="trust-desc">Institutional Grade Encryption</div>
             </div>
             <div className="col-6 col-md-3 trust-item">
               <HiOutlineTruck className="trust-icon" />
-              <div className="trust-label">Priority Shipping</div>
+              <div className="trust-label mb-2">Priority Shipping</div>
               <div className="trust-desc">Insured Worldwide Delivery</div>
             </div>
             <div className="col-6 col-md-3 trust-item">
               <HiOutlineArrowPath className="trust-icon" />
-              <div className="trust-label">Easy Returns</div>
+              <div className="trust-label mb-2">Returns Policy</div>
               <div className="trust-desc">14-Day Archival Window</div>
             </div>
             <div className="col-6 col-md-3 trust-item">
               <HiOutlineCheckBadge className="trust-icon" />
-              <div className="trust-label">Authenticity</div>
+              <div className="trust-label mb-2">Authenticity</div>
               <div className="trust-desc">Certified Chronometer</div>
             </div>
           </div>

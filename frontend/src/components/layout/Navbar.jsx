@@ -4,10 +4,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   HiOutlineShoppingCart, 
   HiOutlineUser, 
-  HiMenu, 
-  HiX, 
-  HiOutlineSearch 
-} from 'react-icons/hi';
+  HiBars3, 
+  HiXMark, 
+  HiOutlineSearch,
+  HiOutlineShoppingBag,
+  HiOutlineHeart,
+  HiOutlineArrowLeftOnRectangle 
+} from 'react-icons/hi2';
 import useCartStore from '../../store/cartStore';
 import useAuthStore from '../../store/authStore';
 import { products } from '../../data/products';
@@ -81,6 +84,8 @@ export default function Navbar() {
     : user?.displayName?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U';
 
   const firstName = profile?.name ? profile.name.split(' ')[0] : 'User';
+  const fullName = profile?.name || user?.displayName || 'User';
+  const userEmail = user?.email || 'user@example.com';
 
   return (
     <>
@@ -306,48 +311,101 @@ export default function Navbar() {
           box-shadow: var(--shadow-sm);
         }
 
-        .user-dropdown {
+        /* Redesigned User Dropdown */
+        .user-dropdown-card {
           position: absolute;
-          top: calc(100% + 10px);
+          top: calc(100% + 12px);
           right: 0;
-          width: 200px;
-          background: var(--s1);
+          width: 250px;
+          background: rgba(255, 255, 255, 0.95);
+          backdrop-filter: blur(12px);
           border: 1px solid var(--border);
-          border-radius: 12px;
+          border-radius: 20px;
           overflow: hidden;
-          box-shadow: var(--shadow-lg);
+          box-shadow: 0 15px 50px rgba(0,0,0,0.08);
           z-index: 220;
+          transform-origin: top right;
         }
 
-        .dropdown-item {
-          display: block;
-          padding: 12px 16px;
-          font-size: 0.875rem;
+        .dropdown-info-sec {
+          padding: 20px;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          background: var(--bg-2);
+          border-bottom: 1px solid var(--border);
+        }
+
+        .avatar-circle-sm {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          overflow: hidden;
+          background: var(--bg-3);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--t2);
+          font-size: 0.85rem;
+          font-weight: 700;
+          border: 2px solid #fff;
+        }
+
+        .info-text-sec { overflow: hidden; }
+        .info-name { display: block; font-size: 0.9rem; font-weight: 700; color: var(--t1); white-space: nowrap; text-overflow: ellipsis; }
+        .info-email { display: block; font-size: 0.7rem; color: var(--t3); opacity: 0.7; white-space: nowrap; text-overflow: ellipsis; }
+
+        .dropdown-menu-list { padding: 10px; }
+        .dropdown-menu-item {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 12px 14px;
+          font-size: 0.85rem;
           color: var(--t2);
           text-decoration: none;
           background: transparent;
           border: none;
           width: 100%;
           text-align: left;
-          transition: var(--transition);
-          border-bottom: 1px solid var(--bg-2);
+          transition: all 0.2s ease;
+          border-radius: 10px;
+          font-weight: 500;
         }
 
-        .dropdown-item:last-child {
-          border-bottom: none;
+        .dropdown-menu-item:hover {
+          color: var(--t1);
+          background: var(--bg-3);
+          transform: translateX(4px);
         }
 
-        .dropdown-item:hover {
+        .dropdown-menu-item svg {
+          color: var(--t3);
+          transition: color 0.2s ease;
+        }
+
+        .dropdown-menu-item:hover svg {
           color: var(--gold);
-          background: var(--bg-2);
         }
 
-        .logout-btn {
-          color: #c0392b !important;
+        .menu-divider {
+          height: 1px;
+          background: var(--border);
+          margin: 8px 10px;
+          opacity: 0.5;
         }
 
-        .logout-btn:hover {
-          background: #fdf2f2 !important;
+        .signout-item {
+          color: #dc2626;
+        }
+
+        .signout-item:hover {
+          background: #fef2f2;
+          color: #b91c1c;
+        }
+
+        .signout-item svg {
+          color: #f87171;
         }
 
         .hamburger {
@@ -479,20 +537,48 @@ export default function Navbar() {
                   <AnimatePresence>
                     {userMenuOpen && (
                       <motion.div 
-                        className="user-dropdown"
-                        initial={{ opacity: 0, y: 10, scale: 0.96 }}
+                        className="user-dropdown-card"
+                        initial={{ opacity: 0, y: 15, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 10, scale: 0.96 }}
-                        transition={{ duration: 0.2 }}
+                        exit={{ opacity: 0, y: 15, scale: 0.95 }}
+                        transition={{ duration: 0.3, cubicBezier: [0.16, 1, 0.3, 1] }}
                       >
-                        <Link to="/profile" className="dropdown-item">My Profile</Link>
-                        <Link to="/orders" className="dropdown-item">My Acquisitions</Link>
-                        <button 
-                          onClick={handleLogout} 
-                          className="dropdown-item logout-btn"
-                        >
-                          Sign Out
-                        </button>
+                        <div className="dropdown-info-sec">
+                           <div className="avatar-circle-sm">
+                              {profilePhoto ? (
+                                <img src={profilePhoto} alt={firstName} className="avatar-img" />
+                              ) : initials}
+                           </div>
+                           <div className="info-text-sec">
+                              <span className="info-name">{fullName}</span>
+                              <span className="info-email">{userEmail}</span>
+                           </div>
+                        </div>
+
+                        <div className="dropdown-menu-list">
+                           <Link to="/profile?tab=details" className="dropdown-menu-item">
+                              <HiOutlineUser size={18} />
+                              My Profile
+                           </Link>
+                           <Link to="/profile?tab=orders" className="dropdown-menu-item">
+                              <HiOutlineShoppingBag size={18} />
+                              My Orders
+                           </Link>
+                           <Link to="/profile?tab=wishlist" className="dropdown-menu-item">
+                              <HiOutlineHeart size={18} />
+                              Wishlist
+                           </Link>
+                           
+                           <div className="menu-divider" />
+                           
+                           <button 
+                             onClick={handleLogout} 
+                             className="dropdown-menu-item signout-item"
+                           >
+                             <HiOutlineArrowLeftOnRectangle size={18} />
+                             Sign Out
+                           </button>
+                        </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -508,7 +594,7 @@ export default function Navbar() {
               className="hamburger d-md-none" 
               onClick={() => setMobileOpen(!mobileOpen)}
             >
-              {mobileOpen ? <HiX size={24} /> : <HiMenu size={24} />}
+              {mobileOpen ? <HiXMark size={24} /> : <HiBars3 size={24} />}
             </button>
           </div>
         </div>
