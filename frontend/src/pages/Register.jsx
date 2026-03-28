@@ -5,7 +5,7 @@ import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import toast from 'react-hot-toast';
-import { HiOutlineMail, HiOutlineLockClosed, HiOutlineUser, HiOutlineShieldCheck } from 'react-icons/hi2';
+import { HiOutlineEnvelope, HiOutlineLockClosed, HiOutlineUser, HiOutlineShieldCheck } from 'react-icons/hi2';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -93,7 +93,7 @@ export default function Register() {
           <div className="col-12">
             <label className="text-uppercase text-t3 tracking-widest ps-1 mb-2 d-block" style={{ fontSize: '0.65rem' }}>Digital Mail</label>
             <div className="position-relative">
-              <HiOutlineMail className="position-absolute start-0 ms-3 top-50 translate-middle-y text-t3" />
+              <HiOutlineEnvelope className="position-absolute start-0 ms-3 top-50 translate-middle-y text-t3" />
               <input
                 required
                 type="email"

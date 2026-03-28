@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import { initAdminAuthListener } from './store/adminAuthStore';
 import Sidebar from './components/Sidebar';
+import ScrollToTop from './components/layout/ScrollToTop';
 import AdminProtectedRoute from './components/AdminProtectedRoute';
 
 const AdminLogin  = lazy(() => import('./pages/AdminLogin'));
@@ -30,6 +31,7 @@ const AdminLayout = ({ children }) => (
   <div className="d-flex min-vh-100 bg-obsidian-900 grain-overlay position-relative">
     <Sidebar />
     <main className="flex-grow-1 overflow-auto" style={{ maxHeight: '100vh', zIndex: 1 }}>
+      <ScrollToTop />
       {children}
     </main>
   </div>
@@ -41,6 +43,7 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
+        <ScrollToTop />
         <Suspense fallback={<Spinner />}>
           <Routes>
             <Route path="/login" element={<AdminLogin />} />

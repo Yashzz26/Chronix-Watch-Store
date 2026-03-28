@@ -6,7 +6,7 @@ import {
   HiOutlineUser, 
   HiBars3, 
   HiXMark, 
-  HiOutlineSearch,
+  HiOutlineMagnifyingGlass,
   HiOutlineShoppingBag,
   HiOutlineHeart,
   HiOutlineArrowLeftOnRectangle 
@@ -460,7 +460,7 @@ export default function Navbar() {
           </Link>
 
           <div className="search-container d-none d-md-flex" ref={searchRef}>
-            <HiOutlineSearch className="search-icon" size={18} />
+            <HiOutlineMagnifyingGlass className="search-icon" size={18} />
             <input 
               type="text" 
               className="search-input"

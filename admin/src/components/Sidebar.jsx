@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, Link } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import useAdminAuthStore from '../store/adminAuthStore';
@@ -37,14 +37,14 @@ const Sidebar = () => {
       style={{ width: '260px', minHeight: '100vh', flexShrink: 0, zIndex: 100 }}
     >
       {/* ── Logo ── */}
-      <div className="px-4 py-4 border-bottom border-white-5">
+      <Link to="/" className="px-4 py-4 border-bottom border-white-5 text-decoration-none d-block">
         <span className="font-display fw-bold text-white" style={{ fontSize: '1.3rem' }}>
           Chronix<span className="text-amber">.</span>
           <span className="font-sans text-platinum fw-normal ms-2" style={{ fontSize: '0.75rem' }}>
             Admin
           </span>
         </span>
-      </div>
+      </Link>
 
       {/* ── Navigation ── */}
       <nav className="flex-grow-1 px-3 py-3">

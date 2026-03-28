@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
+import ScrollToTop from './components/layout/ScrollToTop';
 import useAuthStore, { initAuthListener } from './store/authStore';
 
 const Home           = lazy(() => import('./pages/Home'));
@@ -16,6 +17,7 @@ const Login          = lazy(() => import('./pages/Login'));
 const Profile        = lazy(() => import('./pages/Profile'));
 const Orders         = lazy(() => import('./pages/Orders'));
 const Products       = lazy(() => import('./pages/Products'));
+const About         = lazy(() => import('./pages/About'));
 const NotFound       = lazy(() => import('./pages/NotFound'));
 
 const Loader = () => (
@@ -64,6 +66,7 @@ export default function App() {
 
   return (
     <div className="min-vh-100 bg-bg text-t1 d-flex flex-column">
+      <ScrollToTop />
       <Navbar />
       <main className="flex-grow-1 pb-5 mb-5">
 
@@ -80,6 +83,7 @@ export default function App() {
             <Route path="/allcollection"      element={<Products />} />
             <Route path="/giftsforher"        element={<Products filterCategory="Gifts for Her" />} />
             <Route path="/giftsforhim"        element={<Products filterCategory="Gifts for Him" />} />
+            <Route path="/about"              element={<About />} />
             <Route path="*"                   element={<NotFound />} />
           </Routes>
         </Suspense>

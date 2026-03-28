@@ -167,38 +167,33 @@ export default function Home() {
           align-items: center;
         }
 
-        /* --- 6. PREMIUM FEATURE GRID (EDITORIAL) --- */
+        /* --- 6. PREMIUM FEATURE GRID (STRICT RECONSTRUCTION FIX) --- */
         .premium-feature-grid { padding: 120px 0; background: var(--bg); }
-        .feature-grid-container {
+        .feature-grid-manual {
           display: grid;
-          grid-template-columns: repeat(12, 1fr);
-          grid-auto-rows: minmax(300px, auto);
-          gap: 40px;
+          grid-template-columns: 65fr 35fr;
+          gap: 32px;
+          align-items: stretch;
         }
 
-        .feature-item-large { grid-column: span 7; grid-row: span 2; }
-        .feature-item-small { grid-column: span 5; }
-        .feature-item-medium { grid-column: span 4; }
-
+        /* LEFT (65%) */
+        .f-large-cell { grid-column: 1 / 2; }
+        /* RIGHT (35%) */
+        .f-stack-cell { grid-column: 2 / 3; display: flex; flex-direction: column; gap: 32px; }
+        
         .feature-prestige-card {
           position: relative;
           width: 100%;
-          height: 100%;
           border-radius: 20px;
           overflow: hidden;
-          background: var(--s1);
-          transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+          background: #000;
+          transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
           cursor: pointer;
         }
 
-        .feature-item-large .feature-prestige-card { aspect-ratio: unset; min-height: 620px; }
-        .feature-item-small .feature-prestige-card { min-height: 290px; }
-        .feature-item-medium .feature-prestige-card { min-height: 420px; }
-
-        .feature-prestige-card:hover {
-          transform: translateY(-8px);
-          box-shadow: 0 30px 60px rgba(0,0,0,0.06);
-        }
+        /* Height balance: Large card height should match stack height exactly */
+        .f-large-cell .feature-prestige-card { height: 700px; }
+        .f-stack-cell .feature-prestige-card { height: calc(350px - 16px); } 
 
         .feature-bg-img {
           position: absolute;
@@ -206,57 +201,73 @@ export default function Home() {
           width: 100%;
           height: 100%;
           object-fit: cover;
-          transition: transform 1.5s cubic-bezier(0.16, 1, 0.3, 1);
+          transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
           z-index: 0;
+          filter: brightness(0.8);
+        }
+
+        .feature-prestige-card:hover { 
+          transform: scale(1.03); 
+          box-shadow: 0 40px 100px rgba(0,0,0,0.4);
+          z-index: 2;
         }
         .feature-prestige-card:hover .feature-bg-img { 
-          transform: scale(1.08); 
+          filter: brightness(1.05);
         }
 
         .feature-content-overlay {
           position: absolute;
           inset: 0;
-          background: linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.8) 100%);
+          background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 60%);
           z-index: 1;
           display: flex;
           flex-direction: column;
           justify-content: flex-end;
-          padding: 40px;
+          padding: 50px;
           color: #fff;
-          transition: var(--transition);
-        }
-        .feature-prestige-card:hover .feature-content-overlay {
-          background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.85) 100%);
         }
 
         .feature-lbl {
-           font-size: 0.6rem;
+           font-size: 0.7rem;
            font-weight: 800;
            color: var(--gold);
-           letter-spacing: 0.25em;
+           letter-spacing: 0.4em;
            text-transform: uppercase;
-           margin-bottom: 10px;
+           position: absolute;
+           top: 50px;
+           left: 50px;
            opacity: 0.9;
         }
         .feature-h {
            font-family: var(--font-display);
-           font-size: clamp(1.25rem, 2.5vw, 2rem);
+           font-size: clamp(1.5rem, 2.5vw, 2.25rem);
            font-weight: 700;
            line-height: 1.1;
            margin-bottom: 0;
+           text-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
-        .feature-item-large .feature-h { font-size: clamp(2rem, 4.5vw, 3rem); }
+        .f-large-cell .feature-h { font-size: clamp(2.5rem, 4.5vw, 3.5rem); }
 
         @media (max-width: 1199px) {
-          .feature-grid-container { grid-template-columns: repeat(2, 1fr); gap: 24px; }
-          .feature-item-large, .feature-item-small, .feature-item-medium { grid-column: span 1; grid-row: span 1; }
-          .feature-item-large .feature-prestige-card,
-          .feature-item-small .feature-prestige-card,
-          .feature-item-medium .feature-prestige-card { min-height: 400px; }
+           .feature-grid-manual { gap: 24px; }
+           .f-stack-cell { gap: 24px; }
+           .f-large-cell .feature-prestige-card { height: 600px; }
+           .f-stack-cell .feature-prestige-card { height: calc(300px - 12px); }
+           .feature-content-overlay { padding: 40px; }
+           .feature-lbl { top: 40px; left: 40px; }
         }
-        @media (max-width: 767px) {
-          .feature-grid-container { grid-template-columns: 1fr; }
-          .feature-content-overlay { padding: 32px; }
+
+        @media (max-width: 991px) {
+           .feature-grid-manual { 
+             display: flex; 
+             flex-direction: column; 
+             gap: 24px; 
+           }
+           .f-large-cell, .f-stack-cell { width: 100%; }
+           .f-stack-cell { gap: 24px; }
+           .f-large-cell .feature-prestige-card { height: 500px; }
+           .f-stack-cell .feature-prestige-card { height: 400px; }
+           .feature-h { font-size: 2rem !important; }
         }
       `}</style>
 
@@ -397,10 +408,10 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 4. PREMIUM FEATURE SHOWCASE (EDITORIAL FIX) */}
+      {/* 4. PREMIUM FEATURE SHOWCASE (STRICT RECONSTRUCTION FIX) */}
       <section className="premium-feature-grid">
         <div className="container">
-          <div className="d-flex justify-content-between align-items-end mb-5 pb-5">
+          <div className="d-flex justify-content-between align-items-end mb-5 pb-4">
             <div>
                <span className="section-label text-gold">THE CHRONIX PHILOSOPHY</span>
                <h2 className="section-title text-start m-0">Built for Precision.</h2>
@@ -408,48 +419,28 @@ export default function Home() {
             <Link to="/about" className="btn-ghost d-none d-md-block">The Maison Story</Link>
           </div>
           
-          <div className="feature-grid-container">
-             <div className="feature-item-large">
+          <div className="feature-grid-manual">
+             {/* LEFT SIDE (65%) */}
+             <div className="f-large-cell">
                 <LuxuryFeatureCard 
                   img="/images/features/crafted.png" 
-                  label="Mechanical Excellence"
+                  label="MECHANICAL EXCELLENCE"
                   title="Crafted for Every Second"
                   showCTA
                 />
              </div>
-             <div className="feature-item-small">
+
+             {/* RIGHT SIDE (35%) */}
+             <div className="f-stack-cell">
                 <LuxuryFeatureCard 
                   img="/images/features/materials.png" 
-                  label="Structural Art"
-                  title="Premium Institutional Steel"
+                  label="STRUCTURAL ART"
+                  title="Premium Materials"
                 />
-             </div>
-             <div className="feature-item-small">
                 <LuxuryFeatureCard 
                   img="/images/features/precision.png" 
-                  label="The Escapement"
-                  title="Swiss-Grade Precision"
-                />
-             </div>
-             <div className="feature-item-medium">
-                <LuxuryFeatureCard 
-                  img="/images/features/durable.png" 
-                  label="Resistance"
-                  title="Built to Endure"
-                />
-             </div>
-             <div className="feature-item-medium">
-                <LuxuryFeatureCard 
-                  img="/images/features/lifestyle.png" 
-                  label="The Collector"
-                  title="Your Style, Your Watch"
-                />
-             </div>
-             <div className="feature-item-medium">
-                <LuxuryFeatureCard 
-                  img="/images/features/heritage.png" 
-                  label="Global Trust"
-                  title="Trusted Worldwide"
+                  label="THE ESCAPEMENT"
+                  title="Precision Inside"
                 />
              </div>
           </div>
