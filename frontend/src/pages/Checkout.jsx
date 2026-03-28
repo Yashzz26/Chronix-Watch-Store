@@ -11,6 +11,7 @@ import {
   HiArrowLeft
 } from 'react-icons/hi2';
 import useCartStore from '../store/cartStore';
+import useAuthStore from '../store/authStore';
 import toast from 'react-hot-toast';
 import { auth } from '../lib/firebase';
 import { initiateRazorpayPayment } from '../lib/razorpay';
@@ -60,6 +61,7 @@ const CheckoutStepper = ({ currentStep }) => {
 export default function Checkout() {
   const navigate = useNavigate();
   const { items, clearCart, appliedCoupon, applyCoupon } = useCartStore();
+  const { profile } = useAuthStore();
   
   const [currentStep, setCurrentStep] = useState('address');
   const [method, setMethod] = useState('online');
@@ -77,7 +79,25 @@ export default function Checkout() {
 
   useEffect(() => {
     if (items.length === 0) navigate('/cart', { replace: true });
-  }, [items, navigate]);
+    
+    // Auto-fill persistence
+    const savedLocally = localStorage.getItem('chronix-checkout-address');
+    if (savedLocally) {
+      try {
+        setAddressData(JSON.parse(savedLocally));
+      } catch (err) {}
+    } else if (profile?.addresses?.length > 0) {
+      const pAddr = profile.addresses[0];
+      setAddressData(prev => ({
+        ...prev,
+        fullName: profile.name || '',
+        phone: profile.phone || '',
+        address: pAddr.street || '',
+        city: pAddr.city || 'Pune',
+        zip: pAddr.zip || ''
+      }));
+    }
+  }, [items, navigate, profile]);
 
   if (items.length === 0) return null;
 
@@ -275,6 +295,7 @@ export default function Checkout() {
                   <div className="mt-5">
                     <button className="btn-gold w-100 py-3 transition-all hover:-translate-y-1" onClick={() => {
                         if(!addressData.fullName || !addressData.address) return toast.error('Please fill in all required fields');
+                        localStorage.setItem('chronix-checkout-address', JSON.stringify(addressData));
                         setCurrentStep('payment');
                     }}>Continue to Payment</button>
                   </div>

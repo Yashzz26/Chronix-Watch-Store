@@ -22,8 +22,10 @@ import {
   HiOutlineCreditCard,
   HiOutlineBanknotes
 } from 'react-icons/hi2';
-import useAuthStore from '../store/authStore';
 import { auth } from '../lib/firebase';
+import useAuthStore from '../store/authStore';
+import useWishlistStore from '../store/wishlistStore';
+import useCartStore from '../store/cartStore';
 import toast from 'react-hot-toast';
 
 const StatusIcon = ({ status }) => {
@@ -251,16 +253,63 @@ export default function Profile() {
     </motion.div>
   );
 
-  const MyWishlist = () => (
-    <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}>
-      <h2 className="font-display h3 mb-5 pb-2 border-bottom border-border border-opacity-50">My Wishlist</h2>
-      <div className="text-center py-5">
-         <HiOutlineHeart size={64} className="text-t3 opacity-25 mb-4" />
-         <p className="text-t3 uppercase tracking-widest small">Your curation is currently empty</p>
-         <a href="/allcollection" className="btn-pill-soft px-4 py-2 mt-3 d-inline-block text-decoration-none">Explore Collections</a>
-      </div>
-    </motion.div>
-  );
+  const MyWishlist = () => {
+    const { items: wishlistItems, removeFromWishlist } = useWishlistStore();
+    const { addItem } = useCartStore();
+
+    return (
+      <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}>
+        <h2 className="font-display h3 mb-5 pb-2 border-bottom border-border border-opacity-50">My Curation</h2>
+        
+        {wishlistItems.length === 0 ? (
+          <div className="text-center py-5 border border-border border-dashed rounded-4 bg-bg-2">
+             <HiOutlineHeart size={64} className="text-t3 opacity-25 mb-4" />
+             <p className="text-t3 uppercase tracking-widest small">Your curation is currently empty</p>
+             <a href="/allcollection" className="btn-pill-soft px-4 py-2 mt-3 d-inline-block text-decoration-none">Explore Collections</a>
+          </div>
+        ) : (
+          <div className="row g-4">
+            {wishlistItems.map((item) => (
+              <div key={item.id} className="col-12 col-md-6">
+                 <div className="p-3 border border-border rounded-4 bg-white hover-shadow transition-all d-flex gap-3 align-items-center position-relative">
+                    <img 
+                      src={item.imageGallery?.[0]} 
+                      alt={item.name} 
+                      style={{ width: '80px', height: '80px', objectFit: 'contain', background: 'var(--bg-2)' }} 
+                      className="rounded-3 p-2 border border-border"
+                    />
+                    <div className="flex-grow-1">
+                       <span className="x-small tracking-widest fw-bold text-gold uppercase d-block mb-1">{item.category}</span>
+                       <h4 className="h6 fw-bold text-t1 mb-1 m-0 pointer-events-none">{item.name}</h4>
+                       <p className="font-mono text-t1 m-0 fw-bold">₹{item.price.toLocaleString()}</p>
+                    </div>
+                    <div className="d-flex flex-column gap-2" style={{ zIndex: 10 }}>
+                       <button 
+                         className="btn-gold p-2 border-0 w-100" 
+                         onClick={() => {
+                           addItem(item);
+                           toast.success('Moved to archive cart');
+                           removeFromWishlist(item.id);
+                         }}
+                         style={{ fontSize: '0.65rem' }}
+                       >
+                         Checkout
+                       </button>
+                       <button 
+                         className="btn-pill-soft p-2 border-0 text-danger opacity-75 hover-opacity-100 w-100" 
+                         onClick={() => removeFromWishlist(item.id)}
+                       >
+                         Remove
+                       </button>
+                    </div>
+                 </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </motion.div>
+    );
+  };
 
   const MyOrders = () => {
     const [orders, setOrders] = useState([]);
