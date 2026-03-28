@@ -166,6 +166,98 @@ export default function Home() {
           gap: 24px;
           align-items: center;
         }
+
+        /* --- 6. PREMIUM FEATURE GRID (EDITORIAL) --- */
+        .premium-feature-grid { padding: 120px 0; background: var(--bg); }
+        .feature-grid-container {
+          display: grid;
+          grid-template-columns: repeat(12, 1fr);
+          grid-auto-rows: minmax(300px, auto);
+          gap: 40px;
+        }
+
+        .feature-item-large { grid-column: span 7; grid-row: span 2; }
+        .feature-item-small { grid-column: span 5; }
+        .feature-item-medium { grid-column: span 4; }
+
+        .feature-prestige-card {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          border-radius: 20px;
+          overflow: hidden;
+          background: var(--s1);
+          transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+          cursor: pointer;
+        }
+
+        .feature-item-large .feature-prestige-card { aspect-ratio: unset; min-height: 620px; }
+        .feature-item-small .feature-prestige-card { min-height: 290px; }
+        .feature-item-medium .feature-prestige-card { min-height: 420px; }
+
+        .feature-prestige-card:hover {
+          transform: translateY(-8px);
+          box-shadow: 0 30px 60px rgba(0,0,0,0.06);
+        }
+
+        .feature-bg-img {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          transition: transform 1.5s cubic-bezier(0.16, 1, 0.3, 1);
+          z-index: 0;
+        }
+        .feature-prestige-card:hover .feature-bg-img { 
+          transform: scale(1.08); 
+        }
+
+        .feature-content-overlay {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.8) 100%);
+          z-index: 1;
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-end;
+          padding: 40px;
+          color: #fff;
+          transition: var(--transition);
+        }
+        .feature-prestige-card:hover .feature-content-overlay {
+          background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.85) 100%);
+        }
+
+        .feature-lbl {
+           font-size: 0.6rem;
+           font-weight: 800;
+           color: var(--gold);
+           letter-spacing: 0.25em;
+           text-transform: uppercase;
+           margin-bottom: 10px;
+           opacity: 0.9;
+        }
+        .feature-h {
+           font-family: var(--font-display);
+           font-size: clamp(1.25rem, 2.5vw, 2rem);
+           font-weight: 700;
+           line-height: 1.1;
+           margin-bottom: 0;
+        }
+        .feature-item-large .feature-h { font-size: clamp(2rem, 4.5vw, 3rem); }
+
+        @media (max-width: 1199px) {
+          .feature-grid-container { grid-template-columns: repeat(2, 1fr); gap: 24px; }
+          .feature-item-large, .feature-item-small, .feature-item-medium { grid-column: span 1; grid-row: span 1; }
+          .feature-item-large .feature-prestige-card,
+          .feature-item-small .feature-prestige-card,
+          .feature-item-medium .feature-prestige-card { min-height: 400px; }
+        }
+        @media (max-width: 767px) {
+          .feature-grid-container { grid-template-columns: 1fr; }
+          .feature-content-overlay { padding: 32px; }
+        }
       `}</style>
 
       {/* 1. HERO SECTION V2 */}
@@ -305,7 +397,66 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 4. CATEGORY STORYTELLING */}
+      {/* 4. PREMIUM FEATURE SHOWCASE (EDITORIAL FIX) */}
+      <section className="premium-feature-grid">
+        <div className="container">
+          <div className="d-flex justify-content-between align-items-end mb-5 pb-5">
+            <div>
+               <span className="section-label text-gold">THE CHRONIX PHILOSOPHY</span>
+               <h2 className="section-title text-start m-0">Built for Precision.</h2>
+            </div>
+            <Link to="/about" className="btn-ghost d-none d-md-block">The Maison Story</Link>
+          </div>
+          
+          <div className="feature-grid-container">
+             <div className="feature-item-large">
+                <LuxuryFeatureCard 
+                  img="/images/features/crafted.png" 
+                  label="Mechanical Excellence"
+                  title="Crafted for Every Second"
+                  showCTA
+                />
+             </div>
+             <div className="feature-item-small">
+                <LuxuryFeatureCard 
+                  img="/images/features/materials.png" 
+                  label="Structural Art"
+                  title="Premium Institutional Steel"
+                />
+             </div>
+             <div className="feature-item-small">
+                <LuxuryFeatureCard 
+                  img="/images/features/precision.png" 
+                  label="The Escapement"
+                  title="Swiss-Grade Precision"
+                />
+             </div>
+             <div className="feature-item-medium">
+                <LuxuryFeatureCard 
+                  img="/images/features/durable.png" 
+                  label="Resistance"
+                  title="Built to Endure"
+                />
+             </div>
+             <div className="feature-item-medium">
+                <LuxuryFeatureCard 
+                  img="/images/features/lifestyle.png" 
+                  label="The Collector"
+                  title="Your Style, Your Watch"
+                />
+             </div>
+             <div className="feature-item-medium">
+                <LuxuryFeatureCard 
+                  img="/images/features/heritage.png" 
+                  label="Global Trust"
+                  title="Trusted Worldwide"
+                />
+             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 5. CATEGORY STORYTELLING */}
       <section className="section-padding container">
         <div className="row g-4">
           <div className="col-12 col-md-6">
@@ -437,6 +588,34 @@ function ProductCardEditorial({ product, index, addItem }) {
            <div className="text-gold font-mono fw-bold">₹{product.price.toLocaleString()}</div>
         </div>
       </Link>
+    </motion.div>
+  );
+}
+
+// LUXURY FEATURE CARD COMPONENT
+function LuxuryFeatureCard({ img, label, title, showCTA = false }) {
+  return (
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.98 }}
+      whileInView={{ opacity: 1, scale: 1 }}
+      viewport={{ once: true }}
+      transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+      className="feature-prestige-card"
+    >
+      <img src={img} alt={title} className="feature-bg-img" />
+      <div className="feature-content-overlay">
+         <span className="feature-lbl">{label}</span>
+         <h3 className="feature-h">{title}</h3>
+         {showCTA && (
+           <Link 
+             to="/allcollection" 
+             className="btn-gold py-3 px-4 mt-4" 
+             style={{ fontSize: '0.65rem', width: 'fit-content' }}
+           >
+             Explore Full Archive
+           </Link>
+         )}
+      </div>
     </motion.div>
   );
 }

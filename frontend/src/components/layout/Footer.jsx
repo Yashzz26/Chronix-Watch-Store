@@ -207,33 +207,6 @@ export default function Footer() {
         }
       `}</style>
 
-      {/* Trust Strip */}
-      <div className="trust-strip">
-        <div className="container">
-          <div className="row g-5">
-            <div className="col-6 col-md-3 trust-item">
-              <HiOutlineShieldCheck className="trust-icon" />
-              <div className="trust-label mb-2">Secure Payment</div>
-              <div className="trust-desc">Institutional Grade Encryption</div>
-            </div>
-            <div className="col-6 col-md-3 trust-item">
-              <HiOutlineTruck className="trust-icon" />
-              <div className="trust-label mb-2">Priority Shipping</div>
-              <div className="trust-desc">Insured Worldwide Delivery</div>
-            </div>
-            <div className="col-6 col-md-3 trust-item">
-              <HiOutlineArrowPath className="trust-icon" />
-              <div className="trust-label mb-2">Returns Policy</div>
-              <div className="trust-desc">14-Day Archival Window</div>
-            </div>
-            <div className="col-6 col-md-3 trust-item">
-              <HiOutlineCheckBadge className="trust-icon" />
-              <div className="trust-label mb-2">Authenticity</div>
-              <div className="trust-desc">Certified Chronometer</div>
-            </div>
-          </div>
-        </div>
-      </div>
 
       <div className="footer-content">
         <div className="container">
