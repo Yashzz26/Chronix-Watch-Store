@@ -18,7 +18,9 @@ import {
   HiOutlineTruck,
   HiOutlineXCircle,
   HiOutlinePlus,
-  HiOutlineTrash
+  HiOutlineTrash,
+  HiOutlineCreditCard,
+  HiOutlineBanknotes
 } from 'react-icons/hi2';
 import useAuthStore from '../store/authStore';
 import { auth } from '../lib/firebase';
@@ -424,7 +426,7 @@ export default function Profile() {
                        <div className="text-end">
                           <p className="h5 m-0 fw-bold mb-3">₹{order.totalPrice.toLocaleString()}</p>
                           <div className="d-flex justify-content-end gap-2">
-                             <button className="action-btn action-btn-primary" onClick={() => toggleExpand(order.id)}>View Details</button>
+                             <button className="action-btn action-btn-primary" onClick={() => navigate(`/invoice/${order.id}`)}>Download Invoice</button>
                              {order.status === 'delivered' && <button className="action-btn action-btn-outline">Reorder</button>}
                              {order.status === 'pending' && <button className="action-btn action-btn-outline text-danger border-danger border-opacity-25" onClick={() => toast.success('Cancellation request sent')}>Cancel</button>}
                           </div>

@@ -7,11 +7,13 @@ import {
   HiOutlineTruck, 
   HiOutlineXCircle,
   HiOutlineCreditCard,
-  HiOutlineBanknotes
+  HiOutlineBanknotes,
+  HiOutlineDocumentText
 } from 'react-icons/hi2';
 import { auth } from '../lib/firebase';
 import useAuthStore from '../store/authStore';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 
 const StatusBadge = ({ status }) => {
   const configs = {
@@ -32,6 +34,7 @@ const StatusBadge = ({ status }) => {
 };
 
 export default function Orders() {
+  const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedOrderId, setExpandedOrderId] = useState(null);
@@ -98,6 +101,28 @@ export default function Orders() {
         .action-btn-primary:hover { background: #000; transform: translateY(-1px); }
         .action-btn-outline { background: transparent; color: var(--t2); border: 1px solid var(--border); }
         .action-btn-outline:hover { background: var(--bg-2); border-color: var(--t1); }
+        
+        .invoice-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 8px 16px;
+          background: transparent;
+          border: 1.5px solid var(--border, #E0DED9);
+          border-radius: 6px;
+          font-size: 0.75rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          color: var(--t2, #444444);
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .invoice-btn:hover {
+          border-color: var(--gold, #D4AF37);
+          color: var(--gold, #D4AF37);
+          background: rgba(212,175,55,0.04);
+        }
         
         .input-refined { width: 100%; border: 1px solid var(--border); border-radius: 14px; padding: 14px 20px; font-size: 0.95rem; background: #fff; outline: none; transition: var(--transition); color: var(--t1); }
         .input-refined:focus { border-color: var(--gold); box-shadow: 0 0 15px rgba(212,175,55,0.05); }
@@ -196,7 +221,9 @@ export default function Orders() {
                        <div>
                           <p className="h4 m-0 fw-bold mb-3 font-mono">₹{order.totalPrice.toLocaleString('en-IN')}</p>
                           <div className="d-flex justify-content-lg-end gap-2">
-                             <button className="action-btn action-btn-primary" onClick={() => toggleExpand(order.id)}>View Details</button>
+                             <button className="action-btn action-btn-primary" onClick={() => navigate(`/invoice/${order.id}`)}>
+                               Download Invoice
+                             </button>
                              {order.status === 'delivered' && <button className="action-btn action-btn-outline">Reorder</button>}
                              {order.status === 'pending' && <button className="action-btn action-btn-outline text-danger border-danger border-opacity-25" onClick={() => toast.success('Cancellation request sent')}>Cancel Order</button>}
                           </div>

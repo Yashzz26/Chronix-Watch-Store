@@ -1,6 +1,6 @@
 // Last updated: 2026-03-22T22:00:00Z (To force Vite rebuild)
 import { lazy, Suspense, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import Navbar from './components/layout/Navbar';
@@ -18,6 +18,7 @@ const Profile        = lazy(() => import('./pages/Profile'));
 const Orders         = lazy(() => import('./pages/Orders'));
 const Products       = lazy(() => import('./pages/Products'));
 const About         = lazy(() => import('./pages/About'));
+const Invoice       = lazy(() => import('./pages/Invoice'));
 const NotFound       = lazy(() => import('./pages/NotFound'));
 
 const Loader = () => (
@@ -61,14 +62,16 @@ export default function App() {
   }, []);
 
   const loading = useAuthStore(s => s.loading);
+  const location = useLocation();
+  const isInvoicePage = location.pathname.startsWith('/invoice/');
 
   if (loading) return <Loader />;
 
   return (
     <div className="min-vh-100 bg-bg text-t1 d-flex flex-column">
       <ScrollToTop />
-      <Navbar />
-      <main className="flex-grow-1 pb-5 mb-5">
+      {!isInvoicePage && <Navbar />}
+      <main className={`flex-grow-1 ${!isInvoicePage ? 'pb-5 mb-5' : ''}`}>
 
         <Suspense fallback={<Loader />}>
           <Routes>
@@ -80,6 +83,7 @@ export default function App() {
             <Route path="/confirmation"       element={<Protected><Confirmation /></Protected>} />
             <Route path="/profile"            element={<Protected><Profile /></Protected>} />
             <Route path="/orders"             element={<Protected><Orders /></Protected>} />
+            <Route path="/invoice/:orderId"   element={<Protected><Invoice /></Protected>} />
             <Route path="/allcollection"      element={<Products />} />
             <Route path="/giftsforher"        element={<Products filterCategory="Gifts for Her" />} />
             <Route path="/giftsforhim"        element={<Products filterCategory="Gifts for Him" />} />
@@ -88,7 +92,7 @@ export default function App() {
           </Routes>
         </Suspense>
       </main>
-      <Footer />
+      {!isInvoicePage && <Footer />}
       <Toaster
         position="top-right"
         toastOptions={{

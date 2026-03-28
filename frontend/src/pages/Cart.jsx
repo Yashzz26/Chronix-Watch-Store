@@ -109,6 +109,35 @@ export default function Cart() {
         .action-link { font-size: 0.7rem; letter-spacing: 0.1em; font-weight: 700; color: var(--t3); text-decoration: none; text-transform: uppercase; transition: var(--transition); border: none; background: transparent; }
         .action-link:hover { color: var(--gold); }
         .action-link.remove:hover { color: #dc3545; }
+
+        .cart-invoice-label {
+          font-size: 0.65rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.2em;
+          color: var(--t3, #888888);
+          margin-bottom: 10px;
+        }
+
+        .cart-invoice-gst {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          font-size: 0.82rem;
+          color: var(--t2, #444444);
+          padding: 14px;
+          background: var(--bg-2, #F4F3EF);
+          border-radius: 8px;
+          border: 1px solid var(--border, #E0DED9);
+        }
+
+        .cart-gst-total {
+          font-weight: 700;
+          color: var(--t1, #111111);
+          border-top: 1px solid var(--border, #E0DED9);
+          padding-top: 8px;
+          margin-top: 4px;
+        }
       `}</style>
 
       <div className="container">
@@ -214,9 +243,31 @@ export default function Cart() {
                    <span className="text-t3">Calculated at checkout</span>
                 </div>
 
-                <div className="summary-total summary-row align-items-end mb-5">
+                <div className="summary-total summary-row align-items-end mb-4">
                    <span className="section-label m-0">Estimated Total</span>
                    <span className="h2 text-t1 m-0 fw-bold">₹{totalPrice.toLocaleString()}</span>
+                </div>
+
+                <div className="cart-invoice-preview mb-5">
+                  <p className="cart-invoice-label">Order Summary</p>
+                  <div className="cart-invoice-gst">
+                    <div className="d-flex justify-content-between">
+                      <span>Subtotal</span>
+                      <span>₹{totalPrice.toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="d-flex justify-content-between">
+                      <span>CGST (9%)</span>
+                      <span>₹{(totalPrice * 0.09).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="d-flex justify-content-between">
+                      <span>SGST (9%)</span>
+                      <span>₹{(totalPrice * 0.09).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="d-flex justify-content-between cart-gst-total">
+                      <span>Grand Total (incl. GST)</span>
+                      <span>₹{(totalPrice * 1.18).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                    </div>
+                  </div>
                 </div>
 
                 <button className="btn-gold w-100 py-3 mb-4 transition-all hover:-translate-y-1" onClick={() => navigate('/checkout')}>Continue to Shipping</button>
