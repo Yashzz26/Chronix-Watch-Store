@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react';
 import { NavLink, useNavigate, Link } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { auth, db } from '../lib/firebase';
-import { collection, onSnapshot, query, where, Timestamp } from 'firebase/firestore';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import useAdminAuthStore from '../store/adminAuthStore';
 import {
   HiOutlineChartBar, HiOutlineShoppingBag, HiOutlineClipboardList,
   HiOutlineUsers, HiOutlineStar, HiOutlineLogout, HiOutlineTicket, HiOutlineMenuAlt2
 } from 'react-icons/hi';
 import toast from 'react-hot-toast';
+import { motion } from 'framer-motion';
 
 const NAV = [
   { label: 'Dashboard', icon: HiOutlineChartBar, to: '/' },
@@ -27,7 +28,6 @@ const Sidebar = () => {
   const [todayOrders, setTodayOrders] = useState(0);
 
   useEffect(() => {
-    // Real-time listener for today's stats in the sidebar
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
 
@@ -102,24 +102,41 @@ const Sidebar = () => {
             }
             title={collapsed ? label : undefined}
           >
-            <Icon size={20} style={{ flexShrink: 0 }} />
-            {!collapsed && <span className="ms-3">{label}</span>}
+            {({ isActive }) => (
+              <motion.span
+                whileHover={{ scale: 1.02 }}
+                transition={{ duration: 0.15 }}
+                className="d-flex align-items-center gap-3 w-100"
+                style={{ pointerEvents: 'none' }}
+              >
+                <Icon size={20} style={{ flexShrink: 0 }} />
+                {!collapsed && <span>{label}</span>}
+              </motion.span>
+            )}
           </NavLink>
         ))}
       </nav>
 
       {/* ── Quick Stats Footer (Hidden if collapsed) ── */}
       {!collapsed && (
-        <div className="px-4 py-3 border-top border-white-5">
-           <p className="x-small tracking-widest text-platinum uppercase mb-2 opacity-50">Pulse Today</p>
-           <div className="d-flex justify-content-between align-items-end mb-2">
-             <span className="small text-white">Revenue</span>
-             <span className="font-mono text-amber fw-bold small">₹{todayRevenue.toLocaleString()}</span>
-           </div>
-           <div className="d-flex justify-content-between align-items-end mb-3">
-             <span className="small text-white">Orders</span>
-             <span className="font-mono fw-bold small">{todayOrders}</span>
-           </div>
+        <div
+          className="px-4 py-4 border-top border-white-5 rounded-3 mx-3 mb-3"
+          style={{
+            background: 'linear-gradient(135deg, rgba(245,166,35,0.06), transparent)',
+            border: '1px solid rgba(245,166,35,0.1)',
+          }}
+        >
+          <p className="x-small tracking-widest text-platinum text-uppercase mb-3 opacity-50">
+            ⚡ Pulse Today
+          </p>
+          <div className="d-flex justify-content-between align-items-end mb-2">
+            <span className="small text-white opacity-75">Revenue</span>
+            <span className="font-mono text-amber fw-bold small">₹{todayRevenue.toLocaleString()}</span>
+          </div>
+          <div className="d-flex justify-content-between align-items-end">
+            <span className="small text-white opacity-75">Orders</span>
+            <span className="font-mono text-white fw-bold small">{todayOrders}</span>
+          </div>
         </div>
       )}
 
@@ -164,7 +181,6 @@ const Sidebar = () => {
           onClick={handleLogout}
           className={`btn border-0 w-100 d-flex align-items-center px-2 py-2 text-platinum shadow-none transition-all ${collapsed ? 'justify-content-center' : 'gap-3 px-3'}`}
           style={{ fontSize: '14px', borderRadius: '0.75rem' }}
-          target="_blank"
           title={collapsed ? 'Sign Out' : undefined}
           onMouseEnter={e => {
             e.currentTarget.style.color = '#ff4d4d';

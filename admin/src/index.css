@@ -1,7 +1,7 @@
 /* ============================================================
    Chronix Admin — Global Styles (Bootstrap 5 Dark Theme)
    ============================================================ */
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,900;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,900;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap');
 
 /* ─── CSS Custom Properties ─── */
 :root {
@@ -13,6 +13,7 @@
   --color-amber-dark:#D48A0E;
   --color-platinum:  #8B8FA8;
   --color-text:      #E8EAF0;
+  --radius-card:     16px;
 }
 
 /* ─── Base ─── */
@@ -31,9 +32,10 @@ body {
 }
 
 /* ─── Typography utilities ─── */
-.font-display { font-family: 'Playfair Display', serif; }
-.font-sans    { font-family: 'DM Sans', sans-serif; }
-.x-small      { font-size: 11px !important; }
+.font-display   { font-family: 'Playfair Display', serif; }
+.font-sans      { font-family: 'DM Sans', sans-serif; }
+.font-mono      { font-family: 'DM Mono', monospace; }
+.x-small        { font-size: 11px !important; }
 .tracking-widest { letter-spacing: 0.1em; }
 
 /* ─── Scrollbar ─── */
@@ -55,11 +57,12 @@ body {
 
 /* ─── Glass Card ─── */
 .glass {
-  background: rgba(26, 26, 36, 0.65);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(139, 143, 168, 0.12);
-  border-radius: 1rem;
+  background: rgba(26, 26, 36, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(139, 143, 168, 0.15);
+  border-radius: var(--radius-card);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
 /* ─── Grain Texture Overlay ─── */
@@ -106,7 +109,7 @@ body {
 .chronix-input:focus, .form-control.chronix-input:focus {
   background-color: #1A1A24 !important;
   border-color: rgba(245, 166, 35, 0.5) !important;
-  box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.1) !important;
+  box-shadow: 0 0 0 4px rgba(245, 166, 35, 0.1) !important;
   color: var(--color-text) !important;
   outline: none !important;
 }
@@ -118,12 +121,14 @@ body {
   background-color: #111118 !important;
   border-color: rgba(139, 143, 168, 0.2) !important;
   color: var(--color-text) !important;
+  height: 48px;
+  font-size: 15px;
 }
 .form-control.bg-obsidian-800:focus,
 .form-select.bg-obsidian-800:focus {
   background-color: #1A1A24 !important;
   border-color: rgba(245, 166, 35, 0.5) !important;
-  box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.1) !important;
+  box-shadow: 0 0 0 4px rgba(245, 166, 35, 0.1) !important;
   color: var(--color-text) !important;
 }
 .form-control.bg-obsidian-800::placeholder { color: var(--color-platinum); opacity: 0.6; }
@@ -151,20 +156,98 @@ body {
   font-weight: 700;
 }
 .table-chronix tbody td {
-  padding: 0.9rem 1rem;
+  padding: 1.2rem 1rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
   vertical-align: middle;
+  transition: all 0.2s ease;
 }
-.table-chronix tbody tr:hover td { background-color: rgba(255, 255, 255, 0.025); }
+.table-chronix tbody tr {
+  transition: all 0.2s ease;
+}
+.table-chronix tbody tr:hover td {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+.table-chronix tbody tr:hover {
+  box-shadow: inset 0 0 0 1px rgba(245, 166, 35, 0.15);
+}
 .table-chronix tbody tr:last-child td { border-bottom: none !important; }
 
-/* ─── Badge Tweaks ─── */
-.badge { font-weight: 600; }
+/* ─── Status Badge System ─── */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-family: 'DM Sans', sans-serif;
+  white-space: nowrap;
+}
+
+.status-badge-paid {
+  background: rgba(245, 166, 35, 0.15);
+  color: #D48A0E;
+}
+.status-badge-pending {
+  background: rgba(234, 179, 8, 0.15);
+  color: #A16207;
+}
+.status-badge-shipped {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3B82F6;
+}
+.status-badge-delivered {
+  background: rgba(251, 146, 60, 0.15);
+  color: #C2410C;
+}
+.status-badge-completed {
+  background: rgba(34, 197, 94, 0.15);
+  color: #15803D;
+}
+.status-badge-cancelled {
+  background: rgba(239, 68, 68, 0.15);
+  color: #B91C1C;
+}
+.status-badge-active {
+  background: rgba(34, 197, 94, 0.12);
+  color: #15803D;
+}
 
 /* ─── Modal Dark Theme ─── */
-.modal-content.glass { background: rgba(17, 17, 24, 0.95); border: none; }
+.modal-content.glass { background: rgba(17, 17, 24, 0.97); border: none; }
 .modal-header { border-color: rgba(255, 255, 255, 0.05) !important; }
 .modal-footer { border-color: rgba(255, 255, 255, 0.05) !important; }
+
+/* ─── Order Detail Drawer ─── */
+.order-drawer {
+  position: fixed;
+  right: 0;
+  top: 0;
+  height: 100vh;
+  width: 550px;
+  max-width: 100vw;
+  z-index: 9999;
+  background: #111118;
+  border-left: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.order-drawer-header {
+  position: sticky;
+  top: 0;
+  background: #0A0A0F;
+  padding: 32px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  flex-shrink: 0;
+}
+.order-drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px;
+}
 
 /* ─── Hover Utilities ─── */
 .hover-bg-obsidian-700:hover { background-color: #1A1A24 !important; }
@@ -174,12 +257,21 @@ body {
 .hover-opacity-100:hover     { opacity: 1 !important; }
 .hover-glow:hover            { transform: translateY(-2px); border-color: rgba(245, 166, 35, 0.2) !important; }
 
+/* ─── Hover Lift ─── */
+.hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5) !important;
+}
+
 /* ─── Sidebar Nav ─── */
 .sidebar-nav-link {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.75rem 1rem;
+  padding: 1rem 1rem;
   border-radius: 0.75rem;
   margin-bottom: 2px;
   font-size: 0.875rem;
@@ -198,11 +290,17 @@ body {
   color: var(--color-amber);
   border-left-color: var(--color-amber);
   padding-left: calc(1rem - 3px);
+  font-weight: 700;
 }
 
 /* ─── Spinner color ─── */
 .text-amber.spinner-border { color: var(--color-amber) !important; }
 .border-amber { border-color: var(--color-amber) !important; }
+
+/* ─── New Utility Classes ─── */
+.rounded-4           { border-radius: 16px !important; }
+.shadow-amber-glow   { box-shadow: 0 8px 32px rgba(245, 166, 35, 0.2) !important; }
+.shadow-2xl          { box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6) !important; }
 
 /* ─── Misc ─── */
 .line-clamp-2 {
@@ -217,3 +315,51 @@ body {
 .cursor-pointer     { cursor: pointer; }
 .transition-all     { transition: all 0.2s ease; }
 .active-scale:active { transform: scale(0.98); }
+
+/* ─── Product image upload slot ─── */
+.img-upload-slot {
+  width: 120px;
+  height: 120px;
+  border: 2px dashed rgba(139, 143, 168, 0.3);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background: rgba(26, 26, 36, 0.5);
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+.img-upload-slot:hover {
+  border-color: rgba(245, 166, 35, 0.5);
+  background: rgba(245, 166, 35, 0.05);
+}
+.img-upload-slot.has-image {
+  border-style: solid;
+  border-color: rgba(245, 166, 35, 0.3);
+}
+
+/* ─── Coupon Preview Badge ─── */
+.coupon-preview-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(245, 166, 35, 0.12);
+  border: 1px dashed rgba(245, 166, 35, 0.4);
+  color: var(--color-amber);
+  font-family: 'DM Mono', monospace;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 15px;
+  transition: all 0.2s ease;
+}
+
+/* ─── Review row hover ─── */
+.review-row:hover td {
+  background: rgba(255, 255, 255, 0.02) !important;
+}

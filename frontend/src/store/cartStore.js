@@ -25,11 +25,20 @@ const useCartStore = create(
 
       // ── Cart ──────────────────────────────────
       addItem(product) {
-        const existing = get().items.find(i => i.id === product.id);
-        if (existing) {
-          set({ items: get().items.map(i => i.id === product.id ? { ...i, qty: i.qty + 1 } : i) });
+        // Uniquely identify item by ID + Variants
+        const itemKey = product.id + (product.variants ? JSON.stringify(product.variants) : '');
+        
+        const existingIndex = get().items.findIndex(i => {
+          const currentKey = i.id + (i.variants ? JSON.stringify(i.variants) : '');
+          return currentKey === itemKey;
+        });
+
+        if (existingIndex !== -1) {
+          const updatedItems = [...get().items];
+          updatedItems[existingIndex].qty += (product.qty || 1);
+          set({ items: updatedItems });
         } else {
-          set({ items: [...get().items, { ...product, qty: 1 }] });
+          set({ items: [...get().items, { ...product, qty: product.qty || 1 }] });
         }
       },
       removeItem(id) {

@@ -12,10 +12,11 @@ router.get('/:productId', async (req, res) => {
     const { productId } = req.params;
     const snapshot = await db.collection('reviews')
       .where('productId', '==', productId)
-      .orderBy('createdAt', 'desc')
       .get();
       
-    const reviews = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    let reviews = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    // Sort manually to avoid index requirement for field filters + orderBy
+    reviews.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     res.json({ reviews });
   } catch (err) {
     console.error('Fetch reviews error:', err);

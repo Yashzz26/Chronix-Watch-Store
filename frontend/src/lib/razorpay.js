@@ -28,7 +28,7 @@ export const initiateRazorpayPayment = async ({ orderData, userInfo, onSuccess, 
     currency: orderData.currency || 'INR',
     name: 'Chronix',
     description: 'Premium Watch Purchase',
-    image: '/logo.png',
+    image: 'https://cdn-icons-png.flaticon.com/512/7458/7458694.png',
     order_id: orderData.razorpayOrderId,
     prefill: {
       name: userInfo?.name || '',

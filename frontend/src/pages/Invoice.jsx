@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { HiOutlineArrowLeft, HiOutlineDocumentDownload, HiOutlinePrinter, HiOutlineEnvelope } from 'react-icons/hi2';
+import { HiOutlineArrowLeft, HiOutlineArrowDownTray, HiOutlinePrinter, HiOutlineEnvelope } from 'react-icons/hi2';
 
 export default function Invoice() {
   const { orderId } = useParams();
@@ -471,9 +471,9 @@ export default function Invoice() {
             <button className="action-icon-btn action-btn-outline" onClick={handlePrint}>
               <HiOutlinePrinter size={18} /> Print Invoice
             </button>
-            <button className="action-icon-btn action-btn-primary" onClick={handlePrint}>
-              <HiOutlineDocumentDownload size={18} /> Download PDF
-            </button>
+              <button className="invoice-action-btn" onClick={() => window.print()}>
+                <HiOutlineArrowDownTray /> Save PDF
+              </button>
           </div>
         </div>
       </div>
@@ -568,7 +568,12 @@ export default function Invoice() {
                         />
                         <div>
                           <p className="invoice-item-name">{item.name}</p>
-                          <p className="invoice-item-sku">SKU: CHR-{item.id.slice(0, 6).toUpperCase()}</p>
+                          <p className="invoice-item-sku mb-1">SKU: CHR-{item.id.slice(0, 6).toUpperCase()}</p>
+                          {item.variants && (
+                            <p className="x-small text-gold fw-bold uppercase tracking-widest" style={{ fontSize: '0.65rem' }}>
+                              {item.variants.size} • {item.variants.color} • {item.variants.material}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </td>

@@ -17,6 +17,11 @@ import useCartStore from '../store/cartStore';
 import toast from 'react-hot-toast';
 
 export default function Home() {
+  const heroRef = useRef(null);
+  const { scrollYProgress } = useScroll({ target: heroRef });
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.4], [1, 0]);
+  const heroScale = useTransform(scrollYProgress, [0, 0.4], [1, 0.95]);
+
   const [searchParams] = useSearchParams();
   const addItem = useCartStore((s) => s.addItem);
   
