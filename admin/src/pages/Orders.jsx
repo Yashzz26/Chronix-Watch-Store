@@ -25,7 +25,7 @@ const getStatusClass = (status) => {
 const Orders = () => {
   const [activeTab, setActiveTab] = useState('all');
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [statusDropdown, setStatusDropdown] = useState(null); // order id with open dropdown
+  const [statusDropdown, setStatusDropdown] = useState(null);
   const queryClient = useQueryClient();
 
   const { data: orders = [], isLoading } = useQuery({
@@ -43,43 +43,49 @@ const Orders = () => {
       toast.success('Order status updated');
       setStatusDropdown(null);
     },
-    onError: () => toast.error('Check administrative clearance')
+    onError: () => toast.error('Update failed')
   });
 
-  const filteredOrders = activeTab === 'all'
-    ? orders
-    : orders.filter(o => o.status === activeTab);
+  const filteredOrders = activeTab === 'all' ? orders : orders.filter(o => o.status === activeTab);
 
   if (isLoading) return (
     <div className="d-flex align-items-center justify-content-center" style={{ height: '300px' }}>
-      <div className="spinner-border text-amber" role="status" />
+      <div className="spinner-border" style={{ color: '#D97706' }} />
     </div>
   );
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="p-4 p-md-5"
+      transition={{ duration: 0.35 }}
+      style={{ padding: '32px 36px' }}
     >
-      <div className="mb-5">
-        <h1 className="font-display fw-bold text-white mb-1">Orders</h1>
-        <p className="text-platinum small">Manage customer fulfillment and logistics.</p>
+      {/* Header */}
+      <div style={{ marginBottom: '24px' }}>
+        <h1 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '1.6rem', color: '#111827', marginBottom: '4px' }}>Orders</h1>
+        <p style={{ color: '#6B7280', fontSize: '14px', margin: 0 }}>Manage customer fulfillment and logistics.</p>
       </div>
 
       {/* Filter Tabs */}
-      <div className="d-flex gap-2 mb-5 overflow-auto pb-2 scrollbar-hide flex-wrap">
+      <div className="d-flex gap-2 mb-4 flex-wrap">
         {TABS.map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`btn btn-sm rounded-pill text-uppercase fw-bold shadow-none transition-all ${
-              activeTab === tab
-                ? 'btn-amber'
-                : 'bg-white bg-opacity-5 text-platinum hover-text-white'
-            }`}
-            style={{ fontSize: '10px', letterSpacing: '0.08em', padding: '6px 16px' }}
+            className="btn btn-sm"
+            style={{
+              borderRadius: '999px',
+              fontSize: '12px',
+              fontWeight: 600,
+              letterSpacing: '0.03em',
+              textTransform: 'capitalize',
+              padding: '6px 14px',
+              border: activeTab === tab ? '1px solid #111827' : '1px solid #E5E7EB',
+              background: activeTab === tab ? '#111827' : '#FFFFFF',
+              color: activeTab === tab ? '#FFFFFF' : '#6B7280',
+              transition: 'all 0.15s ease',
+            }}
           >
             {tab} ({orders.filter(o => tab === 'all' || o.status === tab).length})
           </button>
@@ -87,7 +93,7 @@ const Orders = () => {
       </div>
 
       {/* Table */}
-      <div className="glass overflow-hidden border border-white-5">
+      <div className="glass overflow-hidden">
         <div className="table-responsive">
           <table className="table table-chronix align-middle mb-0">
             <thead>
@@ -101,27 +107,26 @@ const Orders = () => {
               {filteredOrders.map(o => (
                 <tr key={o.id} style={{ position: 'relative' }}>
                   <td className="ps-4">
-                    <span
-                      className="font-mono fw-bold text-amber"
-                      style={{ fontSize: '14px', letterSpacing: '0.02em' }}
-                    >
+                    <span style={{ fontFamily: 'DM Mono, monospace', fontWeight: 700, color: '#D97706', fontSize: '13px' }}>
                       {o.id.slice(-8).toUpperCase()}
                     </span>
                   </td>
                   <td>
-                    <p className="text-white fw-medium mb-0 small">{o.shippingAddress?.name || 'Guest'}</p>
-                    <p className="text-platinum opacity-50 mb-0" style={{ fontSize: '11px' }}>
+                    <p style={{ fontWeight: 600, color: '#111827', margin: '0 0 2px', fontSize: '14px' }}>
+                      {o.shippingAddress?.name || 'Guest'}
+                    </p>
+                    <p style={{ color: '#9CA3AF', margin: 0, fontSize: '12px' }}>
                       {o.shippingAddress?.email}
                     </p>
                   </td>
-                  <td className="text-platinum small">{o.items?.length || 0} items</td>
-                  <td className="text-white fw-bold small">₹{o.totalAmount?.toLocaleString('en-IN')}</td>
-
-                  {/* Custom Status Badge Dropdown */}
+                  <td style={{ color: '#6B7280', fontSize: '13px' }}>{o.items?.length || 0} items</td>
+                  <td style={{ fontWeight: 700, color: '#111827', fontSize: '14px' }}>
+                    ₹{o.totalAmount?.toLocaleString('en-IN')}
+                  </td>
                   <td style={{ position: 'relative' }}>
                     <button
-                      className={`${getStatusClass(o.status)} border-0 cursor-pointer`}
-                      style={{ background: 'inherit' }}
+                      className={getStatusClass(o.status)}
+                      style={{ border: 'none', cursor: 'pointer' }}
                       onClick={() => setStatusDropdown(statusDropdown === o.id ? null : o.id)}
                     >
                       {o.status || 'pending'} ▾
@@ -132,16 +137,27 @@ const Orders = () => {
                           initial={{ opacity: 0, y: 4, scale: 0.97 }}
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, y: 4, scale: 0.97 }}
-                          transition={{ duration: 0.15 }}
-                          className="position-absolute bg-obsidian-800 border border-white-5 rounded-3 p-2 shadow-2xl"
-                          style={{ top: '100%', left: 0, zIndex: 500, minWidth: '160px' }}
+                          transition={{ duration: 0.12 }}
+                          style={{
+                            position: 'absolute', top: '100%', left: 0, zIndex: 500,
+                            background: '#FFFFFF', border: '1px solid #E5E7EB',
+                            borderRadius: '12px', padding: '6px',
+                            boxShadow: '0 8px 24px rgba(0,0,0,0.1)', minWidth: '160px',
+                          }}
                           onClick={e => e.stopPropagation()}
                         >
                           {STATUS_OPTIONS.map(opt => (
                             <button
                               key={opt.value}
-                              className={`d-block w-100 text-start border-0 bg-transparent mb-1 p-2 rounded-2 cursor-pointer transition-all hover-bg-obsidian-700`}
+                              style={{
+                                display: 'block', width: '100%', textAlign: 'left',
+                                border: 'none', background: 'transparent',
+                                padding: '6px 8px', borderRadius: '8px', cursor: 'pointer',
+                                marginBottom: '2px', transition: 'background 0.1s',
+                              }}
                               onClick={() => statusMutation.mutate({ id: o.id, status: opt.value })}
+                              onMouseEnter={e => e.currentTarget.style.background = '#F9FAFB'}
+                              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                             >
                               <span className={`status-badge ${opt.cls}`}>{opt.label}</span>
                             </button>
@@ -150,31 +166,23 @@ const Orders = () => {
                       )}
                     </AnimatePresence>
                   </td>
-
-                  <td className="text-platinum x-small">
+                  <td style={{ color: '#9CA3AF', fontSize: '12px' }}>
                     {o.createdAt?.toDate?.()?.toLocaleDateString('en-IN') ||
-                     (o.createdAt ? new Date(o.createdAt).toLocaleDateString('en-IN') : 'N/A')}
+                      (o.createdAt ? new Date(o.createdAt).toLocaleDateString('en-IN') : 'N/A')}
                   </td>
                   <td className="pe-4">
                     <button
                       onClick={() => { setSelectedOrder(o); setStatusDropdown(null); }}
-                      className="btn btn-sm d-flex align-items-center gap-2 fw-bold border-0 shadow-none transition-all"
+                      className="btn btn-sm d-flex align-items-center gap-2"
                       style={{
-                        background: 'rgba(245,166,35,0.1)',
-                        color: '#F5A623',
-                        fontSize: '11px',
-                        padding: '6px 14px',
-                        borderRadius: '8px',
-                        letterSpacing: '0.04em',
+                        background: '#F3F4F6', color: '#374151', fontSize: '12px',
+                        padding: '6px 12px', borderRadius: '8px', border: 'none',
+                        fontWeight: 600, transition: 'all 0.15s ease',
                       }}
-                      onMouseEnter={e => {
-                        e.currentTarget.style.background = 'rgba(245,166,35,0.2)';
-                      }}
-                      onMouseLeave={e => {
-                        e.currentTarget.style.background = 'rgba(245,166,35,0.1)';
-                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = '#E5E7EB'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = '#F3F4F6'; }}
                     >
-                      <HiOutlineEye size={14} /> Inspect
+                      <HiOutlineEye size={14} /> View
                     </button>
                   </td>
                 </tr>
@@ -182,8 +190,8 @@ const Orders = () => {
             </tbody>
           </table>
           {filteredOrders.length === 0 && (
-            <div className="p-5 text-center text-platinum opacity-25 fst-italic small">
-              No entries found for this category.
+            <div style={{ padding: '48px', textAlign: 'center', color: '#D1D5DB', fontStyle: 'italic', fontSize: '14px' }}>
+              No entries found for this filter.
             </div>
           )}
         </div>
@@ -192,17 +200,15 @@ const Orders = () => {
       {/* Click outside to close dropdown */}
       {statusDropdown && (
         <div
-          className="position-fixed inset-0"
-          style={{ zIndex: 499, top: 0, left: 0, right: 0, bottom: 0 }}
+          style={{ position: 'fixed', inset: 0, zIndex: 499 }}
           onClick={() => setStatusDropdown(null)}
         />
       )}
 
-      {/* ── Slide-In Order Drawer ── */}
+      {/* Slide-In Drawer */}
       <AnimatePresence>
         {selectedOrder && (
           <>
-            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -210,126 +216,115 @@ const Orders = () => {
               onClick={() => setSelectedOrder(null)}
               style={{
                 position: 'fixed', inset: 0, zIndex: 9998,
-                background: 'rgba(0,0,0,0.6)',
-                backdropFilter: 'blur(10px)',
+                background: 'rgba(17, 24, 39, 0.25)',
               }}
             />
-
-            {/* Drawer */}
             <motion.div
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              transition={{ type: 'spring', damping: 28, stiffness: 280 }}
               className="order-drawer"
-              style={{ zIndex: 9999 }}
               onClick={e => e.stopPropagation()}
             >
               {/* Drawer Header */}
               <div className="order-drawer-header d-flex align-items-start justify-content-between">
                 <div>
-                  <h3 className="font-display h4 fw-bold text-white mb-1">
-                    Order Manifest
+                  <h3 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '1.1rem', color: '#111827', marginBottom: '4px' }}>
+                    Order Details
                   </h3>
-                  <p className="font-mono text-amber fw-bold mb-0" style={{ fontSize: '13px', letterSpacing: '0.05em' }}>
+                  <p style={{ fontFamily: 'DM Mono, monospace', fontWeight: 600, color: '#D97706', margin: 0, fontSize: '13px' }}>
                     #{selectedOrder.id.slice(-8).toUpperCase()}
                   </p>
                 </div>
                 <button
                   onClick={() => setSelectedOrder(null)}
-                  className="btn border-0 text-platinum p-2 hover-text-white transition-all shadow-none"
-                  style={{ borderRadius: '8px', background: 'rgba(255,255,255,0.05)' }}
+                  style={{
+                    border: 'none', background: '#F3F4F6', color: '#6B7280',
+                    padding: '8px', borderRadius: '8px', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', transition: 'all 0.15s',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = '#E5E7EB'}
+                  onMouseLeave={e => e.currentTarget.style.background = '#F3F4F6'}
                 >
-                  <HiOutlineX size={20} />
+                  <HiOutlineX size={18} />
                 </button>
               </div>
 
               {/* Drawer Body */}
               <div className="order-drawer-body scrollbar-hide">
 
-                {/* Shipping Destination */}
-                <div className="mb-4">
-                  <p className="x-small text-amber fw-bold text-uppercase tracking-widest mb-3">
-                    📦 Shipping Destination
+                {/* Shipping */}
+                <div style={{ marginBottom: '20px' }}>
+                  <p style={{ fontSize: '11px', fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>
+                    Shipping Destination
                   </p>
-                  <div className="p-4 rounded-4 border border-white-5" style={{ background: 'rgba(255,255,255,0.03)' }}>
-                    <p className="text-white fw-bold mb-2">{selectedOrder.shippingAddress?.name}</p>
-                    <div className="text-platinum small">
-                      <p className="mb-1">{selectedOrder.shippingAddress?.address}</p>
-                      <p className="mb-1">
-                        {selectedOrder.shippingAddress?.city}, {selectedOrder.shippingAddress?.state} {selectedOrder.shippingAddress?.zip}
-                      </p>
-                      <p className="mb-0 mt-2 pt-2 border-top border-white-5 font-mono opacity-60" style={{ fontSize: '11px' }}>
+                  <div style={{ background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '12px', padding: '16px' }}>
+                    <p style={{ fontWeight: 700, color: '#111827', marginBottom: '6px', fontSize: '14px' }}>
+                      {selectedOrder.shippingAddress?.name}
+                    </p>
+                    <p style={{ color: '#6B7280', fontSize: '13px', margin: 0 }}>
+                      {selectedOrder.shippingAddress?.address}<br />
+                      {selectedOrder.shippingAddress?.city}, {selectedOrder.shippingAddress?.state} {selectedOrder.shippingAddress?.zip}
+                    </p>
+                    {selectedOrder.shippingAddress?.email && (
+                      <p style={{ fontFamily: 'DM Mono, monospace', fontSize: '11px', color: '#9CA3AF', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #E5E7EB', marginBottom: 0 }}>
                         {selectedOrder.shippingAddress?.email}
                       </p>
-                    </div>
+                    )}
                   </div>
                 </div>
 
                 {/* Order Analytics */}
-                <div className="mb-4">
-                  <p className="x-small text-amber fw-bold text-uppercase tracking-widest mb-3">
-                    📊 Order Analytics
+                <div style={{ marginBottom: '20px' }}>
+                  <p style={{ fontSize: '11px', fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>
+                    Order Overview
                   </p>
-                  <div className="p-4 rounded-4 border border-white-5" style={{ background: 'rgba(255,255,255,0.03)' }}>
-                    <div className="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom border-white-5">
-                      <span className="text-platinum small">Payment Method</span>
-                      <span className="text-white font-mono small text-uppercase">{selectedOrder.paymentMethod || '—'}</span>
+                  <div style={{ background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '12px', padding: '16px' }}>
+                    <div className="d-flex justify-content-between align-items-center mb-3 pb-3" style={{ borderBottom: '1px solid #E5E7EB' }}>
+                      <span style={{ fontSize: '13px', color: '#6B7280' }}>Payment</span>
+                      <span style={{ fontSize: '13px', fontWeight: 600, color: '#111827', textTransform: 'uppercase' }}>
+                        {selectedOrder.paymentMethod || '—'}
+                      </span>
                     </div>
-                    <div className="d-flex justify-content-between align-items-center mb-4">
-                      <span className="text-platinum small">Status</span>
+                    <div className="d-flex justify-content-between align-items-center mb-3 pb-3" style={{ borderBottom: '1px solid #E5E7EB' }}>
+                      <span style={{ fontSize: '13px', color: '#6B7280' }}>Status</span>
                       <span className={getStatusClass(selectedOrder.status)}>{selectedOrder.status}</span>
                     </div>
-                    <div>
-                      <p className="text-platinum x-small text-uppercase tracking-widest mb-1">Settlement Total</p>
-                      <p className="font-display fw-bold text-white mb-0" style={{ fontSize: '2rem' }}>
+                    <div className="d-flex justify-content-between align-items-center">
+                      <span style={{ fontSize: '13px', color: '#6B7280' }}>Total</span>
+                      <span style={{ fontSize: '1.4rem', fontWeight: 700, color: '#111827' }}>
                         ₹{selectedOrder.totalAmount?.toLocaleString('en-IN')}
-                      </p>
+                      </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Acquisition Record */}
+                {/* Items */}
                 <div>
-                  <p className="x-small text-amber fw-bold text-uppercase tracking-widest mb-3">
-                    🛍️ Acquisition Record
+                  <p style={{ fontSize: '11px', fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>
+                    Items ({selectedOrder.items?.length || 0})
                   </p>
-                  <div className="d-flex flex-column gap-3">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {selectedOrder.items?.map((item, idx) => (
                       <div
                         key={idx}
-                        className="d-flex align-items-center gap-3 p-3 rounded-4 border border-white-5 transition-all hover-bg-obsidian-700"
-                        style={{ background: 'rgba(255,255,255,0.02)' }}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '12px',
+                          background: '#F9FAFB', border: '1px solid #E5E7EB',
+                          borderRadius: '10px', padding: '12px',
+                        }}
                       >
-                        <div
-                          className="bg-obsidian-800 rounded-3 flex-shrink-0 border border-white-5"
-                          style={{ width: '64px', height: '64px', padding: '6px' }}
-                        >
-                          <img
-                            src={item.imageGallery?.[0]}
-                            className="w-100 h-100 object-fit-contain"
-                            alt=""
-                          />
+                        <div style={{ width: 52, height: 52, borderRadius: '8px', background: '#FFFFFF', border: '1px solid #E5E7EB', padding: 6, flexShrink: 0 }}>
+                          <img src={item.imageGallery?.[0]} style={{ width: '100%', height: '100%', objectFit: 'contain' }} alt="" />
                         </div>
-                        <div className="flex-grow-1">
-                          <p className="text-white fw-bold mb-1 small">{item.name}</p>
-                          <div className="d-flex align-items-center gap-3">
-                            <p className="text-platinum x-small mb-0 opacity-75">
-                              Qty: {item.qty || item.quantity}
-                            </p>
-                            {item.variants && (
-                              <p className="text-amber x-small mb-0 fw-bold text-uppercase" style={{ fontSize: '9px' }}>
-                                {item.variants.size} • {item.variants.color}
-                              </p>
-                            )}
-                          </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: '13px', fontWeight: 600, color: '#111827', margin: '0 0 2px' }}>{item.name}</p>
+                          <p style={{ fontSize: '12px', color: '#9CA3AF', margin: 0 }}>Qty: {item.qty || item.quantity}</p>
                         </div>
-                        <div className="text-end flex-shrink-0">
-                          <p className="text-white font-mono fw-bold mb-0 small">
-                            ₹{(item.dealPrice || item.price)?.toLocaleString('en-IN')}
-                          </p>
-                          <p className="text-platinum x-small opacity-50 mb-0">per unit</p>
-                        </div>
+                        <p style={{ fontSize: '13px', fontWeight: 700, color: '#111827', margin: 0, flexShrink: 0 }}>
+                          ₹{(item.dealPrice || item.price)?.toLocaleString('en-IN')}
+                        </p>
                       </div>
                     ))}
                   </div>

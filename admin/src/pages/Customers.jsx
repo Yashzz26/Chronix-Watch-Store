@@ -7,7 +7,7 @@ import { HiOutlineX } from 'react-icons/hi';
 
 const getStatusClass = (status) => {
   const s = (status || '').toLowerCase();
-  if (s === 'delivered' || s === 'completed') return 'status-badge status-badge-delivered';
+  if (s === 'delivered' || s === 'completed') return 'status-badge status-badge-completed';
   if (s === 'paid') return 'status-badge status-badge-paid';
   if (s === 'shipped') return 'status-badge status-badge-shipped';
   if (s === 'cancelled') return 'status-badge status-badge-cancelled';
@@ -29,36 +29,34 @@ const Customers = () => {
     queryKey: ['customer-orders', selectedCustomer?.uid],
     queryFn: async () => {
       if (!selectedCustomer) return [];
-      const snapshot = await getDocs(
-        query(collection(db, 'orders'), where('userId', '==', selectedCustomer.uid), orderBy('createdAt', 'desc'))
-      );
+      const snapshot = await getDocs(query(collection(db, 'orders'), where('userId', '==', selectedCustomer.uid), orderBy('createdAt', 'desc')));
       return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
     },
     enabled: !!selectedCustomer
   });
 
-  const getInitials = (name) =>
-    name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U';
+  const getInitials = (name) => name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U';
+  const getColor = (name) => {
+    const colors = ['#FEF3C7:#92400E', '#DBEAFE:#1E40AF', '#D1FAE5:#065F46', '#E0E7FF:#3730A3', '#FCE7F3:#9D174D'];
+    const idx = (name?.charCodeAt(0) || 0) % colors.length;
+    const [bg, color] = colors[idx].split(':');
+    return { background: bg, color };
+  };
 
   if (isLoading) return (
     <div className="d-flex align-items-center justify-content-center" style={{ height: '300px' }}>
-      <div className="spinner-border text-amber" role="status" />
+      <div className="spinner-border" style={{ color: '#D97706' }} />
     </div>
   );
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="p-4 p-md-5"
-    >
-      <div className="mb-5">
-        <h1 className="font-display fw-bold text-white mb-1">Customers</h1>
-        <p className="text-platinum small">Directory of Chronix patrons and their lifecycle data.</p>
+    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} style={{ padding: '32px 36px' }}>
+      <div style={{ marginBottom: '24px' }}>
+        <h1 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '1.6rem', color: '#111827', marginBottom: '4px' }}>Customers</h1>
+        <p style={{ color: '#6B7280', fontSize: '14px', margin: 0 }}>Directory of Chronix patrons and their lifecycle data.</p>
       </div>
 
-      <div className="glass overflow-hidden border border-white-5">
+      <div className="glass overflow-hidden">
         <div className="table-responsive">
           <table className="table table-chronix align-middle mb-0">
             <thead>
@@ -69,181 +67,134 @@ const Customers = () => {
               </tr>
             </thead>
             <tbody>
-              {customers.map(c => (
-                <tr key={c.id}>
-                  <td className="ps-4">
-                    <div className="d-flex align-items-center gap-3">
-                      <div
-                        className="rounded-circle d-flex align-items-center justify-content-center text-amber fw-bold flex-shrink-0 overflow-hidden"
-                        style={{
-                          width: '48px', height: '48px', fontSize: '14px',
-                          background: 'rgba(245,166,35,0.1)',
-                          border: '1px solid rgba(245,166,35,0.2)',
-                          boxShadow: '0 0 12px rgba(245,166,35,0.2)',
-                        }}
+              {customers.map(c => {
+                const { background, color } = getColor(c.name);
+                return (
+                  <tr key={c.id}>
+                    <td className="ps-4">
+                      <div className="d-flex align-items-center gap-3">
+                        <div
+                          style={{ width: 44, height: 44, borderRadius: '50%', background, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '14px', color, flexShrink: 0, border: '2px solid rgba(255,255,255,0.8)', boxShadow: '0 1px 4px rgba(0,0,0,0.08)', overflow: 'hidden' }}
+                        >
+                          {c.photo ? <img src={c.photo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" /> : getInitials(c.name)}
+                        </div>
+                        <div>
+                          <p style={{ fontSize: '14px', fontWeight: 600, color: '#111827', margin: '0 0 2px' }}>{c.name || 'Anonymous'}</p>
+                          <p style={{ fontSize: '11px', fontFamily: 'DM Mono, monospace', color: '#D1D5DB', margin: 0 }}>{c.uid?.slice(0, 10)}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td style={{ color: '#6B7280', fontSize: '13px' }}>{c.email}</td>
+                    <td style={{ color: '#6B7280', fontSize: '13px' }}>{c.phone || '—'}</td>
+                    <td><span className="status-badge status-badge-active">Active</span></td>
+                    <td style={{ color: '#9CA3AF', fontSize: '12px' }}>
+                      {c.createdAt?.toDate?.()?.toLocaleDateString('en-IN') || 'N/A'}
+                    </td>
+                    <td className="pe-4">
+                      <button
+                        onClick={() => setSelectedCustomer(c)}
+                        style={{ background: '#F3F4F6', color: '#374151', border: 'none', borderRadius: '8px', padding: '6px 14px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' }}
+                        onMouseEnter={e => e.currentTarget.style.background = '#E5E7EB'}
+                        onMouseLeave={e => e.currentTarget.style.background = '#F3F4F6'}
                       >
-                        {c.photo
-                          ? <img src={c.photo} className="w-100 h-100 object-fit-cover" alt="" />
-                          : getInitials(c.name)}
-                      </div>
-                      <div>
-                        <p className="text-white fw-bold mb-0 small">{c.name || 'Anonymous User'}</p>
-                        <p className="text-platinum opacity-25 font-mono mb-0" style={{ fontSize: '9px' }}>
-                          {c.uid?.slice(0, 12)}
-                        </p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="text-platinum small">{c.email}</td>
-                  <td className="text-platinum small">{c.phone || '—'}</td>
-                  <td>
-                    <span className="status-badge status-badge-active">Active</span>
-                  </td>
-                  <td className="text-platinum x-small">
-                    {c.createdAt?.toDate?.()?.toLocaleDateString('en-IN') || 'N/A'}
-                  </td>
-                  <td className="pe-4">
-                    <button
-                      onClick={() => setSelectedCustomer(c)}
-                      className="btn btn-sm fw-bold border-0 shadow-none transition-all"
-                      style={{
-                        background: 'rgba(245,166,35,0.1)',
-                        color: '#F5A623',
-                        fontSize: '11px',
-                        padding: '6px 14px',
-                        borderRadius: '8px',
-                        letterSpacing: '0.04em',
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(245,166,35,0.2)'}
-                      onMouseLeave={e => e.currentTarget.style.background = 'rgba(245,166,35,0.1)'}
-                    >
-                      View Profile
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                        View Profile
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Customer Detail Drawer */}
+      {/* Customer Drawer */}
       <AnimatePresence>
         {selectedCustomer && (
           <>
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setSelectedCustomer(null)}
-              style={{
-                position: 'fixed', inset: 0, zIndex: 9998,
-                background: 'rgba(0,0,0,0.6)',
-                backdropFilter: 'blur(10px)',
-              }}
+              style={{ position: 'fixed', inset: 0, zIndex: 9998, background: 'rgba(17,24,39,0.2)' }}
             />
-
             <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-              className="order-drawer"
-              style={{ zIndex: 9999 }}
+              initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 28, stiffness: 280 }}
+              className="order-drawer" style={{ zIndex: 9999 }}
               onClick={e => e.stopPropagation()}
             >
-              {/* Header */}
               <div className="order-drawer-header d-flex align-items-center justify-content-between">
-                <h3 className="font-display h4 fw-bold text-white mb-0">Patron Dossier</h3>
-                <button
-                  onClick={() => setSelectedCustomer(null)}
-                  className="btn border-0 text-platinum p-2 hover-text-white transition-all shadow-none"
-                  style={{ borderRadius: '8px', background: 'rgba(255,255,255,0.05)' }}
-                >
-                  <HiOutlineX size={20} />
+                <h3 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '1.1rem', color: '#111827', margin: 0 }}>
+                  Customer Profile
+                </h3>
+                <button onClick={() => setSelectedCustomer(null)} style={{ border: 'none', background: '#F3F4F6', color: '#6B7280', padding: '8px', borderRadius: '8px', cursor: 'pointer', display: 'flex', transition: 'background 0.15s' }} onMouseEnter={e => e.currentTarget.style.background = '#E5E7EB'} onMouseLeave={e => e.currentTarget.style.background = '#F3F4F6'}>
+                  <HiOutlineX size={18} />
                 </button>
               </div>
 
-              {/* Body */}
               <div className="order-drawer-body scrollbar-hide">
-                {/* Avatar + Name */}
+                {/* Avatar */}
                 <div className="text-center mb-5">
-                  <div
-                    className="d-inline-block mb-4 rounded-circle"
-                    style={{ padding: '3px', background: 'radial-gradient(circle, rgba(245,166,35,0.25), rgba(245,166,35,0.05))' }}
-                  >
-                    <div
-                      className="rounded-circle d-flex align-items-center justify-content-center text-amber fw-bold overflow-hidden"
-                      style={{
-                        width: '140px', height: '140px', fontSize: '42px',
-                        background: 'rgba(26,26,36,0.9)',
-                        border: '2px solid rgba(245,166,35,0.25)',
-                        boxShadow: '0 0 40px rgba(245,166,35,0.15)',
-                      }}
-                    >
-                      {selectedCustomer.photo
-                        ? <img src={selectedCustomer.photo} className="w-100 h-100 object-fit-cover" alt="" />
-                        : getInitials(selectedCustomer.name)}
-                    </div>
-                  </div>
-                  <h4 className="font-display h3 fw-bold text-white mb-1">{selectedCustomer.name}</h4>
-                  <p className="text-platinum small opacity-75 fst-italic mb-0">{selectedCustomer.email}</p>
+                  {(() => {
+                    const { background, color } = getColor(selectedCustomer.name);
+                    return (
+                      <div style={{ display: 'inline-flex', padding: 4, borderRadius: '50%', background: '#F3F4F6', marginBottom: 16 }}>
+                        <div style={{ width: 80, height: 80, borderRadius: '50%', background, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '26px', color, overflow: 'hidden' }}>
+                          {selectedCustomer.photo ? <img src={selectedCustomer.photo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" /> : getInitials(selectedCustomer.name)}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                  <h4 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, color: '#111827', marginBottom: '4px', fontSize: '1.2rem' }}>
+                    {selectedCustomer.name}
+                  </h4>
+                  <p style={{ color: '#9CA3AF', fontSize: '14px', margin: 0 }}>{selectedCustomer.email}</p>
                 </div>
 
-                {/* Stat Cards */}
+                {/* Stats */}
                 <div className="row g-3 mb-5">
-                  <div className="col-6">
-                    <div className="glass p-5 rounded-4 text-center h-100">
-                      <p className="text-platinum text-uppercase small fw-bold tracking-widest opacity-50 mb-2" style={{ fontSize: '9px' }}>
-                        Total Orders
-                      </p>
-                      <p className="h3 fw-bold text-amber mb-0">{customerOrders.length}</p>
+                  {[
+                    { label: 'Total Orders', value: customerOrders.length },
+                    { label: 'Lifetime Value', value: `₹${customerOrders.reduce((s, o) => s + (o.totalAmount || 0), 0).toLocaleString('en-IN')}` }
+                  ].map(({ label, value }) => (
+                    <div className="col-6" key={label}>
+                      <div style={{ background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '12px', padding: '20px 16px', textAlign: 'center' }}>
+                        <p style={{ fontSize: '11px', fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>{label}</p>
+                        <p style={{ fontSize: '1.4rem', fontWeight: 700, color: '#111827', margin: 0 }}>{value}</p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="col-6">
-                    <div className="glass p-5 rounded-4 text-center h-100">
-                      <p className="text-platinum text-uppercase small fw-bold tracking-widest opacity-50 mb-2" style={{ fontSize: '9px' }}>
-                        Lifetime Value
-                      </p>
-                      <p className="h3 fw-bold text-amber mb-0">
-                        ₹{customerOrders.reduce((s, o) => s + (o.totalAmount || 0), 0).toLocaleString('en-IN')}
-                      </p>
-                    </div>
-                  </div>
+                  ))}
                 </div>
 
                 {/* Order History */}
                 <div>
-                  <p className="x-small text-amber fw-bold text-uppercase tracking-widest mb-3">
-                    📋 Acquisition History
+                  <p style={{ fontSize: '11px', fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px' }}>
+                    Order History
                   </p>
                   {ordersLoading ? (
-                    <div className="text-center py-5 text-platinum opacity-50 small fst-italic">
-                      Scanning Ledger...
-                    </div>
+                    <p style={{ color: '#D1D5DB', fontSize: '13px', textAlign: 'center', padding: '24px 0' }}>Loading...</p>
                   ) : customerOrders.length === 0 ? (
-                    <div className="text-center py-5 glass rounded-4 opacity-25">
-                      <p className="small fst-italic mb-0">No prior acquisitions registered.</p>
+                    <div style={{ textAlign: 'center', padding: '32px', background: '#F9FAFB', borderRadius: '12px', border: '1px solid #E5E7EB' }}>
+                      <p style={{ color: '#D1D5DB', fontSize: '13px', fontStyle: 'italic', margin: 0 }}>No orders yet.</p>
                     </div>
                   ) : (
-                    <div className="d-flex flex-column gap-3">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       {customerOrders.map(o => (
                         <div
                           key={o.id}
-                          className="p-4 rounded-4 border border-white-5 d-flex align-items-center justify-content-between hover-lift"
-                          style={{ background: 'rgba(255,255,255,0.02)' }}
+                          className="hover-lift"
+                          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '10px', transition: 'all 0.2s' }}
                         >
                           <div>
-                            <p className="text-white font-mono fw-bold small text-uppercase mb-1">
+                            <p style={{ fontFamily: 'DM Mono, monospace', fontWeight: 700, fontSize: '12px', color: '#374151', margin: '0 0 3px', textTransform: 'uppercase' }}>
                               #{o.id.slice(-8)}
                             </p>
-                            <p className="text-platinum opacity-50 x-small mb-0">
-                              {o.createdAt?.toDate?.()?.toLocaleDateString('en-IN') ||
-                               (o.createdAt ? new Date(o.createdAt).toLocaleDateString('en-IN') : 'N/A')}
+                            <p style={{ fontSize: '12px', color: '#9CA3AF', margin: 0 }}>
+                              {o.createdAt?.toDate?.()?.toLocaleDateString('en-IN') || (o.createdAt ? new Date(o.createdAt).toLocaleDateString('en-IN') : 'N/A')}
                             </p>
                           </div>
                           <div className="text-end">
-                            <p className="text-white fw-bold mb-1">₹{o.totalAmount?.toLocaleString('en-IN')}</p>
+                            <p style={{ fontWeight: 700, color: '#111827', margin: '0 0 4px', fontSize: '14px' }}>₹{o.totalAmount?.toLocaleString('en-IN')}</p>
                             <span className={getStatusClass(o.status)}>{o.status}</span>
                           </div>
                         </div>

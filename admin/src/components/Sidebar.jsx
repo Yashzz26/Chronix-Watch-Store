@@ -30,26 +30,18 @@ const Sidebar = () => {
   useEffect(() => {
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
-
     const ordersRef = collection(db, 'orders');
     const q = query(ordersRef, where('createdAt', '>=', startOfToday.toISOString()));
-
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      let r = 0;
-      let count = 0;
+      let r = 0, count = 0;
       snapshot.forEach(doc => {
         const data = doc.data();
-        if (data.status === 'paid' || data.status === 'shipped' || data.status === 'delivered') {
-          r += data.totalPrice || 0;
-        }
+        if (['paid', 'shipped', 'delivered'].includes(data.status)) r += data.totalPrice || 0;
         count++;
       });
       setTodayRevenue(r);
       setTodayOrders(count);
-    }, (err) => {
-      console.error('Sidebar listener error', err);
-    });
-    
+    }, err => console.error('Sidebar listener error', err));
     return () => unsubscribe();
   }, []);
 
@@ -65,51 +57,66 @@ const Sidebar = () => {
 
   return (
     <aside
-      className="d-flex flex-column bg-obsidian-800 border-end border-white-5 transition-all"
-      style={{ 
-        width: collapsed ? '80px' : '260px', 
-        minHeight: '100vh', 
-        flexShrink: 0, 
-        zIndex: 100 
+      className="d-flex flex-column transition-all"
+      style={{
+        width: collapsed ? '72px' : '256px',
+        minHeight: '100vh',
+        flexShrink: 0,
+        zIndex: 100,
+        background: '#FFFFFF',
+        borderRight: '1px solid #E5E7EB',
       }}
     >
       {/* ── Header ── */}
-      <div className="px-3 py-3 border-bottom border-white-5 d-flex align-items-center justify-content-between" style={{ height: '72px' }}>
+      <div
+        className="d-flex align-items-center justify-content-between"
+        style={{ height: '64px', padding: collapsed ? '0 16px' : '0 20px', borderBottom: '1px solid #E5E7EB' }}
+      >
         {!collapsed && (
           <Link to="/" className="text-decoration-none">
-            <span className="font-display fw-bold text-white text-truncate" style={{ fontSize: '1.2rem' }}>
-              Chronix<span className="text-amber">.</span>
+            <span className="fw-bold" style={{ fontSize: '1.15rem', color: '#111827', fontFamily: 'DM Sans, sans-serif' }}>
+              Chronix<span style={{ color: '#D97706' }}>.</span>
             </span>
           </Link>
         )}
-        <button 
-          className="btn btn-sm text-platinum hover-text-white border-0 p-1 mx-auto" 
+        <button
+          className="btn border-0 p-1 d-flex align-items-center justify-content-center"
           onClick={() => setCollapsed(!collapsed)}
+          style={{
+            color: '#6B7280', borderRadius: '8px',
+            background: 'transparent',
+            marginLeft: collapsed ? 'auto' : 0,
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = '#F3F4F6'}
+          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
         >
-          <HiOutlineMenuAlt2 size={24} />
+          <HiOutlineMenuAlt2 size={22} />
         </button>
       </div>
 
       {/* ── Navigation ── */}
-      <nav className="flex-grow-1 px-3 py-3 overflow-hidden">
+      <nav className="flex-grow-1 overflow-hidden" style={{ padding: '12px 10px' }}>
         {NAV.map(({ label, icon: Icon, to }) => (
           <NavLink
             key={label}
             to={to}
             end={to === '/'}
             className={({ isActive }) =>
-              `sidebar-nav-link ${isActive ? 'active' : ''} ${collapsed ? 'justify-content-center px-0' : ''}`
+              `sidebar-nav-link ${isActive ? 'active' : ''} ${collapsed ? 'justify-content-center' : ''}`
             }
             title={collapsed ? label : undefined}
           >
             {({ isActive }) => (
               <motion.span
                 whileHover={{ scale: 1.02 }}
-                transition={{ duration: 0.15 }}
+                transition={{ duration: 0.12 }}
                 className="d-flex align-items-center gap-3 w-100"
                 style={{ pointerEvents: 'none' }}
               >
-                <Icon size={20} style={{ flexShrink: 0 }} />
+                <Icon
+                  size={19}
+                  style={{ flexShrink: 0, color: isActive ? '#111827' : '#9CA3AF' }}
+                />
                 {!collapsed && <span>{label}</span>}
               </motion.span>
             )}
@@ -117,60 +124,61 @@ const Sidebar = () => {
         ))}
       </nav>
 
-      {/* ── Quick Stats Footer (Hidden if collapsed) ── */}
+      {/* ── Pulse Today ── */}
       {!collapsed && (
         <div
-          className="px-4 py-4 border-top border-white-5 rounded-3 mx-3 mb-3"
           style={{
-            background: 'linear-gradient(135deg, rgba(245,166,35,0.06), transparent)',
-            border: '1px solid rgba(245,166,35,0.1)',
+            margin: '0 10px 12px',
+            padding: '14px 16px',
+            background: '#F9FAFB',
+            border: '1px solid #E5E7EB',
+            borderRadius: '12px',
           }}
         >
-          <p className="x-small tracking-widest text-platinum text-uppercase mb-3 opacity-50">
-            ⚡ Pulse Today
+          <p style={{ fontSize: '10px', fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px' }}>
+            Today's Pulse
           </p>
-          <div className="d-flex justify-content-between align-items-end mb-2">
-            <span className="small text-white opacity-75">Revenue</span>
-            <span className="font-mono text-amber fw-bold small">₹{todayRevenue.toLocaleString()}</span>
+          <div className="d-flex justify-content-between align-items-center mb-2">
+            <span style={{ fontSize: '13px', color: '#6B7280' }}>Revenue</span>
+            <span style={{ fontSize: '13px', fontWeight: 700, color: '#111827', fontFamily: 'DM Mono, monospace' }}>
+              ₹{todayRevenue.toLocaleString()}
+            </span>
           </div>
-          <div className="d-flex justify-content-between align-items-end">
-            <span className="small text-white opacity-75">Orders</span>
-            <span className="font-mono text-white fw-bold small">{todayOrders}</span>
+          <div className="d-flex justify-content-between align-items-center">
+            <span style={{ fontSize: '13px', color: '#6B7280' }}>Orders</span>
+            <span style={{ fontSize: '13px', fontWeight: 700, color: '#111827', fontFamily: 'DM Mono, monospace' }}>
+              {todayOrders}
+            </span>
           </div>
         </div>
       )}
 
       {/* ── User Info ── */}
-      <div className="px-3 py-3 border-top border-white-5">
+      <div style={{ padding: collapsed ? '12px 10px' : '12px 10px', borderTop: '1px solid #E5E7EB' }}>
         {!collapsed ? (
-          <div className="glass d-flex align-items-center gap-3 p-3 mb-2" style={{ borderRadius: '0.75rem' }}>
+          <div
+            className="d-flex align-items-center gap-3 mb-2"
+            style={{ padding: '10px 12px', borderRadius: '10px', background: '#F9FAFB', border: '1px solid #E5E7EB' }}
+          >
             <div
-              className="d-flex align-items-center justify-content-center rounded-circle text-amber fw-bold flex-shrink-0"
-              style={{
-                width: '38px', height: '38px', fontSize: '13px',
-                background: 'rgba(245,166,35,0.12)',
-                border: '1px solid rgba(245,166,35,0.25)'
-              }}
+              className="d-flex align-items-center justify-content-center rounded-circle fw-bold flex-shrink-0"
+              style={{ width: '36px', height: '36px', fontSize: '12px', background: '#111827', color: '#FFFFFF' }}
             >
               {initials}
             </div>
             <div style={{ minWidth: 0 }}>
-              <p className="text-white small fw-medium mb-0 text-truncate">
+              <p className="mb-0 text-truncate" style={{ fontSize: '13px', fontWeight: 600, color: '#111827' }}>
                 {adminProfile?.name || 'Admin'}
               </p>
-              <p className="text-platinum mb-0 text-truncate x-small">
+              <p className="mb-0 text-truncate" style={{ fontSize: '11px', color: '#9CA3AF' }}>
                 {admin?.email}
               </p>
             </div>
           </div>
         ) : (
           <div
-            className="d-flex align-items-center justify-content-center rounded-circle text-amber fw-bold mx-auto mb-2 cursor-pointer"
-            style={{
-              width: '40px', height: '40px', fontSize: '14px',
-              background: 'rgba(245,166,35,0.12)',
-              border: '1px solid rgba(245,166,35,0.25)'
-            }}
+            className="d-flex align-items-center justify-content-center rounded-circle fw-bold mx-auto mb-2 cursor-pointer"
+            style={{ width: '38px', height: '38px', fontSize: '12px', background: '#111827', color: '#FFFFFF' }}
             title={adminProfile?.name || 'Admin'}
           >
             {initials}
@@ -179,19 +187,19 @@ const Sidebar = () => {
 
         <button
           onClick={handleLogout}
-          className={`btn border-0 w-100 d-flex align-items-center px-2 py-2 text-platinum shadow-none transition-all ${collapsed ? 'justify-content-center' : 'gap-3 px-3'}`}
-          style={{ fontSize: '14px', borderRadius: '0.75rem' }}
+          className={`btn border-0 w-100 d-flex align-items-center py-2 shadow-none transition-all ${collapsed ? 'justify-content-center px-2' : 'gap-3 px-3'}`}
+          style={{ fontSize: '13px', borderRadius: '10px', color: '#6B7280', fontWeight: 500 }}
           title={collapsed ? 'Sign Out' : undefined}
           onMouseEnter={e => {
-            e.currentTarget.style.color = '#ff4d4d';
-            e.currentTarget.style.backgroundColor = 'rgba(255,77,77,0.1)';
+            e.currentTarget.style.color = '#991B1B';
+            e.currentTarget.style.backgroundColor = '#FEE2E2';
           }}
           onMouseLeave={e => {
-            e.currentTarget.style.color = '';
+            e.currentTarget.style.color = '#6B7280';
             e.currentTarget.style.backgroundColor = '';
           }}
         >
-          <HiOutlineLogout size={20} />
+          <HiOutlineLogout size={18} />
           {!collapsed && <span>Sign Out</span>}
         </button>
       </div>

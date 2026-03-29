@@ -15,7 +15,6 @@ const Reviews = () => {
     queryFn: async () => {
       const snapshot = await getDocs(query(collection(db, 'reviews'), orderBy('createdAt', 'desc')));
       const revs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-
       const enrichedRevs = await Promise.all(revs.map(async (r) => {
         try {
           const pDoc = await getDoc(doc(db, 'products', r.productId));
@@ -24,7 +23,6 @@ const Reviews = () => {
           return { ...r, productName: 'Archived Piece' };
         }
       }));
-
       return enrichedRevs;
     },
   });
@@ -33,114 +31,94 @@ const Reviews = () => {
     mutationFn: (id) => deleteDoc(doc(db, 'reviews', id)),
     onSuccess: () => {
       queryClient.invalidateQueries(['admin-reviews']);
-      toast.success('Review removed from registry');
+      toast.success('Review removed');
     },
-    onError: () => toast.error('Access Denied')
+    onError: () => toast.error('Delete failed')
   });
 
   if (isLoading) return (
     <div className="d-flex align-items-center justify-content-center" style={{ height: '300px' }}>
-      <div className="spinner-border text-amber" role="status" />
+      <div className="spinner-border" style={{ color: '#D97706' }} />
     </div>
   );
 
-  const COMMENT_LIMIT = 70;
+  const LIMIT = 70;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="p-4 p-md-5"
-    >
-      <div className="mb-5">
-        <h1 className="font-display fw-bold text-white mb-1">Reviews</h1>
-        <p className="text-platinum small">Monitor patron feedback and timepiece appraisals.</p>
+    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} style={{ padding: '32px 36px' }}>
+      <div style={{ marginBottom: '24px' }}>
+        <h1 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '1.6rem', color: '#111827', marginBottom: '4px' }}>Reviews</h1>
+        <p style={{ color: '#6B7280', fontSize: '14px', margin: 0 }}>Monitor patron feedback and timepiece appraisals.</p>
       </div>
 
-      <div className="glass overflow-hidden border border-white-5">
+      <div className="glass overflow-hidden">
         <div className="table-responsive">
           <table className="table table-chronix align-middle mb-0">
             <thead>
               <tr>
-                {['Patron', 'Timepiece', 'Rating', 'Critique', 'Date', 'Actions'].map(h => (
+                {['Patron', 'Timepiece', 'Rating', 'Review', 'Date', 'Actions'].map(h => (
                   <th key={h} className="ps-4">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {reviews.map((r, i) => {
+              {reviews.map(r => {
                 const isExpanded = expandedId === r.id;
-                const isLong = (r.comment || '').length > COMMENT_LIMIT;
+                const isLong = (r.comment || '').length > LIMIT;
                 const displayComment = isExpanded || !isLong
                   ? r.comment
-                  : `${r.comment.slice(0, COMMENT_LIMIT)}…`;
+                  : `${r.comment.slice(0, LIMIT)}…`;
 
                 return (
                   <tr key={r.id} className="review-row">
                     <td className="ps-4">
-                      <p className="text-white fw-bold mb-0 small">{r.userName}</p>
-                      <p className="text-platinum opacity-25 font-mono mb-0" style={{ fontSize: '9px' }}>
+                      <p style={{ fontSize: '14px', fontWeight: 600, color: '#111827', margin: '0 0 2px' }}>{r.userName}</p>
+                      <p style={{ fontSize: '10px', fontFamily: 'DM Mono, monospace', color: '#D1D5DB', margin: 0 }}>
                         REV-{r.id.slice(0, 8).toUpperCase()}
                       </p>
                     </td>
                     <td>
-                      <span className="text-amber fw-bold text-uppercase" style={{ fontSize: '11px', letterSpacing: '0.04em' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                         {r.productName}
                       </span>
                     </td>
                     <td>
-                      <div className="d-flex align-items-center gap-1">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                         {[...Array(5)].map((_, i) => (
                           <HiStar
                             key={i}
                             size={16}
-                            style={{
-                              color: i < r.rating ? '#F5A623' : 'rgba(255,255,255,0.1)',
-                              fill: i < r.rating ? '#F5A623' : 'transparent',
-                            }}
+                            style={{ color: i < r.rating ? '#F59E0B' : '#E5E7EB', fill: i < r.rating ? '#F59E0B' : '#E5E7EB' }}
                           />
                         ))}
-                        <span className="text-platinum ms-1 x-small opacity-60">({r.rating}/5)</span>
+                        <span style={{ fontSize: '11px', color: '#9CA3AF', marginLeft: 4 }}>({r.rating})</span>
                       </div>
                     </td>
-                    <td style={{ minWidth: '220px', maxWidth: '320px' }}>
-                      <p className="text-platinum small mb-0 opacity-75 fst-italic">
+                    <td style={{ minWidth: '200px', maxWidth: '300px' }}>
+                      <p style={{ fontSize: '13px', color: '#6B7280', margin: '0 0 2px', fontStyle: 'italic' }}>
                         "{displayComment}"
                       </p>
                       {isLong && (
                         <button
-                          className="btn btn-link p-0 border-0 shadow-none text-amber x-small mt-1"
-                          style={{ fontSize: '11px', textDecoration: 'none' }}
                           onClick={() => setExpandedId(isExpanded ? null : r.id)}
+                          style={{ border: 'none', background: 'transparent', color: '#D97706', fontSize: '12px', fontWeight: 600, cursor: 'pointer', padding: 0 }}
                         >
-                          {isExpanded ? '← Read less' : 'Read more →'}
+                          {isExpanded ? '← Less' : 'Read more →'}
                         </button>
                       )}
                     </td>
-                    <td className="text-platinum x-small">
+                    <td style={{ color: '#9CA3AF', fontSize: '12px' }}>
                       {r.createdAt?.toDate?.()?.toLocaleDateString('en-IN') || 'N/A'}
                     </td>
                     <td className="pe-4 text-end">
                       <button
-                        onClick={() => {
-                          if (window.confirm('Remove this review from the registry?')) {
-                            deleteMutation.mutate(r.id);
-                          }
-                        }}
-                        className="btn btn-sm border-0 shadow-none transition-all p-2 rounded-2"
-                        title="Delete review"
-                        style={{ background: 'rgba(255,255,255,0.05)', color: '#8B8FA8' }}
-                        onMouseEnter={e => {
-                          e.currentTarget.style.background = 'rgba(239,68,68,0.15)';
-                          e.currentTarget.style.color = '#ef4444';
-                        }}
-                        onMouseLeave={e => {
-                          e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-                          e.currentTarget.style.color = '#8B8FA8';
-                        }}
+                        onClick={() => { if (window.confirm('Remove this review?')) deleteMutation.mutate(r.id); }}
+                        title="Delete"
+                        style={{ width: 34, height: 34, border: 'none', background: '#F3F4F6', color: '#6B7280', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}
+                        onMouseEnter={e => { e.currentTarget.style.background = '#FEE2E2'; e.currentTarget.style.color = '#991B1B'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = '#F3F4F6'; e.currentTarget.style.color = '#6B7280'; }}
                       >
-                        <HiOutlineTrash size={16} />
+                        <HiOutlineTrash size={15} />
                       </button>
                     </td>
                   </tr>
@@ -149,8 +127,8 @@ const Reviews = () => {
             </tbody>
           </table>
           {reviews.length === 0 && (
-            <div className="p-5 text-center text-platinum opacity-25 fst-italic small">
-              No official appraisals submitted yet.
+            <div style={{ padding: '48px', textAlign: 'center', color: '#D1D5DB', fontStyle: 'italic', fontSize: '14px' }}>
+              No reviews submitted yet.
             </div>
           )}
         </div>

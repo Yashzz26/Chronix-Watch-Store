@@ -9,12 +9,7 @@ import { motion } from 'framer-motion';
 
 const getStatusBadgeClass = (status) => {
   const s = (status || '').toLowerCase();
-  if (['paid', 'completed'].includes(s)) return `status-badge status-badge-${s}`;
-  if (s === 'delivered') return 'status-badge status-badge-delivered';
-  if (s === 'pending') return 'status-badge status-badge-pending';
-  if (s === 'cancelled') return 'status-badge status-badge-cancelled';
-  if (s === 'shipped') return 'status-badge status-badge-shipped';
-  return 'status-badge status-badge-pending';
+  return `status-badge status-badge-${s}` || 'status-badge status-badge-pending';
 };
 
 const Dashboard = () => {
@@ -27,23 +22,21 @@ const Dashboard = () => {
     const unsubOrders = onSnapshot(query(collection(db, 'orders'), orderBy('createdAt', 'desc')), snap => {
       setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
-    
     const unsubProducts = onSnapshot(collection(db, 'products'), snap => {
       setProducts(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       setIsLoading(false);
     });
-
     getDocs(query(collection(db, 'users'))).then(snap => {
       setCustomers(snap.docs.filter(d => d.data().role !== 'admin').length);
     });
-
     return () => { unsubOrders(); unsubProducts(); };
   }, []);
 
-  const totalRevenue = useMemo(() => {
-    return orders.filter(o => ['paid', 'shipped', 'delivered'].includes(o.status))
-      .reduce((sum, o) => sum + (o.totalAmount || o.totalPrice || 0), 0);
-  }, [orders]);
+  const totalRevenue = useMemo(() =>
+    orders.filter(o => ['paid', 'shipped', 'delivered'].includes(o.status))
+      .reduce((sum, o) => sum + (o.totalAmount || o.totalPrice || 0), 0),
+    [orders]
+  );
 
   const chartData = useMemo(() => {
     const map = new Map();
@@ -60,180 +53,182 @@ const Dashboard = () => {
 
   if (isLoading) return (
     <div className="d-flex align-items-center justify-content-center" style={{ height: '300px' }}>
-      <div className="spinner-border text-amber" role="status" />
+      <div className="spinner-border" style={{ color: '#D97706' }} role="status" />
     </div>
   );
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="p-4 p-md-5"
+      transition={{ duration: 0.35 }}
+      style={{ padding: '32px 36px' }}
     >
-      <div className="mb-5">
-        <h1 className="font-display fw-bold text-white mb-1">Operations Hub</h1>
-        <p className="text-platinum small">Real-time analytical metrics and high-priority actionables.</p>
+      {/* Header */}
+      <div style={{ marginBottom: '28px' }}>
+        <h1 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '1.6rem', color: '#111827', marginBottom: '4px' }}>
+          Operations Hub
+        </h1>
+        <p style={{ color: '#6B7280', fontSize: '14px', margin: 0 }}>
+          Real-time metrics and high-priority actionables.
+        </p>
       </div>
 
-      {/* ── Stat Cards ── */}
-      <div className="row g-4 mb-5">
+      {/* Stat Cards */}
+      <div className="row g-3 mb-4">
         <div className="col-12 col-sm-6 col-xl-3">
-          <StatCard
-            title="Gross Revenue"
-            value={`₹${totalRevenue.toLocaleString('en-IN')}`}
-            icon={HiOutlineCurrencyRupee}
-            trend={{ value: '+12.5%', isUp: true }}
-          />
+          <StatCard title="Gross Revenue" value={`₹${totalRevenue.toLocaleString('en-IN')}`} icon={HiOutlineCurrencyRupee} trend={{ value: '+12.5%', isUp: true }} />
         </div>
         <div className="col-12 col-sm-6 col-xl-3">
-          <StatCard
-            title="Total Orders"
-            value={orders.length}
-            icon={HiOutlineShoppingCart}
-            trend={{ value: '+4.2%', isUp: true }}
-          />
+          <StatCard title="Total Orders" value={orders.length} icon={HiOutlineShoppingCart} trend={{ value: '+4.2%', isUp: true }} />
         </div>
         <div className="col-12 col-sm-6 col-xl-3">
-          <StatCard
-            title="Active Customers"
-            value={customers}
-            icon={HiOutlineUsers}
-            trend={{ value: '+8.1%', isUp: true }}
-          />
+          <StatCard title="Active Customers" value={customers} icon={HiOutlineUsers} trend={{ value: '+8.1%', isUp: true }} />
         </div>
         <div className="col-12 col-sm-6 col-xl-3">
-          <StatCard
-            title="Total Products"
-            value={products.length}
-            icon={HiOutlineShoppingBag}
-          />
+          <StatCard title="Total Products" value={products.length} icon={HiOutlineShoppingBag} />
         </div>
       </div>
 
-      {/* ── Charts Row ── */}
-      <div className="row g-4 mb-5">
+      {/* Charts Row */}
+      <div className="row g-3 mb-4">
         <div className="col-lg-8">
-          <div className="glass p-4 h-100 border border-white-5">
+          <div className="glass p-4 h-100">
             <div className="d-flex justify-content-between align-items-center mb-4">
               <div>
-                <h3 className="h6 text-white fw-bold m-0 d-flex align-items-center gap-2">
-                  <HiOutlineArrowTrendingUp className="text-amber" /> Trailing 14-Day Velocity
+                <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#111827', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <HiOutlineArrowTrendingUp style={{ color: '#D97706' }} /> Trailing 14-Day Revenue
                 </h3>
-                <p className="x-small text-platinum opacity-50 m-0 text-uppercase tracking-widest mt-1">Revenue Performance</p>
+                <p style={{ fontSize: '11px', color: '#9CA3AF', margin: '3px 0 0', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  Revenue Performance
+                </p>
               </div>
             </div>
-            <div style={{ height: '260px' }}>
+            <div style={{ height: '240px' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                  <XAxis dataKey="date" stroke="rgba(255,255,255,0.2)" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }} tickMargin={10} axisLine={false} />
-                  <YAxis stroke="rgba(255,255,255,0.2)" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `₹${v/1000}k`} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" vertical={false} />
+                  <XAxis dataKey="date" stroke="#E5E7EB" tick={{ fill: '#9CA3AF', fontSize: 11 }} tickMargin={8} axisLine={false} />
+                  <YAxis stroke="#E5E7EB" tick={{ fill: '#9CA3AF', fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v => `₹${v / 1000}k`} />
                   <Tooltip
-                    contentStyle={{ backgroundColor: '#111118', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#E8EAF0' }}
-                    cursor={{ stroke: 'rgba(245,166,35,0.2)' }}
+                    contentStyle={{ background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: '10px', color: '#111827', boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }}
+                    cursor={{ stroke: '#E5E7EB' }}
                   />
-                  <Line type="monotone" dataKey="revenue" stroke="#F5A623" strokeWidth={3} dot={{ fill: '#111118', stroke: '#F5A623', strokeWidth: 2, r: 4 }} activeDot={{ r: 6 }} />
+                  <Line type="monotone" dataKey="revenue" stroke="#D97706" strokeWidth={2.5} dot={{ fill: '#FFFFFF', stroke: '#D97706', strokeWidth: 2, r: 4 }} activeDot={{ r: 5 }} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
           </div>
         </div>
+
         <div className="col-lg-4">
-          <div className="glass p-4 h-100 border border-white-5 d-flex flex-column">
-            <h3 className="h6 text-white fw-bold mb-4">At Risk Matrix</h3>
-            <div className="flex-grow-1 overflow-auto pe-2 scrollbar-hide">
-              <p className="x-small text-platinum opacity-50 text-uppercase tracking-widest mb-3">Critically Low Stock</p>
+          <div className="glass p-4 h-100 d-flex flex-column">
+            <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#111827', margin: '0 0 16px' }}>
+              Low Stock Alert
+            </h3>
+            <div className="flex-grow-1 overflow-auto scrollbar-hide">
               {products.filter(p => p.stock < 5).map(p => (
-                <div key={p.id} className="d-flex align-items-center justify-content-between p-3 rounded-3 bg-obsidian-800 border border-white-5 mb-2">
-                  <div className="d-flex align-items-center gap-3">
-                    <img src={p.imageGallery?.[0]} className="rounded-1 object-fit-contain p-1 border border-white-5 bg-obsidian-900" style={{ width: 36, height: 36 }} alt="" />
-                    <div>
-                      <p className="text-white small fw-bold m-0 text-truncate" style={{ maxWidth: 120 }}>{p.name}</p>
-                      <p className="x-small text-danger fw-bold opacity-75 m-0">{p.stock === 0 ? 'Out of Stock' : `${p.stock} units left`}</p>
-                    </div>
+                <div
+                  key={p.id}
+                  className="d-flex align-items-center gap-3 mb-2 p-3 rounded-3"
+                  style={{ background: '#F9FAFB', border: '1px solid #F3F4F6' }}
+                >
+                  <img
+                    src={p.imageGallery?.[0]}
+                    className="rounded-2 object-fit-contain"
+                    style={{ width: 36, height: 36, background: '#F3F4F6', padding: 4, border: '1px solid #E5E7EB' }}
+                    alt=""
+                  />
+                  <div>
+                    <p style={{ fontSize: '13px', fontWeight: 600, color: '#111827', margin: 0, maxWidth: 130 }} className="text-truncate">
+                      {p.name}
+                    </p>
+                    <p style={{ fontSize: '11px', color: '#EF4444', margin: 0, fontWeight: 600 }}>
+                      {p.stock === 0 ? 'Out of Stock' : `${p.stock} units left`}
+                    </p>
                   </div>
                 </div>
               ))}
               {products.filter(p => p.stock < 5).length === 0 && (
-                <p className="text-platinum small opacity-50 fst-italic">Inventory levels stable.</p>
+                <p style={{ color: '#9CA3AF', fontSize: '13px', fontStyle: 'italic' }}>Inventory stable.</p>
               )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── Live Order Feed (Card-Based) ── */}
-      <div className="glass overflow-hidden border border-white-5">
-        <div className="px-4 py-4 border-bottom border-white-5 d-flex align-items-center justify-content-between">
+      {/* Live Order Feed — Card Grid */}
+      <div className="glass overflow-hidden">
+        <div className="d-flex align-items-center justify-content-between px-4 py-3" style={{ borderBottom: '1px solid #F3F4F6' }}>
           <div>
-            <h2 className="font-display h5 fw-bold text-white mb-0">Live Order Feed</h2>
-            <p className="x-small text-platinum opacity-50 mb-0 mt-1">Most recent {Math.min(orders.length, 8)} transactions</p>
+            <h2 style={{ fontFamily: 'DM Sans, sans-serif', fontSize: '15px', fontWeight: 700, color: '#111827', margin: 0 }}>
+              Live Order Feed
+            </h2>
+            <p style={{ fontSize: '12px', color: '#9CA3AF', margin: 0 }}>
+              Most recent {Math.min(orders.length, 8)} orders
+            </p>
           </div>
-          <span className="status-badge status-badge-active" style={{ fontSize: '10px' }}>
+          <span
+            className="status-badge status-badge-active"
+            style={{ fontSize: '11px' }}
+          >
             ● Live
           </span>
         </div>
 
-        <div className="p-4 d-flex flex-column gap-3">
+        <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {orders.slice(0, 8).map((order, i) => (
             <motion.div
               key={order.id}
-              initial={{ opacity: 0, y: 8 }}
+              initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.04 }}
-              whileHover={{ y: -2, boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}
-              className="d-flex align-items-center justify-content-between p-4 rounded-4 border border-white-5 cursor-pointer"
+              whileHover={{ y: -1, boxShadow: '0 6px 20px rgba(0,0,0,0.07)' }}
               style={{
-                background: 'rgba(255,255,255,0.02)',
-                borderRadius: '16px',
+                background: '#FFFFFF',
+                border: '1px solid #F3F4F6',
+                borderRadius: '12px',
+                padding: '14px 18px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                cursor: 'pointer',
                 transition: 'all 0.2s ease',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
               }}
             >
-              {/* Left: Order info */}
-              <div style={{ flex: '0 0 65%' }}>
-                <div className="d-flex align-items-center gap-3 mb-1">
-                  <span
-                    className="font-mono fw-bold text-amber"
-                    style={{ fontSize: '14px', letterSpacing: '0.02em' }}
-                  >
+              <div>
+                <div className="d-flex align-items-center gap-2 mb-1">
+                  <span style={{ fontFamily: 'DM Mono, monospace', fontWeight: 700, color: '#D97706', fontSize: '13px' }}>
                     #{order.id.slice(-8).toUpperCase()}
                   </span>
-                  <span className="text-white fw-medium" style={{ fontSize: '14px' }}>
+                  <span style={{ fontSize: '14px', fontWeight: 600, color: '#111827' }}>
                     {order.shippingAddress?.name || order.userEmail || 'Guest'}
                   </span>
                 </div>
-                <p
-                  className="mb-0 text-platinum"
-                  style={{ fontSize: '12px', opacity: 0.6 }}
-                >
+                <p style={{ margin: 0, fontSize: '12px', color: '#9CA3AF' }}>
                   {order.userEmail || order.shippingAddress?.email || '—'}
                 </p>
               </div>
-
-              {/* Right: Amount + Badge + Time */}
-              <div className="text-end" style={{ flex: '0 0 35%' }}>
-                <p className="fw-bold text-white mb-1" style={{ fontSize: '1.1rem' }}>
+              <div className="text-end">
+                <p style={{ margin: '0 0 4px', fontSize: '15px', fontWeight: 700, color: '#111827' }}>
                   ₹{(order.totalAmount || order.totalPrice || 0).toLocaleString('en-IN')}
                 </p>
                 <div className="mb-1">
-                  <span className={getStatusBadgeClass(order.status)}>
+                  <span className={`status-badge status-badge-${(order.status || 'pending').toLowerCase()}`}>
                     {order.status || 'pending'}
                   </span>
                 </div>
-                <p className="mb-0 text-platinum" style={{ fontSize: '11px', opacity: 0.5 }}>
+                <p style={{ margin: 0, fontSize: '11px', color: '#D1D5DB' }}>
                   {order.createdAt
-                    ? new Date(order.createdAt).toLocaleString('en-IN', {
-                        hour: 'numeric', minute: '2-digit', day: 'numeric', month: 'short',
-                      })
+                    ? new Date(order.createdAt).toLocaleString('en-IN', { hour: 'numeric', minute: '2-digit', day: 'numeric', month: 'short' })
                     : 'N/A'}
                 </p>
               </div>
             </motion.div>
           ))}
-
           {orders.length === 0 && (
-            <div className="text-center py-5 text-platinum opacity-25 fst-italic small">
+            <div className="text-center py-5" style={{ color: '#D1D5DB', fontStyle: 'italic', fontSize: '14px' }}>
               No orders yet. They'll appear here in real-time.
             </div>
           )}
