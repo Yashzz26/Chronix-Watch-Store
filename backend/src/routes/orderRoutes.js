@@ -9,44 +9,63 @@ const { verifyToken, verifyAdmin } = require('../middleware/verifyToken');
  * POST /api/orders
  * Customer: Create a new order (COD or Online)
  * Body: { items, totalPrice, paymentMethod, shippingAddress }
+ */
+
+const generateDisplayId = () => {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let result = "";
+  for (let i = 0; i < 6; i++) {
+    result += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return result;
+};
+
 router.post('/', verifyToken, async (req, res) => {
   try {
-    const { items, totalPrice, paymentMethod, shippingAddress } = req.body;
+    const { items, totalPrice, paymentMethod, shippingAddress, address } = req.body;
+    const finalAddress = address || shippingAddress;
 
     if (!items || !totalPrice || !paymentMethod) {
       return res.status(400).json({ error: 'Missing order details' });
     }
 
-    // 🚀 S4.3: Atomic Transaction for Stock Decrement & Order Creation
+    const suffix = generateDisplayId();
     const orderId = await db.runTransaction(async (transaction) => {
       const orderRef = db.collection('orders').doc();
       
       const orderData = {
         userId: req.user.uid,
         userEmail: req.user.email,
-        items: items.map(i => ({
-          productId: i.productId || i.id,
-          name: i.name,
-          image: i.image,
+        items: (items || []).map(i => ({
+          productId: String(i.productId || i.id || ''),
+          name: String(i.name || 'Unknown Item'),
+          image: String(i.image || ''),
           selectedVariant: i.selectedVariant || i.variants || null,
-          priceAtPurchase: Number(i.priceAtPurchase || i.price),
-          qty: Number(i.qty)
+          priceAtPurchase: Number(i.priceAtPurchase || i.price || 0),
+          qty: Number(i.qty || 1),
+          sku: String(i.sku || `CHX-${String(i.productId || i.id || '').slice(0, 6)}`),
+          variantLabel: String(i.variantLabel || 'Standard Model')
         })),
-        totalPrice,
-        paymentMethod,
-        shippingAddress: shippingAddress || {},
-        status: paymentMethod === 'cod' ? 'pending' : 'unpaid',
+        totalPrice: Number(totalPrice || 0),
+        paymentMethod: String(paymentMethod || 'cod'),
+        shippingAddress: finalAddress || {},
+        status: paymentMethod === 'cod' ? 'pending' : 'paid',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        orderDisplayId: `ORD-${suffix}`,
+        invoiceId: `INV-${suffix}`,
       };
 
       // 1. Process Stock for every item
-      for (const item of items) {
-        const productRef = db.collection('products').doc(item.id);
+      for (const item of (items || [])) {
+        const pId = item.productId || item.id;
+        if (!pId) continue; // Skip if no ID
+
+        const productRef = db.collection('products').doc(String(pId));
         const productDoc = await transaction.get(productRef);
 
         if (!productDoc.exists) {
-          throw new Error(`Product ${item.id} not found in repository.`);
+          throw new Error(`Product ${pId} not found in repository.`);
         }
 
         const productData = productDoc.data();
@@ -57,19 +76,25 @@ router.post('/', verifyToken, async (req, res) => {
         const vKey = item.selectedVariant || item.variants;
         if (vKey && vKey.sku) {
           const variant = updatedVariants.find(v => v.sku === vKey.sku);
-          if (!variant) throw new Error(`Specific iteration (${vKey.sku}) not found.`);
-          stockAvailable = Number(variant.stock) || 0;
-          
-          if (stockAvailable < item.qty) {
-            throw new Error(`Insufficient inventory: ${item.name} (${vKey.sku}). Requested: ${item.qty}, Available: ${stockAvailable}`);
-          }
+          if (!variant) {
+            // Fallback to base stock if variant doesn't strictly exist via sku match
+            stockAvailable = Number(productData.stock) || 0;
+            if (stockAvailable < item.qty) {
+              throw new Error(`Insufficient inventory for base model: ${item.name}. Requested: ${item.qty}, Available: ${stockAvailable}`);
+            }
+          } else {
+            stockAvailable = Number(variant.stock) || 0;
+            if (stockAvailable < item.qty) {
+              throw new Error(`Insufficient inventory: ${item.name} (${vKey.sku}). Requested: ${item.qty}, Available: ${stockAvailable}`);
+            }
 
-          // Update the specific variant
-          updatedVariants = updatedVariants.map(v => 
-            v.sku === vKey.sku 
-              ? { ...v, stock: v.stock - item.qty } 
-              : v
-          );
+            // Update the specific variant
+            updatedVariants = updatedVariants.map(v => 
+              v.sku === vKey.sku 
+                ? { ...v, stock: v.stock - item.qty } 
+                : v
+            );
+          }
         } else {
           // Fallback to base stock if no variants
           stockAvailable = Number(productData.stock) || 0;
@@ -111,9 +136,15 @@ router.post('/', verifyToken, async (req, res) => {
       return orderRef.id;
     });
 
-    res.status(201).json({ success: true, orderId });
+    res.status(201).json({ success: true, orderId, orderDisplayId: `ORD-${suffix}` });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to create order', details: err.message });
+    console.error('Order creation error:', err);
+    res.status(500).json({ 
+      error: 'Failed to create order', 
+      details: err.message,
+      name: err.name,
+      trace: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
   }
 });
 

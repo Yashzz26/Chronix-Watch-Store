@@ -222,7 +222,7 @@ export default function Orders() {
                           <p className="h4 m-0 fw-bold mb-3 font-mono">₹{order.totalPrice.toLocaleString('en-IN')}</p>
                           <div className="d-flex justify-content-lg-end gap-2">
                              <button className="action-btn action-btn-primary" onClick={() => navigate(`/invoice/${order.id}`)}>
-                               Download Invoice
+                               View Invoice
                              </button>
                              {order.status === 'delivered' && <button className="action-btn action-btn-outline">Reorder</button>}
                              {order.status === 'pending' && <button className="action-btn action-btn-outline text-danger border-danger border-opacity-25" onClick={() => toast.success('Cancellation request sent')}>Cancel Order</button>}

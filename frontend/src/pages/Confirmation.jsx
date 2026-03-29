@@ -7,15 +7,16 @@ export default function Confirmation() {
   const location = useLocation();
   const navigate = useNavigate();
   const orderId = location.state?.orderId;
+  const displayId = location.state?.displayId;
 
   // Section 2.12 — Access guard
   useEffect(() => {
-    if (!orderId) {
+    if (!orderId && !displayId) {
       navigate('/', { replace: true });
     }
-  }, [orderId, navigate]);
+  }, [orderId, displayId, navigate]);
 
-  if (!orderId) return null;
+  if (!orderId && !displayId) return null;
 
   return (
     <div className="container min-vh-100 d-flex flex-column align-items-center justify-content-center p-4 text-center mx-auto" style={{ maxWidth: 600 }}>
@@ -47,7 +48,7 @@ export default function Confirmation() {
         <p className="text-t2 fs-5 mb-5">Your reservation has been successfully accepted.</p>
         <div className="d-inline-block px-5 py-3 bg-s1 border border-border rounded-3 shadow-lg">
           <p className="text-[0.65rem] uppercase text-t3 tracking-widest mb-1">Reservation Reference</p>
-          <p className="text-gold font-mono fw-bold h4 mb-0">{orderId}</p>
+          <p className="text-gold font-mono fw-bold h4 mb-0">#{displayId || (orderId ? orderId.slice(-8).toUpperCase() : 'PENDING')}</p>
         </div>
       </motion.div>
 

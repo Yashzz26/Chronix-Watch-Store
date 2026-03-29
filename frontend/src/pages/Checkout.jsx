@@ -178,14 +178,20 @@ export default function Checkout() {
       const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
       const orderPayload = {
-        items: items.map(item => ({
-          productId: item.id,
-          name: item.name,
-          image: (item.imageGallery && item.imageGallery[0]) || item.image || '',
-          selectedVariant: item.variants || null,
-          priceAtPurchase: item.dealPrice || item.price,
-          qty: item.qty
-        })),
+        items: items.map(item => {
+          const v = item.variants;
+          const label = v ? [v.size, v.color, v.material].filter(Boolean).join(' • ') : 'Standard Model';
+          return {
+            productId: item.id,
+            name: item.name,
+            image: (item.imageGallery && item.imageGallery[0]) || item.image || '',
+            selectedVariant: v || null,
+            priceAtPurchase: Number(item.dealPrice || item.price || 0),
+            qty: item.qty,
+            sku: item.sku || `CHX-${item.id.slice(0, 6)}`,
+            variantLabel: label || 'Standard Model'
+          };
+        }),
         totalPrice: finalTotal,
         paymentMethod: method,
         address: addressData,
@@ -224,7 +230,7 @@ export default function Checkout() {
                 const data = await finalResponse.json();
                 toast.success('Order Recorded', { id: verifyingToast });
                 clearCart();
-                navigate('/confirmation', { state: { orderId: data.orderId } });
+                navigate('/confirmation', { state: { orderId: data.orderId, displayId: data.orderDisplayId } });
               } else {
                 throw new Error('Verification failed');
               }
@@ -253,10 +259,10 @@ export default function Checkout() {
           const data = await response.json();
           clearCart();
           toast.success('Reservation Confirmed');
-          navigate('/confirmation', { state: { orderId: data.orderId } });
+          navigate('/confirmation', { state: { orderId: data.orderId, displayId: data.orderDisplayId } });
         } else {
           const data = await response.json();
-          throw new Error(data.error || 'Failed to place order');
+          throw new Error(data.details || data.error || 'Failed to place order');
         }
       }
     } catch (error) {

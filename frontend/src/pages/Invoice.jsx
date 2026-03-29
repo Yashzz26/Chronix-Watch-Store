@@ -3,6 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { HiOutlineArrowLeft, HiOutlineArrowDownTray, HiOutlinePrinter, HiOutlineEnvelope } from 'react-icons/hi2';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 export default function Invoice() {
   const { orderId } = useParams();
@@ -30,14 +32,55 @@ export default function Invoice() {
     fetchOrder();
   }, [orderId]);
 
-  const handlePrint = () => {
-    window.print();
+  const downloadInvoice = async () => {
+    const element = invoiceRef.current;
+    if (!element) return;
+    try {
+      const canvas = await html2canvas(element, { scale: 2 });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      
+      const width = pdf.internal.pageSize.getWidth();
+      const height = (canvas.height * width) / canvas.width;
+      
+      let position = 0;
+      while (position < height) {
+        pdf.addImage(imgData, "PNG", 0, -position, width, height);
+        position += 297; // A4 page height
+        if (position < height) {
+          pdf.addPage();
+        }
+      }
+      
+      pdf.save(`Invoice-${orderId}.pdf`);
+    } catch (err) {
+      console.error("Failed to download invoice", err);
+    }
+  };
+
+  const getItemPrice = (item) => {
+    return Number(
+      item.priceAtPurchase ||
+      item.dealPrice ||
+      item.price ||
+      0
+    );
+  };
+
+  const getImage = (item) => {
+    return (
+      item.imageGallery?.[0] ||
+      item.image ||
+      item.images?.[0] ||
+      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='
+    );
   };
 
   // Calculate GST
-  const subtotal = order?.items?.reduce(
-    (sum, item) => sum + (item.dealPrice || item.price) * item.qty, 0
-  ) || 0;
+  const subtotal = order?.items?.reduce((sum, item) => {
+    const price = getItemPrice(item);
+    return sum + price * (item.qty || 1);
+  }, 0) || 0;
   const cgst = subtotal * 0.09;
   const sgst = subtotal * 0.09;
   const grandTotal = subtotal + cgst + sgst;
@@ -228,10 +271,10 @@ export default function Invoice() {
           text-transform: uppercase;
           letter-spacing: 0.15em;
         }
-        .invoice-status-paid, .invoice-status-delivered { background: #e8f5e9; color: #2e7d32; }
-        .invoice-status-pending { background: #fff8e1; color: #f57f17; }
-        .invoice-status-shipped { background: #e3f2fd; color: #1565c0; }
-        .invoice-status-cancelled { background: #ffebee; color: #c62828; }
+        .invoice-status-paid, .invoice-status-delivered { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
+        .invoice-status-pending { background: #fff8e1; color: #f57f17; border: 1px solid #ffecb3; }
+        .invoice-status-shipped { background: #e3f2fd; color: #1565c0; border: 1px solid #bbdefb; }
+        .invoice-status-cancelled { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
 
         /* ── MULTI-COLUMN INFO ── */
         .invoice-info-section {
@@ -275,6 +318,8 @@ export default function Invoice() {
         .invoice-table {
           width: 100%;
           border-collapse: collapse;
+          border-radius: 8px;
+          overflow: hidden;
         }
 
         .invoice-table th {
@@ -294,7 +339,7 @@ export default function Invoice() {
         }
 
         .invoice-table td {
-          padding: 24px 20px;
+          padding: 28px 20px;
           border-bottom: 1px solid #E0DED9;
           border-left: 1px solid #E0DED9;
           border-right: 1px solid #E0DED9;
@@ -303,8 +348,8 @@ export default function Invoice() {
           vertical-align: top;
         }
 
-        .item-row:hover td {
-          background: #FAFAF8;
+        .item-row:nth-child(even) td {
+          background: #FAFAFA;
         }
 
         .invoice-item-product {
@@ -314,8 +359,8 @@ export default function Invoice() {
         }
 
         .invoice-item-img {
-          width: 56px;
-          height: 56px;
+          width: 72px;
+          height: 72px;
           object-fit: contain;
           background: #F4F3EF;
           border-radius: 6px;
@@ -335,6 +380,13 @@ export default function Invoice() {
           color: #888888;
           margin: 0;
         }
+
+        .invoice-variant {
+          font-size: 0.7rem;
+          color: #888;
+          font-weight: 600;
+          margin: 4px 0 0 0;
+        }
         
         .item-price-col {
           font-family: 'DM Mono', monospace;
@@ -351,6 +403,9 @@ export default function Invoice() {
         .invoice-totals-box {
           width: 100%;
           max-width: 400px;
+          background: #FAFAF8;
+          padding: 20px;
+          border-radius: 10px;
         }
 
         .invoice-totals-row {
@@ -359,6 +414,7 @@ export default function Invoice() {
           padding: 12px 0;
           font-size: 0.95rem;
           color: #555555;
+          font-weight: 500;
         }
 
         .invoice-totals-val {
@@ -465,15 +521,9 @@ export default function Invoice() {
             <HiOutlineArrowLeft size={18} /> Back to Orders
           </Link>
           <div className="d-flex gap-3">
-            <button className="action-icon-btn action-btn-outline" onClick={() => window.alert('Email sent to ' + (order?.userEmail || 'customer'))}>
-              <HiOutlineEnvelope size={18} /> Send to Email
+            <button className="action-icon-btn action-btn-primary" onClick={downloadInvoice}>
+              <HiOutlineArrowDownTray size={18} /> Download Invoice
             </button>
-            <button className="action-icon-btn action-btn-outline" onClick={handlePrint}>
-              <HiOutlinePrinter size={18} /> Print Invoice
-            </button>
-              <button className="invoice-action-btn" onClick={() => window.print()}>
-                <HiOutlineArrowDownTray /> Save PDF
-              </button>
           </div>
         </div>
       </div>
@@ -533,11 +583,13 @@ export default function Invoice() {
             </div>
             <div>
               <p className="info-col-title">PAYMENT METHOD</p>
-              <p className="info-col-name">
-                {order?.paymentMethod === 'online' ? 'Online Payment' : 'Cash on Delivery'}
-              </p>
+              <div className="d-inline-flex px-3 py-1 rounded-pill mt-1" style={{ background: order?.status === 'pending' ? '#fff8e1' : '#e8f5e9', border: `1px solid ${order?.status === 'pending' ? '#ffecb3' : '#c8e6c9'}` }}>
+                <p className="info-col-name m-0" style={{ fontSize: '0.8rem', color: order?.status === 'pending' ? '#f57f17' : '#2e7d32', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                  {order?.paymentMethod === 'online' ? 'Online Payment' : 'Cash on Delivery'}
+                </p>
+              </div>
               {order?.razorpayDetails?.paymentId && (
-                <p className="info-col-detail font-mono mt-2">
+                <p className="info-col-detail font-mono mt-3">
                   Txn ID: {order.razorpayDetails.paymentId}
                 </p>
               )}
@@ -562,25 +614,25 @@ export default function Invoice() {
                     <td>
                       <div className="invoice-item-product">
                         <img 
-                          src={item.imageGallery?.[0]} 
+                          src={getImage(item)} 
                           alt={item.name}
                           className="invoice-item-img"
                         />
                         <div>
                           <p className="invoice-item-name">{item.name}</p>
-                          <p className="invoice-item-sku mb-1">SKU: CHR-{(item.id || item._id || Math.random().toString(36).slice(-6)).toString().slice(0, 6).toUpperCase()}</p>
-                          {item.variants && (
-                            <p className="x-small text-gold fw-bold uppercase tracking-widest" style={{ fontSize: '0.65rem' }}>
-                              {item.variants.size} • {item.variants.color} • {item.variants.material}
-                            </p>
-                          )}
+                          <p className="invoice-item-sku">
+                            SKU: {item.sku || 'CHX-' + (item.id || item.productId || 'Unknown')?.slice?.(0, 6)}
+                          </p>
+                          <p className="invoice-variant">
+                            {item.variantLabel || 'Standard Model'}
+                          </p>
                         </div>
                       </div>
                     </td>
                     <td>{item.category || 'Luxury Timepiece'}</td>
                     <td className="item-price-col">{item.qty}</td>
-                    <td className="item-price-col">₹{(item.dealPrice || item.price)?.toLocaleString('en-IN')}</td>
-                    <td className="item-price-col fw-bold text-dark">₹{((item.dealPrice || item.price) * item.qty)?.toLocaleString('en-IN')}</td>
+                    <td className="item-price-col">₹{getItemPrice(item).toLocaleString('en-IN')}</td>
+                    <td className="item-price-col fw-bold text-dark">₹{(getItemPrice(item) * item.qty).toLocaleString('en-IN')}</td>
                   </tr>
                 ))}
               </tbody>
@@ -590,6 +642,9 @@ export default function Invoice() {
           {/* PROMINENT TOTALS */}
           <div className="invoice-totals-wrapper">
             <div className="invoice-totals-box">
+              <div className="invoice-totals-row border-bottom pb-3 mb-2 opacity-75">
+                <span className="text-uppercase tracking-widest text-t3" style={{ fontSize: '0.75rem' }}>Total Items: {order?.items?.length || 0}</span>
+              </div>
               <div className="invoice-totals-row">
                 <span>Subtotal</span>
                 <span className="invoice-totals-val">₹{subtotal.toLocaleString('en-IN')}</span>
