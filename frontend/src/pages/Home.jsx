@@ -9,7 +9,9 @@ import {
   HiOutlineShieldCheck,
   HiOutlineArrowPath
 } from 'react-icons/hi2';
-import { products } from '../data/products';
+import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
+import { db } from '../lib/firebase';
+import { products as legacyProducts } from '../data/products';
 import SkeletonCard from '../components/ui/SkeletonCard';
 import useCartStore from '../store/cartStore';
 import toast from 'react-hot-toast';
@@ -17,20 +19,25 @@ import toast from 'react-hot-toast';
 export default function Home() {
   const [searchParams] = useSearchParams();
   const addItem = useCartStore((s) => s.addItem);
-  const [loading, setLoading] = useState(true);
   
-  const heroRef = useRef(null);
-  const { scrollYProgress } = useScroll({ target: heroRef });
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.4], [1, 0]);
-  const heroScale = useTransform(scrollYProgress, [0, 0.4], [1, 0.95]);
-
-  const newArrivals = useMemo(() => products.slice(0, 4), []);
+  // Database State
+  const [dbProducts, setDbProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
-    const timer = setTimeout(() => setLoading(false), 600);
-    return () => clearTimeout(timer);
+    const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'), limit(8));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setDbProducts(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+      setLoading(false);
+    }, (err) => {
+      console.error(err);
+      setLoading(false);
+    });
+    return () => unsubscribe();
   }, []);
+
+  const newArrivals = useMemo(() => dbProducts.slice(0, 4), [dbProducts]);
+  const heroProduct = useMemo(() => dbProducts[0] || null, [dbProducts]);
 
   return (
     <div className="home-minimal">
@@ -317,20 +324,20 @@ export default function Home() {
             </div>
             
             <div className="col-12 col-lg-6 mt-5 mt-lg-0 text-center text-lg-end">
-               <motion.div 
-                 initial={{ opacity: 0, scale: 0.8 }}
-                 whileInView={{ opacity: 1, scale: 1 }}
-                 viewport={{ once: true }}
-                 transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-                 className="animate-float"
-               >
-                 <img 
-                   src={products[2].imageGallery[0]} 
-                   className="img-fluid" 
-                   style={{ maxHeight: '700px', filter: 'drop-shadow(0 40px 100px rgba(212,175,55,0.15))' }} 
-                   alt="Luxury Watch Hero" 
-                 />
-               </motion.div>
+                 <motion.div 
+                   initial={{ opacity: 0, scale: 0.8 }}
+                   whileInView={{ opacity: 1, scale: 1 }}
+                   viewport={{ once: true }}
+                   transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+                   className="animate-float"
+                 >
+                   <img 
+                     src={heroProduct?.imageGallery?.[0] || 'https://via.placeholder.com/600'} 
+                     className="img-fluid" 
+                     style={{ maxHeight: '700px', filter: 'drop-shadow(0 40px 100px rgba(212,175,55,0.15))' }} 
+                     alt="Luxury Watch Hero" 
+                   />
+                 </motion.div>
             </div>
           </div>
         </div>
@@ -382,14 +389,14 @@ export default function Home() {
             </div>
             
             <div className="col-12 col-md-4 text-center my-4 my-md-0">
-               <motion.img 
-                 whileInView={{ y: [20, 0], opacity: [0, 1] }}
-                 viewport={{ once: true }}
-                 src={products[5].imageGallery[0]} 
-                 className="img-fluid animate-float" 
-                 style={{ maxHeight: '550px' }}
-                 alt="Main Feature Product" 
-               />
+                <motion.img 
+                  whileInView={{ y: [20, 0], opacity: [0, 1] }}
+                  viewport={{ once: true }}
+                  src={dbProducts[Math.min(5, dbProducts.length - 1)]?.imageGallery?.[0] || 'https://via.placeholder.com/550'} 
+                  className="img-fluid animate-float" 
+                  style={{ maxHeight: '550px' }}
+                  alt="Main Feature Product" 
+                />
             </div>
 
             <div className="col-12 col-md-4">

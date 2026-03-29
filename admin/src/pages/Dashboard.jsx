@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { collection, onSnapshot, query, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import StatCard from '../components/StatCard';
-import { HiOutlineCurrencyRupee, HiOutlineShoppingCart, HiOutlineUsers, HiOutlineShoppingBag, HiOutlineArrowUp, HiArrowUpRight } from 'react-icons/hi';
+import { HiOutlineCurrencyRupee, HiOutlineShoppingCart, HiOutlineUsers, HiOutlineShoppingBag } from 'react-icons/hi';
 import { HiOutlineArrowTrendingUp } from 'react-icons/hi2';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 

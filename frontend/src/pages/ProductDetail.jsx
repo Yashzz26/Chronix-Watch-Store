@@ -12,7 +12,8 @@ import {
   HiStar
 } from 'react-icons/hi2';
 import { HiHeart } from 'react-icons/hi2';
-import { getProductById, products } from '../data/products';
+import { doc, getDoc, collection, query, limit, getDocs, where } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import useCartStore from '../store/cartStore';
 import useWishlistStore from '../store/wishlistStore';
 import useReviewStore from '../store/reviewStore';
@@ -23,9 +24,50 @@ import toast from 'react-hot-toast';
 export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const product = getProductById(id);
+  
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [relatedProducts, setRelatedProducts] = useState([]);
+  
   const { addItem } = useCartStore();
   const { toggleWishlist, isInWishlist } = useWishlistStore();
+
+  useEffect(() => {
+    const fetchProduct = async () => {
+      setLoading(true);
+      try {
+        const docRef = doc(db, 'products', id);
+        const docSnap = await getDoc(docRef);
+        
+        if (docSnap.exists()) {
+          const data = { id: docSnap.id, ...docSnap.data() };
+          setProduct(data);
+
+          // Fetch Related Products (same category)
+          const q = query(
+            collection(db, 'products'), 
+            where('category', '==', data.category),
+            limit(5)
+          );
+          const relatedSnap = await getDocs(q);
+          setRelatedProducts(
+            relatedSnap.docs
+              .map(d => ({ id: d.id, ...d.data() }))
+              .filter(p => p.id !== id)
+              .slice(0, 4)
+          );
+        } else {
+          navigate('/404', { replace: true });
+        }
+      } catch (err) {
+        console.error(err);
+        toast.error('Failed to load instrument details');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProduct();
+  }, [id, navigate]);
 
   const [activeImg, setActiveImg] = useState(0);
   const [openAccordion, setOpenAccordion] = useState('description');
@@ -39,10 +81,11 @@ export default function ProductDetail() {
   const [editingReviewId, setEditingReviewId] = useState(null);
 
   useEffect(() => {
-    if (!product) { navigate('/404', { replace: true }); return; }
-    window.scrollTo(0, 0);
-    fetchReviews(product.id);
-  }, [product, navigate, id, fetchReviews]);
+    if (product) {
+      window.scrollTo(0, 0);
+      fetchReviews(product.id);
+    }
+  }, [product, fetchReviews]);
 
   useEffect(() => {
     const checkPurchase = async () => {
@@ -92,6 +135,7 @@ export default function ProductDetail() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  if (loading) return <div className="p-10 text-center text-t3 opacity-50">Retrieving Instrument Specifications...</div>;
   if (!product) return null;
 
   const handleAddToCart = (e) => {
@@ -620,7 +664,7 @@ export default function ProductDetail() {
          </div>
 
          <div className="row g-4">
-            {products.filter(p => p.id !== product.id).slice(0, 4).map((p) => (
+            {relatedProducts.map((p) => (
               <div key={p.id} className="col-12 col-sm-6 col-lg-3">
                  <div className="related-card">
                     <Link to={`/product/${p.id}`} className="text-decoration-none position-relative d-block">

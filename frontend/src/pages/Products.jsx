@@ -2,7 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HiAdjustments, HiX } from 'react-icons/hi';
-import { products, categories } from '../data/products';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { db } from '../lib/firebase';
+import { categoryNames, categories } from '../data/products';
 import SkeletonCard from '../components/ui/SkeletonCard';
 import useCartStore from '../store/cartStore';
 import toast from 'react-hot-toast';
@@ -11,18 +13,34 @@ export default function Products({ filterCategory }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const addItem = useCartStore((s) => s.addItem);
 
-  // States
+  // Database Products State
+  const [dbProducts, setDbProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Sync with Firestore
+  useEffect(() => {
+    const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setDbProducts(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+      setLoading(false);
+    }, (err) => {
+      console.error(err);
+      toast.error('Inventory Sync Failed');
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Filter and Sort Logic
   const urlCategory = searchParams.get('cat') || 'All';
   const activeCategory = filterCategory || urlCategory;
   const sort = searchParams.get('sort') || 'default';
-  const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 9;
 
-  // Filter and Sort Logic
   const filteredProducts = useMemo(() => {
-    let result = [...products];
+    let result = [...dbProducts];
     if (activeCategory !== 'All') {
       result = result.filter(p => p.category === activeCategory);
     }
@@ -32,7 +50,7 @@ export default function Products({ filterCategory }) {
       result.sort((a, b) => (b.dealPrice || b.price) - (a.dealPrice || a.price));
     }
     return result;
-  }, [activeCategory, sort]);
+  }, [dbProducts, activeCategory, sort]);
 
   // Pagination Logic
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
@@ -150,7 +168,7 @@ export default function Products({ filterCategory }) {
                   >
                     {cat}
                     <span className="filter-count">
-                      ({cat === 'All' ? products.length : products.filter(p => p.category === cat).length})
+                      ({cat === 'All' ? dbProducts.length : dbProducts.filter(p => p.category === cat).length})
                     </span>
                   </li>
                 ))}
