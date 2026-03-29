@@ -66,7 +66,7 @@ const Dashboard = () => {
     >
       {/* Header */}
       <div style={{ marginBottom: '28px' }}>
-        <h1 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '1.6rem', color: '#111827', marginBottom: '4px' }}>
+        <h1 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '1.85rem', color: '#111827', marginBottom: '4px', letterSpacing: '-0.02em' }}>
           Operations Hub
         </h1>
         <p style={{ color: '#6B7280', fontSize: '14px', margin: 0 }}>
@@ -104,7 +104,7 @@ const Dashboard = () => {
                 </p>
               </div>
             </div>
-            <div style={{ height: '240px' }}>
+            <div style={{ height: '260px' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" vertical={false} />
@@ -170,9 +170,9 @@ const Dashboard = () => {
           </div>
           <span
             className="status-badge status-badge-active"
-            style={{ fontSize: '11px' }}
+            style={{ fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
           >
-            ● Live
+            <span className="live-dot" /> Live
           </span>
         </div>
 

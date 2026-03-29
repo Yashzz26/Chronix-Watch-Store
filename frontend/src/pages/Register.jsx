@@ -2,13 +2,16 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, arrayUnion } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import toast from 'react-hot-toast';
 import { HiOutlineEnvelope, HiOutlineLockClosed, HiOutlineUser, HiOutlineShieldCheck } from 'react-icons/hi2';
+import { FcGoogle } from 'react-icons/fc';
+import useAuthStore from '../store/authStore';
 
 export default function Register() {
   const navigate = useNavigate();
+  const { googleSignIn } = useAuthStore();
   const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '' });
   const [loading, setLoading] = useState(false);
   const [passStrength, setPassStrength] = useState(0);
@@ -43,12 +46,14 @@ export default function Register() {
         name: form.name,
         email: form.email,
         role: 'customer',
-        createdAt: new Date().toISOString(),
+        providers: ['password'],
+        createdAt: serverTimestamp(),
+        lastLogin: serverTimestamp(),
         wishlist: [],
         photoURL: '',
         phone: '',
         address: '',
-      });
+      }, { merge: true });
 
       toast.success('Welcome to the Inner Circle');
       navigate('/');
@@ -56,6 +61,18 @@ export default function Register() {
       toast.error(error.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    const result = await googleSignIn();
+    setLoading(false);
+    if (result.success) {
+      toast.success('Welcome to the Elite');
+      navigate('/');
+    } else {
+      toast.error(result.error || 'Identity Verification Failed');
     }
   };
 
@@ -67,15 +84,15 @@ export default function Register() {
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        className="chronix-card p-5 w-100 position-relative z-1"
-        style={{ maxWidth: '500px' }}
+        className="chronix-card p-4 p-md-5 w-100 position-relative z-1"
+        style={{ maxWidth: '500px', background: '#fff' }}
       >
         <div className="text-center mb-5">
            <h1 className="font-display display-6 text-t1 mb-2">Join the Elite</h1>
-           <p className="text-t3 text-uppercase tracking-widest m-0" style={{ fontSize: '0.65rem' }}>Induct your presence into Chronix</p>
+           <p className="text-t3 text-uppercase tracking-widest m-0" style={{ fontSize: '0.65rem', letterSpacing: '0.15em' }}>Induct your presence into Chronix</p>
         </div>
 
-        <form onSubmit={handleRegister} className="row g-4">
+        <form onSubmit={handleRegister} className="row g-3">
           <div className="col-12">
             <label className="text-uppercase text-t3 tracking-widest ps-1 mb-2 d-block" style={{ fontSize: '0.65rem' }}>Full Appellation</label>
             <div className="position-relative">
@@ -83,7 +100,7 @@ export default function Register() {
               <input
                 required
                 className="form-control chronix-input ps-5"
-                placeholder="John Doe"
+                placeholder="Identity"
                 value={form.name}
                 onChange={e => setForm({...form, name: e.target.value})}
               />
@@ -98,7 +115,7 @@ export default function Register() {
                 required
                 type="email"
                 className="form-control chronix-input ps-5"
-                placeholder="email@example.com"
+                placeholder="email@chronix.com"
                 value={form.email}
                 onChange={e => setForm({...form, email: e.target.value})}
               />
@@ -113,7 +130,7 @@ export default function Register() {
                 required
                 type="password"
                 className="form-control chronix-input ps-5"
-                placeholder="At least 8 characters"
+                placeholder="Entropy Required"
                 value={form.password}
                 onChange={e => {
                   setForm({...form, password: e.target.value});
@@ -127,11 +144,11 @@ export default function Register() {
               <div className="mt-2 px-1">
                 <div className="d-flex gap-1 mb-1">
                   {[1,2,3,4].map(i => (
-                    <div key={i} className="flex-grow-1" style={{ height: 3, background: i <= passStrength ? 'var(--gold)' : 'rgba(255,255,255,0.05)', transition: 'background 0.3s' }} />
+                    <div key={i} className="flex-grow-1" style={{ height: 3, background: i <= passStrength ? 'var(--gold)' : 'rgba(0,0,0,0.05)', transition: 'background 0.3s' }} />
                   ))}
                 </div>
                 <p className="m-0 text-t3 text-uppercase tracking-widest" style={{ fontSize: '0.55rem' }}>
-                  Security Level: {['Vulnerable', 'Moderate', 'Strong', 'Impermeable'][passStrength-1] || 'Unknown'}
+                   Security: {['Vulnerable', 'Moderate', 'Strong', 'Impermeable'][passStrength-1] || 'Unknown'}
                 </p>
               </div>
             )}
@@ -145,7 +162,7 @@ export default function Register() {
                 required
                 type="password"
                 className="form-control chronix-input ps-5"
-                placeholder="Re-enter password"
+                placeholder="Validate Security"
                 value={form.confirmPassword}
                 onChange={e => setForm({...form, confirmPassword: e.target.value})}
               />
@@ -155,18 +172,34 @@ export default function Register() {
           <div className="col-12 pt-2">
             <button
               disabled={loading}
-              className="btn-chronix-primary w-100 py-3 d-flex align-items-center justify-content-center gap-3 shadow-lg"
+              className="btn-chronix-primary w-100 py-3 d-flex align-items-center justify-content-center gap-3 shadow-sm border-0"
             >
               {loading ? (
-                <div className="spinner-border spinner-border-sm text-dark" role="status" />
-              ) : 'Request Induction'}
+                <div className="spinner-border spinner-border-sm" role="status" />
+              ) : 'Establish Membership'}
             </button>
           </div>
         </form>
 
-        <div className="mt-5 text-center">
-           <Link to="/login" className="btn btn-link text-t3 text-uppercase tracking-widest text-decoration-none" style={{ fontSize: '0.7rem' }}>
-             Already a member? Return to Login
+        {/* OR Divider */}
+        <div className="position-relative text-center my-4">
+          <div className="position-absolute w-100 top-50 translate-middle-y" style={{ height: 1, background: 'var(--border)', zIndex: 0 }} />
+          <span className="bg-white px-3 text-uppercase text-t3 tracking-widest position-relative" style={{ fontSize: '0.55rem', zIndex: 1 }}>Global Induction Vault</span>
+        </div>
+
+        <button 
+          onClick={handleGoogleSignIn}
+          disabled={loading}
+          className="btn w-100 py-3 d-flex align-items-center justify-content-center gap-3 transition-all hover-glow"
+          style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: '12px', fontSize: '0.85rem', fontWeight: 600, color: '#374151' }}
+        >
+          <FcGoogle size={20} />
+          Google Authentication
+        </button>
+
+        <div className="mt-4 text-center border-top border-border pt-4">
+           <Link to="/login" className="btn btn-link text-t3 text-uppercase tracking-widest text-decoration-none" style={{ fontSize: '0.65rem', fontWeight: 600 }}>
+             Existing Member? Return to Vault
            </Link>
         </div>
       </motion.div>

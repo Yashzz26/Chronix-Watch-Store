@@ -6,43 +6,75 @@ const StatCard = ({ title, value, icon: Icon, trend, change, prefix = '', suffix
 
   return (
     <motion.div
-      whileHover={{ y: -2, boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}
-      transition={{ duration: 0.2 }}
-      className="glass p-4 h-100"
-      style={{ cursor: 'default' }}
+      whileHover={{ y: -3, boxShadow: '0 8px 28px rgba(0,0,0,0.10)' }}
+      transition={{ duration: 0.18 }}
+      style={{
+        background: 'linear-gradient(180deg, #FFFFFF 0%, #FAFAFA 100%)',
+        border: '1px solid #E5E7EB',
+        borderRadius: '14px',
+        padding: '22px 24px',
+        height: '100%',
+        cursor: 'default',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.05)',
+        transition: 'box-shadow 0.2s ease',
+      }}
     >
-      <div className="d-flex justify-content-between align-items-start mb-4">
+      {/* Top row: icon + trend */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
         <div
           style={{
-            width: 44,
-            height: 44,
-            borderRadius: '12px',
+            width: 40,
+            height: 40,
+            borderRadius: '10px',
             background: '#F3F4F6',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <Icon size={22} style={{ color: '#374151' }} />
+          <Icon size={20} style={{ color: '#374151' }} />
         </div>
         {trendValue !== undefined && (
           <span
-            className="badge rounded-pill fw-semibold"
             style={{
+              display: 'inline-flex',
+              alignItems: 'center',
               fontSize: '11px',
+              fontWeight: 700,
               background: isUp ? '#D1FAE5' : '#FEE2E2',
               color: isUp ? '#065F46' : '#991B1B',
-              padding: '5px 10px',
+              padding: '4px 10px',
+              borderRadius: '999px',
             }}
           >
             {trendValue}
           </span>
         )}
       </div>
-      <p style={{ fontSize: '12px', fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
+
+      {/* Label — small uppercase */}
+      <p style={{
+        fontSize: '11px',
+        fontWeight: 700,
+        color: '#9CA3AF',
+        textTransform: 'uppercase',
+        letterSpacing: '0.07em',
+        marginBottom: '6px',
+        margin: '0 0 6px',
+      }}>
         {title}
       </p>
-      <h2 style={{ fontSize: '2rem', fontWeight: 700, color: '#111827', marginBottom: 0, fontFamily: 'DM Sans, sans-serif', lineHeight: 1.1 }}>
+
+      {/* Value — dominates */}
+      <h2 style={{
+        fontSize: '2rem',
+        fontWeight: 800,
+        color: '#111827',
+        marginBottom: 0,
+        fontFamily: 'DM Sans, sans-serif',
+        lineHeight: 1.1,
+        letterSpacing: '-0.02em',
+      }}>
         {prefix}{typeof value === 'number' ? value.toLocaleString('en-IN') : value}{suffix}
       </h2>
     </motion.div>

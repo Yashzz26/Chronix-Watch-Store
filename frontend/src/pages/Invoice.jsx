@@ -568,7 +568,7 @@ export default function Invoice() {
                         />
                         <div>
                           <p className="invoice-item-name">{item.name}</p>
-                          <p className="invoice-item-sku mb-1">SKU: CHR-{item.id.slice(0, 6).toUpperCase()}</p>
+                          <p className="invoice-item-sku mb-1">SKU: CHR-{(item.id || item._id || Math.random().toString(36).slice(-6)).toString().slice(0, 6).toUpperCase()}</p>
                           {item.variants && (
                             <p className="x-small text-gold fw-bold uppercase tracking-widest" style={{ fontSize: '0.65rem' }}>
                               {item.variants.size} • {item.variants.color} • {item.variants.material}

@@ -61,12 +61,16 @@ body {
 
 /* ─── Card ─── */
 .glass {
-  background: #FFFFFF;
+  background: linear-gradient(180deg, #FFFFFF 0%, #FAFAFA 100%);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05), 0 4px 16px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.05);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.glass:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.08);
 }
 
 /* ─── Buttons ─── */
@@ -211,12 +215,14 @@ body {
   font-weight: 500;
   color: var(--color-text-2);
   text-decoration: none;
-  transition: all 0.15s ease;
+  transition: all 0.18s ease;
   border-left: none;
+  transform: translateX(0);
 }
 .sidebar-nav-link:hover {
   background-color: var(--color-surface-2);
   color: var(--color-text);
+  transform: translateX(3px);
 }
 .sidebar-nav-link.active {
   background-color: var(--color-surface-2);
@@ -277,6 +283,29 @@ body {
 .hover-danger:hover          { background-color: #FEE2E2 !important; color: #991B1B !important; }
 .hover-opacity-100:hover     { opacity: 1 !important; }
 .hover-glow:hover            { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.08) !important; }
+
+/* ─── Table Row Scale ─── */
+.table-chronix tbody tr {
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+.table-chronix tbody tr:hover {
+  transform: scale(1.002);
+}
+
+/* ─── Live Dot ─── */
+.live-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  background: #22C55E;
+  border-radius: 50%;
+  animation: pulseDot 1.8s ease-in-out infinite;
+}
+@keyframes pulseDot {
+  0%   { opacity: 1;   transform: scale(1); }
+  50%  { opacity: 0.35; transform: scale(0.85); }
+  100% { opacity: 1;   transform: scale(1); }
+}
 
 /* ─── Hover Lift ─── */
 .hover-lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }

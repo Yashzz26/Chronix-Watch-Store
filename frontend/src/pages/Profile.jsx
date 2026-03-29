@@ -22,6 +22,12 @@ import {
   HiOutlineCreditCard,
   HiOutlineBanknotes
 } from 'react-icons/hi2';
+import { 
+  updatePassword, 
+  EmailAuthProvider, 
+  reauthenticateWithCredential,
+  sendPasswordResetEmail
+} from "firebase/auth";
 import { auth } from '../lib/firebase';
 import useAuthStore from '../store/authStore';
 import useWishlistStore from '../store/wishlistStore';
@@ -46,7 +52,6 @@ export default function Profile() {
   const queryTab = searchParams.get('tab');
   const [activeTab, setActiveTab] = useState(queryTab || 'details');
   const [saving, setSaving] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({
     firstName: profile?.name?.split(' ')[0] || '',
     lastName: profile?.name?.split(' ').slice(1).join(' ') || '',
@@ -54,7 +59,6 @@ export default function Profile() {
     phone: '',
     email: profile?.email || '',
     address: profile?.address || '',
-    password: 'Password123!', 
     photo: '', 
   });
 
@@ -222,23 +226,16 @@ export default function Profile() {
             </div>
             <div className="col-md-6">
                <div className="form-group-refined">
-                  <label className="label-refined">Password</label>
+                  <label className="label-refined">Mailing Address</label>
                   <div className="input-wrap-refined">
                      <input 
-                       type={showPassword ? "text" : "password"} 
+                       type="text" 
                        className="input-refined" 
-                       value={form.password} 
-                       readOnly
-                       style={!showPassword ? { letterSpacing: '4px' } : {}}
+                       value={form.address} 
+                       onChange={e => setForm({...form, address: e.target.value})}
+                       placeholder="Luxury Penthouse, Mumbai"
                      />
-                     <button 
-                       type="button"
-                       onClick={() => setShowPassword(!showPassword)}
-                       className="icon-refined border-0 bg-transparent p-0 transition-opacity hover-opacity-100"
-                       style={{ opacity: 0.5 }}
-                     >
-                       {showPassword ? <HiOutlineEyeSlash size={18} /> : <HiOutlineEye size={18} />}
-                     </button>
+                     <HiOutlineMapPin className="icon-refined" size={18} />
                   </div>
                </div>
             </div>
@@ -647,11 +644,200 @@ export default function Profile() {
     );
   };
 
+  const SecuritySettings = () => {
+    const [passwords, setPasswords] = useState({ current: '', new: '', confirm: '' });
+    const [showPass, setShowPass] = useState({ current: false, new: false, confirm: false });
+    const [updating, setUpdating] = useState(false);
+    const [strength, setStrength] = useState({ score: 0, label: 'Weak', color: '#dc2626' });
+
+    const isSocialUser = auth.currentUser?.providerData.some(p => p.providerId !== 'password');
+    const hasPasswordProvider = auth.currentUser?.providerData.some(p => p.providerId === 'password');
+
+    useEffect(() => {
+      const calculateStrength = (p) => {
+        let s = 0;
+        if (p.length > 6) s++;
+        if (/[A-Z]/.test(p)) s++;
+        if (/[0-9]/.test(p)) s++;
+        if (/[^A-Za-z0-9]/.test(p)) s++;
+        
+        const labels = ['Too Weak', 'Weak', 'Medium', 'Strong', 'Excellent'];
+        const colors = ['#9ca3af', '#dc2626', '#f59e0b', '#10b981', '#059669'];
+        setStrength({ score: s, label: labels[s] || 'Weak', color: colors[s] || colors[1] });
+      };
+      calculateStrength(passwords.new);
+    }, [passwords.new]);
+
+    const handlePasswordUpdate = async (e) => {
+      e.preventDefault();
+      if (passwords.new !== passwords.confirm) {
+        toast.error('Passwords do not match');
+        return;
+      }
+      if (passwords.new.length < 6) {
+        toast.error('New password must be at least 6 characters');
+        return;
+      }
+
+      setUpdating(true);
+      const user = auth.currentUser;
+      const credential = EmailAuthProvider.credential(user.email, passwords.current);
+
+      try {
+        await reauthenticateWithCredential(user, credential);
+        await updatePassword(user, passwords.new);
+        toast.success('Security matrix updated successfully');
+        setPasswords({ current: '', new: '', confirm: '' });
+        
+        // Auto logout for security
+        setTimeout(() => {
+          toast('Logging out to refresh security session...', { icon: '🔐' });
+          logout();
+          navigate('/login');
+        }, 2000);
+      } catch (err) {
+        console.error('Password update error:', err);
+        if (err.code === 'auth/wrong-password') {
+          toast.error('Incorrect current password');
+        } else if (err.code === 'auth/too-many-requests') {
+          toast.error('Too many attempts. Please try again later.');
+        } else {
+          toast.error(err.message || 'Failed to update security credentials');
+        }
+      } finally {
+        setUpdating(false);
+      }
+    };
+
+    const handleForgotPassword = async () => {
+      if (!profile?.email) return;
+      try {
+        await sendPasswordResetEmail(auth, profile.email);
+        toast.success(`Reset link dispatched to ${profile.email}`);
+      } catch (err) {
+        toast.error('Failed to send reset link');
+      }
+    };
+
+    return (
+      <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}>
+        <div className="d-flex justify-content-between align-items-end mb-5 pb-2 border-bottom border-border border-opacity-50">
+          <div>
+            <h2 className="font-display h3 m-0">Security Settings</h2>
+            <p className="text-t3 small m-0 mt-1 opacity-75">Secure your Chronix vault and member access</p>
+          </div>
+          <HiOutlineLockClosed size={32} className="text-gold opacity-10" />
+        </div>
+
+        {!hasPasswordProvider && isSocialUser ? (
+           <div className="p-4 rounded-4 bg-bg-2 border border-border border-dashed text-center">
+              <p className="text-t2 m-0 small fw-medium">Your account is secured via {auth.currentUser.providerData[0].providerId === 'google.com' ? 'Google' : 'External Provider'}.<br />Password management is handled by the provider.</p>
+           </div>
+        ) : (
+          <form onSubmit={handlePasswordUpdate} className="max-w-md">
+            <div className="row g-4">
+               <div className="col-12">
+                  <div className="form-group-refined">
+                    <label className="label-refined">Current Password</label>
+                    <div className="input-wrap-refined">
+                       <input 
+                         type={showPass.current ? "text" : "password"} 
+                         className="input-refined" 
+                         required
+                         value={passwords.current}
+                         onChange={e => setPasswords({...passwords, current: e.target.value})}
+                         placeholder="••••••••"
+                       />
+                       <button type="button" onClick={() => setShowPass({...showPass, current: !showPass.current})} className="icon-refined border-0 bg-transparent p-0" style={{ opacity: 0.4 }}>
+                          {showPass.current ? <HiOutlineEyeSlash size={18} /> : <HiOutlineEye size={18} />}
+                       </button>
+                    </div>
+                  </div>
+                  <div className="text-end mt-1">
+                     <button type="button" onClick={handleForgotPassword} className="btn p-0 text-gold small fw-bold text-uppercase tracking-wider border-0" style={{ fontSize: '0.6rem' }}>Forgot Password?</button>
+                  </div>
+               </div>
+
+               <div className="col-12 mt-2">
+                  <div className="form-group-refined">
+                    <label className="label-refined">New Vault Password</label>
+                    <div className="input-wrap-refined">
+                       <input 
+                         type={showPass.new ? "text" : "password"} 
+                         className="input-refined" 
+                         required
+                         value={passwords.new}
+                         onChange={e => setPasswords({...passwords, new: e.target.value})}
+                         placeholder="Min. 6 characters"
+                       />
+                       <button type="button" onClick={() => setShowPass({...showPass, new: !showPass.new})} className="icon-refined border-0 bg-transparent p-0" style={{ opacity: 0.4 }}>
+                          {showPass.new ? <HiOutlineEyeSlash size={18} /> : <HiOutlineEye size={18} />}
+                       </button>
+                    </div>
+                    {passwords.new && (
+                      <div className="mt-2 px-1">
+                         <div className="d-flex justify-content-between align-items-center mb-1">
+                            <span className="x-small uppercase tracking-widest fw-bold opacity-50" style={{ color: strength.color }}>Level: {strength.label}</span>
+                         </div>
+                         <div className="progress" style={{ height: '4px', backgroundColor: 'var(--bg-2)', borderRadius: '10px' }}>
+                            <div 
+                              className="progress-bar transition-all" 
+                              style={{ 
+                                width: `${(strength.score + 1) * 20}%`, 
+                                backgroundColor: strength.color,
+                                borderRadius: '10px'
+                              }} 
+                            />
+                         </div>
+                      </div>
+                    )}
+                  </div>
+               </div>
+
+               <div className="col-12">
+                  <div className="form-group-refined">
+                    <label className="label-refined">Confirm New Password</label>
+                    <div className="input-wrap-refined">
+                       <input 
+                         type={showPass.confirm ? "text" : "password"} 
+                         className="input-refined" 
+                         required
+                         value={passwords.confirm}
+                         onChange={e => setPasswords({...passwords, confirm: e.target.value})}
+                         placeholder="Re-enter to verify"
+                       />
+                       <button type="button" onClick={() => setShowPass({...showPass, confirm: !showPass.confirm})} className="icon-refined border-0 bg-transparent p-0" style={{ opacity: 0.4 }}>
+                          {showPass.confirm ? <HiOutlineEyeSlash size={18} /> : <HiOutlineEye size={18} />}
+                       </button>
+                    </div>
+                    {passwords.confirm && passwords.new !== passwords.confirm && (
+                      <span className="x-small text-danger fw-bold mt-1 d-block px-1">Passwords do not match</span>
+                    )}
+                  </div>
+               </div>
+            </div>
+
+            <div className="mt-5">
+               <button 
+                 type="submit" 
+                 disabled={updating || !passwords.current || !passwords.new || passwords.new !== passwords.confirm} 
+                 className="btn-gold px-5 py-3 text-uppercase fw-bold shadow-sm rounded-pill transition-transform hover-scale w-100 w-md-auto"
+               >
+                  {updating ? 'Securing...' : 'Update Password'}
+               </button>
+            </div>
+          </form>
+        )}
+      </motion.div>
+    );
+  };
+
   const menuItems = [
     { id: 'details', label: 'My Details', icon: HiOutlineUser },
     { id: 'wishlist', label: 'My Wishlist', icon: HiOutlineHeart },
     { id: 'orders', label: 'My Orders', icon: HiOutlineShoppingBag },
     { id: 'address', label: 'My Address Book', icon: HiOutlineMapPin },
+    { id: 'security', label: 'Security Settings', icon: HiOutlineLockClosed },
   ];
 
   return (
@@ -758,6 +944,7 @@ export default function Profile() {
                    {activeTab === 'wishlist' && <MyWishlist key="wishlist" />}
                    {activeTab === 'orders' && <MyOrders key="orders" />}
                    {activeTab === 'address' && <MyAddressBook key="address" />}
+                   {activeTab === 'security' && <SecuritySettings key="security" />}
                 </AnimatePresence>
              </div>
           </div>

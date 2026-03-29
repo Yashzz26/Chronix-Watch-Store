@@ -105,14 +105,28 @@ export default function Checkout() {
   const discountAmount = appliedCoupon ? (subtotal * appliedCoupon.discount) / 100 : 0;
   const finalTotal = subtotal - discountAmount;
 
-  const handleApplyPromo = () => {
-    if (promoCode.toUpperCase() === 'CHRONIX10') {
-      applyCoupon({ code: 'CHRONIX10', discount: 10 });
-      toast.success('CHRONIX10 Applied');
-    } else {
-      toast.error('Invalid promo code');
+  const handleApplyPromo = async () => {
+    const trimmed = promoCode.trim().toUpperCase();
+    if (!trimmed) return toast.error('Enter a promo code first');
+
+    try {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL;
+      const res = await fetch(`${backendUrl}/api/coupons`);
+      if (!res.ok) throw new Error('Could not reach coupon service');
+      const { coupons } = await res.json();
+
+      const match = coupons.find(c => c.code.toUpperCase() === trimmed);
+      if (match) {
+        applyCoupon({ code: match.code, discount: Number(match.discount) });
+        toast.success(`🎉 "${match.code}" applied — ${match.discount}% off!`);
+      } else {
+        toast.error('Invalid or expired promo code');
+      }
+    } catch (err) {
+      toast.error('Could not validate promo code. Try again.');
     }
   };
+
 
   const handlePlaceOrder = async () => {
     if (!auth.currentUser) {
