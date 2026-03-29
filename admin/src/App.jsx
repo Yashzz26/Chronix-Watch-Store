@@ -15,6 +15,7 @@ const Customers   = lazy(() => import('./pages/Customers'));
 const Reviews     = lazy(() => import('./pages/Reviews'));
 const Coupons     = lazy(() => import('./pages/Coupons'));
 const SeedFirestore = lazy(() => import('./pages/SeedFirestore'));
+const EditProduct   = lazy(() => import('./pages/EditProduct'));
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 2 * 60 * 1000, retry: 1 } },
@@ -59,6 +60,8 @@ export default function App() {
                     <Route path="/reviews"   element={<Reviews />} />
                     <Route path="/coupons"   element={<Coupons />} />
                     <Route path="/seed"      element={<SeedFirestore />} />
+                    <Route path="/products/new" element={<EditProduct />} />
+                    <Route path="/products/edit/:id" element={<EditProduct />} />
                     <Route path="*"          element={<Navigate to="/" replace />} />
                   </Routes>
                 </AdminLayout>

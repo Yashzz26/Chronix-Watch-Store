@@ -296,6 +296,21 @@ export default function Navbar() {
         }
 
         .user-btn-signin {
+          color: var(--t1);
+          font-weight: 600;
+          padding: 9px 22px;
+          border-radius: 99px;
+          font-size: 0.85rem;
+          transition: var(--transition);
+          text-decoration: none;
+        }
+        
+        .user-btn-signin:hover {
+          background: var(--bg-2);
+          color: var(--gold);
+        }
+
+        .user-btn-signup {
           background: var(--t1);
           color: #fff !important;
           font-weight: 600;
@@ -303,9 +318,10 @@ export default function Navbar() {
           border-radius: 99px;
           font-size: 0.85rem;
           transition: var(--transition);
+          text-decoration: none;
         }
 
-        .user-btn-signin:hover {
+        .user-btn-signup:hover {
           background: var(--gold);
           transform: translateY(-1px);
           box-shadow: var(--shadow-sm);
@@ -584,9 +600,14 @@ export default function Navbar() {
                   </AnimatePresence>
                 </>
               ) : (
-                <Link to="/login" className="user-btn-signin d-none d-md-flex">
-                  Sign In
-                </Link>
+                <div className="d-none d-md-flex align-items-center gap-2">
+                  <Link to="/login" className="user-btn-signin">
+                    Sign In
+                  </Link>
+                  <Link to="/register" className="user-btn-signup">
+                    Join now
+                  </Link>
+                </div>
               )}
             </div>
 
@@ -636,7 +657,10 @@ export default function Navbar() {
                     </button>
                   </>
                 ) : (
-                  <Link to="/login" className="mobile-link" style={{ color: 'var(--gold)' }}>Sign In</Link>
+                  <>
+                    <Link to="/login" className="mobile-link">Sign In</Link>
+                    <Link to="/register" className="mobile-link" style={{ color: 'var(--gold)' }}>Join Chronix</Link>
+                  </>
                 )}
               </div>
             </motion.div>

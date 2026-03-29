@@ -13,6 +13,7 @@ import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestor
 import { db } from '../lib/firebase';
 import { products as legacyProducts } from '../data/products';
 import SkeletonCard from '../components/ui/SkeletonCard';
+import SkeletonHero from '../components/ui/SkeletonHero';
 import useCartStore from '../store/cartStore';
 import toast from 'react-hot-toast';
 
@@ -283,8 +284,9 @@ export default function Home() {
         }
       `}</style>
 
-      {/* 1. HERO SECTION V2 */}
-      <section className="hero-cinematic-v2" ref={heroRef}>
+      {loading && <SkeletonHero />}
+      {!loading && (
+        <section className="hero-cinematic-v2" ref={heroRef}>
         <div className="hero-v2-glow" />
         <div className="container position-relative" style={{ zIndex: 10 }}>
           <div className="row align-items-center min-vh-100 py-5">
@@ -318,9 +320,9 @@ export default function Home() {
                     className="d-none d-md-flex align-items-center gap-3"
                   >
                     <div className="d-flex -space-x-2">
-                       <img src="https://i.pravatar.cc/100?img=1" className="rounded-circle border border-2 border-dark" style={{ width: 32, height: 32 }} alt="User" />
-                       <img src="https://i.pravatar.cc/100?img=2" className="rounded-circle border border-2 border-dark" style={{ width: 32, height: 32, marginLeft: -12 }} alt="User" />
-                       <img src="https://i.pravatar.cc/100?img=3" className="rounded-circle border border-2 border-dark" style={{ width: 32, height: 32, marginLeft: -12 }} alt="User" />
+                       <img src="https://i.pravatar.cc/100?img=1" className="rounded-circle border border-2 border-dark" style={{ width: 32, height: 32, objectFit: 'cover' }} loading="lazy" alt="User" />
+                       <img src="https://i.pravatar.cc/100?img=2" className="rounded-circle border border-2 border-dark" style={{ width: 32, height: 32, marginLeft: -12, objectFit: 'cover' }} loading="lazy" alt="User" />
+                       <img src="https://i.pravatar.cc/100?img=3" className="rounded-circle border border-2 border-dark" style={{ width: 32, height: 32, marginLeft: -12, objectFit: 'cover' }} loading="lazy" alt="User" />
                     </div>
                     <span className="x-small text-white opacity-50 fw-bold">JOIN 10K+ COLLECTORS</span>
                   </motion.div>
@@ -339,14 +341,16 @@ export default function Home() {
                    <img 
                      src={heroProduct?.imageGallery?.[0] || 'https://via.placeholder.com/600'} 
                      className="img-fluid" 
-                     style={{ maxHeight: '700px', filter: 'drop-shadow(0 40px 100px rgba(212,175,55,0.15))' }} 
+                     style={{ maxHeight: '700px', objectFit: 'contain', filter: 'drop-shadow(0 40px 100px rgba(212,175,55,0.15))' }} 
+                     loading="eager" 
                      alt="Luxury Watch Hero" 
                    />
                  </motion.div>
             </div>
           </div>
         </div>
-      </section>
+        </section>
+      )}
 
       {/* 2. NEW ARRIVALS V2 */}
       <section className="section-padding container">
@@ -555,7 +559,16 @@ function ProductCardEditorial({ product, index, addItem }) {
   const navigate = useNavigate();
   const handleAddToCart = (e) => {
     e.preventDefault();
-    addItem(product);
+    const defaultVariant = product.variants?.[0] || null;
+    addItem({
+      ...product,
+      variants: defaultVariant ? {
+        size: defaultVariant.dialSize,
+        color: defaultVariant.colorName,
+        strap: defaultVariant.strap,
+        sku: defaultVariant.sku
+      } : null
+    });
     toast.success(`${product.name} added to cart`, {
       style: { background: '#fff', color: '#111', border: '1px solid var(--border)' }
     });
@@ -605,7 +618,7 @@ function LuxuryFeatureCard({ img, label, title, showCTA = false }) {
       transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
       className="feature-prestige-card"
     >
-      <img src={img} alt={title} className="feature-bg-img" />
+      <img src={img} alt={title} className="feature-bg-img" loading="lazy" />
       <div className="feature-content-overlay">
          <span className="feature-lbl">{label}</span>
          <h3 className="feature-h">{title}</h3>

@@ -19,6 +19,7 @@ const Orders         = lazy(() => import('./pages/Orders'));
 const Products       = lazy(() => import('./pages/Products'));
 const About         = lazy(() => import('./pages/About'));
 const Invoice       = lazy(() => import('./pages/Invoice'));
+const Register      = lazy(() => import('./pages/Register'));
 const NotFound       = lazy(() => import('./pages/NotFound'));
 
 const Loader = () => (
@@ -78,6 +79,7 @@ export default function App() {
             <Route path="/"                   element={<Home />} />
             <Route path="/product/:id"        element={<ProductDetail />} />
             <Route path="/login"              element={<Login />} />
+            <Route path="/register"           element={<Register />} />
             <Route path="/cart"               element={<Protected><Cart /></Protected>} />
             <Route path="/checkout"           element={<Protected><Checkout /></Protected>} />
             <Route path="/confirmation"       element={<Protected><Confirmation /></Protected>} />

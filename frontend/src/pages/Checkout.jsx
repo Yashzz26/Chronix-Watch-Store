@@ -8,7 +8,8 @@ import {
   HiOutlineShieldCheck,
   HiChevronDown,
   HiChevronUp,
-  HiArrowLeft
+  HiArrowLeft,
+  HiOutlineMapPin
 } from 'react-icons/hi2';
 import useCartStore from '../store/cartStore';
 import useAuthStore from '../store/authStore';
@@ -77,6 +78,42 @@ export default function Checkout() {
     zip: ''
   });
 
+  const handleDetectLocation = () => {
+    if (!navigator.geolocation) {
+      return toast.error('Geolocation is not supported by your browser');
+    }
+
+    const locToast = toast.loading('Synchronizing with satellites...');
+    
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      try {
+        const { latitude, longitude } = pos.coords;
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+        const data = await res.json();
+        
+        if (data && data.address) {
+          const { road, suburb, city, town, village, postcode } = data.address;
+          const detectedCity = city || town || village || '';
+          const street = road || suburb || '';
+          
+          setAddressData(prev => ({
+            ...prev,
+            address: prev.address || street,
+            city: detectedCity || prev.city,
+            zip: postcode || prev.zip
+          }));
+          
+          toast.success('Location synchronized', { id: locToast });
+        }
+      } catch (err) {
+        toast.error('Could not resolve coordinate data', { id: locToast });
+      }
+    }, (err) => {
+      toast.error('Location access denied', { id: locToast });
+    });
+  };
+   
+
   useEffect(() => {
     if (items.length === 0) navigate('/cart', { replace: true });
     
@@ -129,18 +166,26 @@ export default function Checkout() {
 
 
   const handlePlaceOrder = async () => {
-    if (!auth.currentUser) {
-      toast.error('Authentication Required');
+    if (loading || !auth.currentUser) {
+      if (!auth.currentUser) toast.error('Authentication Required');
       return;
     }
 
     setLoading(true);
     try {
       const token = await auth.currentUser.getIdToken();
+
       const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
       const orderPayload = {
-        items,
+        items: items.map(item => ({
+          productId: item.id,
+          name: item.name,
+          image: (item.imageGallery && item.imageGallery[0]) || item.image || '',
+          selectedVariant: item.variants || null,
+          priceAtPurchase: item.dealPrice || item.price,
+          qty: item.qty
+        })),
         totalPrice: finalTotal,
         paymentMethod: method,
         address: addressData,
@@ -293,12 +338,22 @@ export default function Checkout() {
                       <input type="text" className="form-control-minimal" placeholder="+91 00000 00000" value={addressData.phone} onChange={e => setAddressData({...addressData, phone: e.target.value})} />
                     </div>
                     <div className="col-12 form-group">
-                      <label className="form-label">Address</label>
+                      <label className="form-label d-flex justify-content-between align-items-center">
+                        Address
+                        <button 
+                          onClick={handleDetectLocation}
+                          type="button"
+                          className="btn p-0 text-gold d-flex align-items-center gap-1"
+                          style={{ fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.05em', border: 'none', background: 'transparent' }}
+                        >
+                          <HiOutlineMapPin size={12} /> AUTO-DETECT MY LOCATION
+                        </button>
+                      </label>
                       <input type="text" className="form-control-minimal" placeholder="Street, Apartment, Locality" value={addressData.address} onChange={e => setAddressData({...addressData, address: e.target.value})} />
                     </div>
                     <div className="col-md-6 form-group">
-                      <label className="form-label">City</label>
-                      <input type="text" className="form-control-minimal" value={addressData.city} readOnly />
+                      <label className="form-label">City / Region</label>
+                      <input type="text" className="form-control-minimal" placeholder="Pune" value={addressData.city} onChange={e => setAddressData({...addressData, city: e.target.value})} />
                     </div>
                     <div className="col-md-6 form-group">
                       <label className="form-label">Postal Code</label>
@@ -357,7 +412,7 @@ export default function Checkout() {
                    {showSummary && (
                      <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden mb-4 border-bottom border-border pb-3">
                         {items.map(item => (
-                          <div key={item.id} className="d-flex justify-content-between mb-3 small">
+                          <div key={item.id + JSON.stringify(item.variants || {})} className="d-flex justify-content-between mb-3 small">
                              <span className="text-t2 text-truncate pe-3">{item.name} × {item.qty}</span>
                              <span className="text-t1 font-mono">₹{((item.dealPrice || item.price) * item.qty).toLocaleString()}</span>
                           </div>

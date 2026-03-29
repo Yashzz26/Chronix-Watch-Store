@@ -25,12 +25,13 @@ const useCartStore = create(
 
       // ── Cart ──────────────────────────────────
       addItem(product) {
-        // Uniquely identify item by ID + Variants
-        const itemKey = product.id + (product.variants ? JSON.stringify(product.variants) : '');
+        // 🚀 S3.3: SKU-Based Keying
+        const sku = product.variants?.sku || 'BASE';
+        const itemKey = `${product.id}-${sku}`;
         
         const existingIndex = get().items.findIndex(i => {
-          const currentKey = i.id + (i.variants ? JSON.stringify(i.variants) : '');
-          return currentKey === itemKey;
+          const currentSku = i.variants?.sku || 'BASE';
+          return `${i.id}-${currentSku}` === itemKey;
         });
 
         if (existingIndex !== -1) {
@@ -41,37 +42,75 @@ const useCartStore = create(
           set({ items: [...get().items, { ...product, qty: product.qty || 1 }] });
         }
       },
-      removeItem(id) {
-        set({ items: get().items.filter(i => i.id !== id) });
+      removeItem(id, variants) {
+        const sku = variants?.sku || 'BASE';
+        const itemKey = `${id}-${sku}`;
+        set({ 
+          items: get().items.filter(i => {
+            const currentSku = i.variants?.sku || 'BASE';
+            return `${i.id}-${currentSku}` !== itemKey;
+          }) 
+        });
       },
-      updateQty(id, qty) {
-        if (qty <= 0) return get().removeItem(id);
-        if (qty > 99) qty = 99; // Section 2.4 boundary
-        set({ items: get().items.map(i => i.id === id ? { ...i, qty } : i) });
+      updateQty(id, variants, qty) {
+        if (qty <= 0) return get().removeItem(id, variants);
+        if (qty > 99) qty = 99;
+        
+        const sku = variants?.sku || 'BASE';
+        const itemKey = `${id}-${sku}`;
+        set({ 
+          items: get().items.map(i => {
+            const currentSku = i.variants?.sku || 'BASE';
+            return `${i.id}-${currentSku}` === itemKey ? { ...i, qty } : i;
+          }) 
+        });
       },
       clearCart() {
         set({ items: [], appliedCoupon: null });
       },
       
       // ── Save for Later ────────────────────────
-      moveToSaved(id) {
-        const item = get().items.find(i => i.id === id);
+      moveToSaved(id, variants) {
+        const sku = variants?.sku || 'BASE';
+        const itemKey = `${id}-${sku}`;
+        const item = get().items.find(i => {
+           const currentSku = i.variants?.sku || 'BASE';
+           return `${i.id}-${currentSku}` === itemKey;
+        });
         if (!item) return;
         set({
-          items: get().items.filter(i => i.id !== id),
+          items: get().items.filter(i => {
+             const currentSku = i.variants?.sku || 'BASE';
+             return `${i.id}-${currentSku}` !== itemKey;
+          }),
           savedItems: [...get().savedItems, item]
         });
       },
-      moveToCart(id) {
-        const item = get().savedItems.find(i => i.id === id);
+      moveToCart(id, variants) {
+        const sku = variants?.sku || 'BASE';
+        const itemKey = `${id}-${sku}`;
+        const item = get().savedItems.find(i => {
+           const currentSku = i.variants?.sku || 'BASE';
+           return `${i.id}-${currentSku}` === itemKey;
+        });
         if (!item) return;
         set({
-          savedItems: get().savedItems.filter(i => i.id !== id),
+          savedItems: get().savedItems.filter(i => {
+             const currentSku = i.variants?.sku || 'BASE';
+             return `${i.id}-${currentSku}` !== itemKey;
+          }),
           items: [...get().items, item]
         });
       },
-      removeSaved(id) {
-        set({ savedItems: get().savedItems.filter(i => i.id !== id) });
+      removeSaved(id, variants) {
+        const sku = variants?.sku || 'BASE';
+        const itemKey = `${id}-${sku}`;
+        set({ 
+          savedItems: get().savedItems.filter(i => {
+             const currentSku = i.variants?.sku || 'BASE';
+             return `${i.id}-${currentSku}` !== itemKey;
+          }) 
+        });
       },
       totalItems() {
         return get().items.reduce((s, i) => s + i.qty, 0);
@@ -106,9 +145,23 @@ const useCartStore = create(
       name: 'chronix-cart', 
       partialize: (s) => ({ items: s.items, savedItems: s.savedItems }),
       onRehydrateStorage: () => (state) => {
-        if (state && Array.isArray(state.items)) {
-          // Filter out any invalid/corrupted items (Section 1.6)
-          state.items = state.items.filter(isValidCartItem);
+        const migrateItem = item => {
+          if (item.variants && !item.variants.sku) {
+            return { 
+              ...item, 
+              variants: { ...item.variants, sku: 'LEGACY-BASE' } 
+            };
+          }
+          return item;
+        };
+
+        if (state) {
+          if (Array.isArray(state.items)) {
+            state.items = state.items.map(migrateItem).filter(isValidCartItem);
+          }
+          if (Array.isArray(state.savedItems)) {
+            state.savedItems = state.savedItems.map(migrateItem).filter(isValidCartItem);
+          }
         }
       }
     }

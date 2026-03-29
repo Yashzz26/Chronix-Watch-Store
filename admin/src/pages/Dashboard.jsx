@@ -34,7 +34,7 @@ const Dashboard = () => {
 
   const totalRevenue = useMemo(() =>
     orders.filter(o => ['paid', 'shipped', 'delivered'].includes(o.status))
-      .reduce((sum, o) => sum + (o.totalAmount || o.totalPrice || 0), 0),
+      .reduce((sum, o) => sum + (o.totalPrice || 0), 0),
     [orders]
   );
 
@@ -46,7 +46,7 @@ const Dashboard = () => {
       if (!map.has(d)) map.set(d, { date: d, revenue: 0, orders: 0 });
       const day = map.get(d);
       day.orders += 1;
-      if (['paid', 'shipped', 'delivered'].includes(o.status)) day.revenue += (o.totalAmount || o.totalPrice || 0);
+      if (['paid', 'shipped', 'delivered'].includes(o.status)) day.revenue += (o.totalPrice || 0);
     });
     return Array.from(map.values()).reverse().slice(0, 14);
   }, [orders]);
@@ -105,7 +105,7 @@ const Dashboard = () => {
               </div>
             </div>
             <div style={{ height: '260px' }}>
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <LineChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" vertical={false} />
                   <XAxis dataKey="date" stroke="#E5E7EB" tick={{ fill: '#9CA3AF', fontSize: 11 }} tickMargin={8} axisLine={false} />
@@ -212,7 +212,7 @@ const Dashboard = () => {
               </div>
               <div className="text-end">
                 <p style={{ margin: '0 0 4px', fontSize: '15px', fontWeight: 700, color: '#111827' }}>
-                  ₹{(order.totalAmount || order.totalPrice || 0).toLocaleString('en-IN')}
+                  ₹{(order.totalPrice || 0).toLocaleString('en-IN')}
                 </p>
                 <div className="mb-1">
                   <span className={`status-badge status-badge-${(order.status || 'pending').toLowerCase()}`}>

@@ -26,7 +26,8 @@ import {
   updatePassword, 
   EmailAuthProvider, 
   reauthenticateWithCredential,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  deleteUser
 } from "firebase/auth";
 import { auth } from '../lib/firebase';
 import useAuthStore from '../store/authStore';
@@ -649,9 +650,56 @@ export default function Profile() {
     const [showPass, setShowPass] = useState({ current: false, new: false, confirm: false });
     const [updating, setUpdating] = useState(false);
     const [strength, setStrength] = useState({ score: 0, label: 'Weak', color: '#dc2626' });
+    const [confirmDelete, setConfirmDelete] = useState('');
 
     const isSocialUser = auth.currentUser?.providerData.some(p => p.providerId !== 'password');
     const hasPasswordProvider = auth.currentUser?.providerData.some(p => p.providerId === 'password');
+    const providers = auth.currentUser?.providerData.map(p => p.providerId) || [];
+
+    const handleDeleteAccount = async () => {
+      if (confirmDelete !== 'DELETE') return toast.error('Please type DELETE to confirm account teardown.');
+      
+      const pass = window.prompt("To verify your identity, please enter your current vault password:");
+      if (!pass && hasPasswordProvider) return;
+
+      try {
+        setUpdating(true);
+        const user = auth.currentUser;
+        if (hasPasswordProvider) {
+          const credential = EmailAuthProvider.credential(user.email, pass);
+          await reauthenticateWithCredential(user, credential);
+        }
+        
+        // 🛡️ T1.2: Soft Delete Logic (PII Scrubbing)
+        const userRef = doc(db, 'users', user.uid);
+        await updateDoc(userRef, {
+          deleted: true,
+          deletedAt: serverTimestamp(),
+          name: '[Vault Deactivated]',
+          phone: '',
+          photo: '',
+          // We keep the email to prevent re-registration with same email if needed, 
+          // or we can scrub it too if privacy laws require. 
+          // For now, removing identifying labels.
+          status: 'deactivated'
+        });
+
+        // 🔗 T4.1: Final Teardown from Auth
+        await deleteUser(user);
+        toast.success("Identity purged. Order history archived.", { icon: '🛡️' });
+        logout();
+        navigate('/');
+      } catch (err) {
+        console.error('Teardown error:', err);
+        if (err.code === 'auth/requires-recent-login') {
+          toast.error("Security session expired. Please re-login and try again.");
+        } else {
+          toast.error(err.message || "Teardown failed. Please contact support.");
+        }
+      } finally {
+        setUpdating(false);
+      }
+    };
 
     useEffect(() => {
       const calculateStrength = (p) => {
@@ -728,6 +776,38 @@ export default function Profile() {
           </div>
           <HiOutlineLockClosed size={32} className="text-gold opacity-10" />
         </div>
+
+        {/* 🛡️ Connected Accounts Panel */}
+        <div className="mb-5">
+           <h5 className="section-label mb-3 opacity-50">Connected Identities</h5>
+           <div className="d-flex flex-wrap gap-3">
+              <div className={`p-3 rounded-4 border d-flex align-items-center gap-3 transition-all ${providers.includes('password') ? 'bg-white border-gold border-opacity-30' : 'bg-bg-2 border-border opacity-40'}`}>
+                 <HiOutlineEnvelope size={20} className={providers.includes('password') ? 'text-gold' : 'text-t3'} />
+                 <div>
+                    <p className="small fw-bold m-0">Email Access</p>
+                    <span className="x-small opacity-50">{providers.includes('password') ? 'Secured' : 'Not Linked'}</span>
+                 </div>
+              </div>
+              <div className={`p-3 rounded-4 border d-flex align-items-center gap-3 transition-all ${providers.includes('google.com') ? 'bg-white border-gold border-opacity-30' : 'bg-bg-2 border-border opacity-40'}`}>
+                 <svg width="20" height="20" viewBox="0 0 24 24" className={providers.includes('google.com') ? 'text-gold' : 'text-t3'} fill="currentColor">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                 </svg>
+                 <div>
+                    <p className="small fw-bold m-0">Google Profile</p>
+                    <span className="x-small opacity-50">{providers.includes('google.com') ? 'Integrated' : 'Disconnected'}</span>
+                 </div>
+              </div>
+              <div className={`p-3 rounded-4 border d-flex align-items-center gap-3 transition-all ${providers.includes('phone') ? 'bg-white border-gold border-opacity-30' : 'bg-bg-2 border-border opacity-40'}`}>
+                 <HiOutlineDevicePhoneMobile size={20} className={providers.includes('phone') ? 'text-gold' : 'text-t3'} />
+                 <div>
+                    <p className="small fw-bold m-0">Phone OTP</p>
+                    <span className="x-small opacity-50">{providers.includes('phone') ? 'Verified' : 'Inactive'}</span>
+                 </div>
+              </div>
+           </div>
+        </div>
+
+        <h5 className="section-label mb-3 opacity-50">Vault Credentials</h5>
 
         {!hasPasswordProvider && isSocialUser ? (
            <div className="p-4 rounded-4 bg-bg-2 border border-border border-dashed text-center">
@@ -828,6 +908,38 @@ export default function Profile() {
             </div>
           </form>
         )}
+
+        <div className="mt-5 pt-5 border-top border-border border-opacity-50">
+           <h5 className="section-label mb-3 text-danger opacity-50">Danger Zone</h5>
+           <div className="p-4 rounded-4 bg-danger bg-opacity-5 border border-danger border-opacity-20 d-flex flex-column gap-4">
+              <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-4">
+                 <div>
+                    <p className="small fw-bold m-0 text-danger">Teardown Account</p>
+                    <span className="x-small text-t3 opacity-75">Scrub PII and permanently deactivate your membership. Orders remain archived.</span>
+                 </div>
+                 <button 
+                   onClick={handleDeleteAccount}
+                   disabled={updating || confirmDelete !== 'DELETE'}
+                   className="btn-danger btn-sm px-4 rounded-pill uppercase tracking-widest fw-bold" 
+                   style={{ fontSize: '0.65rem' }}
+                 >
+                    {updating ? 'Processing...' : 'Confirm Purge'}
+                 </button>
+              </div>
+              
+              <div className="pt-3 border-top border-danger border-opacity-10">
+                 <label className="x-small uppercase tracking-widest fw-bold text-danger opacity-50 mb-2 d-block">Type "DELETE" to authorize</label>
+                 <input 
+                   type="text" 
+                   className="form-control-minimal border-danger border-opacity-20 w-100" 
+                   style={{ fontSize: '0.75rem', background: 'transparent' }} 
+                   placeholder="Type confirmation here..."
+                   value={confirmDelete}
+                   onChange={e => setConfirmDelete(e.target.value)}
+                 />
+              </div>
+           </div>
+        </div>
       </motion.div>
     );
   };

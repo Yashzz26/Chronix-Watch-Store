@@ -155,7 +155,7 @@ export default function Cart() {
               <AnimatePresence mode="popLayout">
                 {items.map((item) => (
                   <motion.div
-                    key={item.id}
+                    key={item.id + JSON.stringify(item.variants || {})}
                     layout
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -164,8 +164,15 @@ export default function Cart() {
                   >
                     <div className="row align-items-center g-4">
                       <div className="col-12 col-sm-3 col-md-2">
-                        <Link to={`/product/${item.id}`} className="item-img-wrap">
-                          <img src={item.imageGallery[0]} alt={item.name} className="item-img" />
+                        <Link to={`/product/${item.id}`} className="item-img-wrap aspect-square">
+                          <img 
+                            src={item.imageGallery[0]} 
+                            alt={item.name} 
+                            className="item-img" 
+                            loading="lazy" 
+                            width="160" 
+                            height="160" 
+                          />
                         </Link>
                       </div>
                       <div className="col-12 col-sm-9 col-md-10">
@@ -173,6 +180,11 @@ export default function Cart() {
                           <div>
                             <span className="section-label mb-1" style={{ fontSize: '0.6rem' }}>{item.category}</span>
                             <h3 className="h4 font-display text-t1 m-0">{item.name}</h3>
+                            {item.variants && (
+                              <p className="x-small text-gold fw-bold uppercase tracking-widest mt-1" style={{ fontSize: '0.65rem' }}>
+                                {item.variants.size} • {item.variants.color} • {item.variants.strap}
+                              </p>
+                            )}
                           </div>
                           <div className="text-end">
                             <span className="h5 font-body fw-bold">₹{item.price.toLocaleString()}</span>
@@ -181,17 +193,17 @@ export default function Cart() {
 
                         <div className="d-flex justify-content-between align-items-center">
                           <div className="qty-control">
-                            <button className="qty-btn" onClick={() => updateQty(item.id, item.qty - 1)} aria-label="Decrease quantity">
+                            <button className="qty-btn" onClick={() => updateQty(item.id, item.variants, item.qty - 1)} aria-label="Decrease quantity">
                                {item.qty === 1 ? <HiOutlineTrash size={14} /> : <HiMinus size={14} />}
                             </button>
                             <span className="qty-val">{item.qty}</span>
-                            <button className="qty-btn" onClick={() => updateQty(item.id, item.qty + 1)} aria-label="Increase quantity">
+                            <button className="qty-btn" onClick={() => updateQty(item.id, item.variants, item.qty + 1)} aria-label="Increase quantity">
                                <HiPlus size={14} />
                             </button>
                           </div>
                           <div className="d-flex gap-4">
-                            <button className="action-link" onClick={() => moveToSaved(item.id)}>Save for Later</button>
-                            <button className="action-link remove" onClick={() => removeItem(item.id)}>Remove Item</button>
+                            <button className="action-link" onClick={() => moveToSaved(item.id, item.variants)}>Save for Later</button>
+                            <button className="action-link remove" onClick={() => removeItem(item.id, item.variants)}>Remove Item</button>
                           </div>
                         </div>
                       </div>
@@ -207,18 +219,24 @@ export default function Cart() {
                 <h2 className="section-label mb-4 opacity-50">Saved for Later</h2>
                 <div className="row g-4">
                   {savedItems.map(item => (
-                    <div key={item.id} className="col-md-6">
-                      <div className="chronix-card p-4 d-flex gap-4 align-items-center border border-border rounded-4">
-                        <img src={item.imageGallery[0]} className="img-fluid" style={{ width: 60 }} alt="" />
-                        <div className="flex-grow-1">
-                           <h4 className="h6 text-t1 m-0 mb-2">{item.name}</h4>
-                           <div className="d-flex gap-3">
-                             <button className="action-link text-gold" style={{ fontSize: '0.6rem' }} onClick={() => moveToCart(item.id)}>Add to Cart</button>
-                             <button className="action-link" style={{ fontSize: '0.6rem' }} onClick={() => removeSaved(item.id)}>Delete</button>
-                           </div>
+                      <div key={item.id + JSON.stringify(item.variants || {})} className="col-md-6">
+                        <div className="chronix-card p-4 d-flex gap-4 align-items-center border border-border rounded-4">
+                          <img 
+                            src={item.imageGallery[0]} 
+                            className="img-fluid aspect-square" 
+                            style={{ width: 60, height: 60 }} 
+                            loading="lazy" 
+                            alt="" 
+                          />
+                          <div className="flex-grow-1">
+                             <h4 className="h6 text-t1 m-0 mb-2">{item.name}</h4>
+                             <div className="d-flex gap-3">
+                               <button className="action-link text-gold" style={{ fontSize: '0.6rem' }} onClick={() => moveToCart(item.id, item.variants)}>Add to Cart</button>
+                               <button className="action-link" style={{ fontSize: '0.6rem' }} onClick={() => removeSaved(item.id, item.variants)}>Delete</button>
+                             </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
                   ))}
                 </div>
               </div>

@@ -36,9 +36,9 @@ export default function ProductDetail() {
 
   const [activeImg, setActiveImg] = useState(0);
   const [qty, setQty] = useState(1);
-  const [selectedSize, setSelectedSize] = useState('42mm');
-  const [selectedColor, setSelectedColor] = useState('Steel');
-  const [selectedMaterial, setSelectedMaterial] = useState('Oystersteel');
+  const [selectedSize, setSelectedSize] = useState('');
+  const [selectedColor, setSelectedColor] = useState('');
+  const [selectedStrap, setSelectedStrap] = useState('');
   const [showSticky, setShowSticky] = useState(false);
   const [isStoryExpanded, setIsStoryExpanded] = useState(false);
 
@@ -78,6 +78,21 @@ export default function ProductDetail() {
     fetchProduct();
   }, [id, navigate]);
 
+  // Set default variants when product is loaded
+  useEffect(() => {
+    if (product?.variants?.length > 0) {
+      const v = product.variants[0];
+      setSelectedSize(v.dialSize);
+      setSelectedColor(v.colorName);
+      setSelectedStrap(v.strap);
+    } else if (product) {
+      // Fallbacks for legacy products
+      setSelectedSize('42mm');
+      setSelectedColor('Steel');
+      setSelectedStrap('Oystersteel');
+    }
+  }, [product]);
+
   useEffect(() => {
     const handleScroll = () => setShowSticky(window.scrollY > 800);
     window.addEventListener('scroll', handleScroll);
@@ -87,15 +102,28 @@ export default function ProductDetail() {
   if (loading) return <div className="p-10 text-center text-t3 opacity-50 font-display h3">Refining Specifications...</div>;
   if (!product) return null;
 
+  const activeVariant = product?.variants?.find(v => 
+    v.dialSize === selectedSize && 
+    v.colorName === selectedColor && 
+    v.strap === selectedStrap
+  ) || null;
+
+  // S3.3: Reactive Selection Hardening
+  const currentPrice = activeVariant?.price || product?.price || 0;
+  const currentStock = activeVariant ? activeVariant.stock : (product?.variants?.length > 0 ? 0 : (product?.stock || 0));
+  const isAvailable = currentStock > 0 && (product?.variants?.length > 0 ? !!activeVariant : true);
+
   const handleAddToCart = (e) => {
     if(e) e.preventDefault();
     addItem({ 
       ...product, 
+      price: currentPrice, // Use variant price
       qty,
       variants: {
         size: selectedSize,
         color: selectedColor,
-        material: selectedMaterial
+        strap: selectedStrap,
+        sku: activeVariant?.sku || `LEGACY-${product.id}`
       }
     });
     toast.success(`${product.name} acquired`, {
@@ -110,13 +138,18 @@ export default function ProductDetail() {
     else toast.success('Removed from archive');
   };
 
-  const sizes = ['38mm', '40mm', '42mm', '44mm'];
-  const colors = [
+  const sizes = Array.from(new Set(product?.variants?.map(v => v.dialSize) || ['38mm', '40mm', '42mm', '44mm']));
+  const availableColors = product?.variants?.reduce((acc, v) => {
+    if (!acc.some(c => c.name === v.colorName)) {
+      acc.push({ name: v.colorName, color: v.colorHex || '#BFC1C2' });
+    }
+    return acc;
+  }, []) || [
     { name: 'Steel', color: '#BFC1C2' },
     { name: 'Gold', color: '#D4AF37' },
     { name: 'Obsidian', color: '#1A1A1A' }
   ];
-  const materials = ['Oystersteel', 'Titanium', 'Leather'];
+  const straps = Array.from(new Set(product?.variants?.map(v => v.strap) || ['Oystersteel', 'Titanium', 'Leather']));
 
   return (
     <div className="pdp-luxury-wrapper pb-5">
@@ -171,7 +204,13 @@ export default function ProductDetail() {
               </div>
             </div>
             <div className="d-flex gap-3 w-100 w-md-auto justify-content-end">
-               <button className="btn-gold px-5 py-3 h-100" onClick={handleAddToCart}>Secure Acquisition</button>
+               <button 
+                 className={`btn-gold px-5 py-3 h-100 ${!isAvailable ? 'opacity-50 cursor-not-allowed' : ''}`} 
+                 onClick={isAvailable ? handleAddToCart : null}
+                 disabled={!isAvailable}
+               >
+                 {isAvailable ? 'Secure Acquisition' : 'Currently Unavailable'}
+               </button>
             </div>
           </div>
         </div>
@@ -235,12 +274,12 @@ export default function ProductDetail() {
               {/* PRICE & STOCK */}
               <div className="d-flex align-items-end gap-4 mb-5">
                 <div className="pdp-price">
-                  ₹{product.price.toLocaleString()}
-                  {product.isOnDeal && <span>₹{(product.price + 9500).toLocaleString()}</span>}
+                  ₹{currentPrice.toLocaleString()}
+                  {product.isOnDeal && <span>₹{(currentPrice + 9500).toLocaleString()}</span>}
                 </div>
-                <div className="badge-stock mb-2">
-                   <div className="pulse-dot"></div>
-                   Only 3 Left In Stock
+                <div className={`badge-stock mb-2 ${currentStock < 5 ? 'bg-danger text-white' : ''}`}>
+                   {currentStock > 0 && <div className="pulse-dot"></div>}
+                   {currentStock > 0 ? `Only ${currentStock} Left In Stock` : (activeVariant ? 'Currently Out of Stock' : 'Selection Unavailable')}
                 </div>
               </div>
 
@@ -273,7 +312,7 @@ export default function ProductDetail() {
                 <div className="mb-4">
                   <label className="section-label mb-3">Finish & Palette</label>
                   <div className="d-flex gap-3">
-                    {colors.map(c => (
+                    {availableColors.map(c => (
                       <div 
                         key={c.name} 
                         className={`color-swatch ${selectedColor === c.name ? 'active' : ''}`}
@@ -290,11 +329,11 @@ export default function ProductDetail() {
                 <div className="mb-4">
                   <label className="section-label mb-3">Strap Architecture</label>
                   <div className="d-flex gap-2">
-                    {materials.map(m => (
+                    {straps.map(m => (
                       <button 
                         key={m} 
-                        className={`variant-pill ${selectedMaterial === m ? 'active' : ''}`}
-                        onClick={() => setSelectedMaterial(m)}
+                        className={`variant-pill ${selectedStrap === m ? 'active' : ''}`}
+                        onClick={() => setSelectedStrap(m)}
                       >
                         {m}
                       </button>
@@ -315,8 +354,12 @@ export default function ProductDetail() {
                 </div>
                 
                 <div className="d-flex gap-3">
-                  <button className="btn-gold flex-grow-1 py-4" onClick={handleAddToCart}>
-                    Secure Acquisition
+                  <button 
+                    className={`btn-gold flex-grow-1 py-4 ${!isAvailable ? 'opacity-50 cursor-not-allowed' : ''}`} 
+                    onClick={isAvailable ? handleAddToCart : null}
+                    disabled={!isAvailable}
+                  >
+                    {isAvailable ? 'Secure Acquisition' : 'Selection Unavailable'}
                   </button>
                   <button 
                     className={`btn-ghost p-0`} 
@@ -354,25 +397,25 @@ export default function ProductDetail() {
                     <div className="col-6">
                       <div className="spec-card p-3 bg-bg-2 rounded-3 border border-border">
                         <span className="x-small text-t3 uppercase d-block mb-1">Movement</span>
-                        <span className="small fw-bold">Calibre 3235</span>
+                        <span className="small fw-bold">{product.attributes?.movement || 'Calibre 3235'}</span>
                       </div>
                     </div>
                     <div className="col-6">
                       <div className="spec-card p-3 bg-bg-2 rounded-3 border border-border">
-                        <span className="x-small text-t3 uppercase d-block mb-1">Power Reserve</span>
-                        <span className="small fw-bold">~ 70 Hours</span>
+                        <span className="x-small text-t3 uppercase d-block mb-1">Case Material</span>
+                        <span className="small fw-bold">{product.attributes?.material || 'Oystersteel'}</span>
                       </div>
                     </div>
                     <div className="col-6">
                       <div className="spec-card p-3 bg-bg-2 rounded-3 border border-border">
-                        <span className="x-small text-t3 uppercase d-block mb-1">Case Geometry</span>
-                        <span className="small fw-bold">{selectedSize} Circular</span>
+                        <span className="x-small text-t3 uppercase d-block mb-1">Water Resistance</span>
+                        <span className="small fw-bold">{product.attributes?.waterResistance || '10ATM'}</span>
                       </div>
                     </div>
                     <div className="col-6">
                       <div className="spec-card p-3 bg-bg-2 rounded-3 border border-border">
-                        <span className="x-small text-t3 uppercase d-block mb-1">Guarantee</span>
-                        <span className="small fw-bold">5-Year Global</span>
+                        <span className="x-small text-t3 uppercase d-block mb-1">Glass Type</span>
+                        <span className="small fw-bold">{product.attributes?.glassType || 'Sapphire'}</span>
                       </div>
                     </div>
                   </div>

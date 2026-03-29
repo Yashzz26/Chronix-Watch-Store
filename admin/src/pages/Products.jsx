@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { collection, onSnapshot, query, orderBy, doc, updateDoc } from 'firebase/firestore';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '../lib/firebase';
+import { useNavigate } from 'react-router-dom';
+import { useMutation} from '@tanstack/react-query';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import { apiCall } from '../lib/apiHelper';
-import {
-  HiOutlinePlus, HiOutlinePencil, HiOutlineTrash,
-  HiOutlineSearch, HiOutlineFilter, HiOutlineSortAscending, HiOutlinePhotograph
+import { 
+  HiOutlinePlus, HiOutlinePencil, HiOutlineTrash, 
+  HiOutlineSearch, HiOutlineFilter, HiOutlineSortAscending 
 } from 'react-icons/hi';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -16,85 +16,38 @@ const Categories = ['Analog', 'Smart Watch', 'Luxury', 'Gifts for Him', 'Gifts f
 const Tabs = ['All', 'Active', 'Out of Stock'];
 
 const Products = () => {
-  const [showModal, setShowModal] = useState(false);
-  const [editingProduct, setEditingProduct] = useState(null);
+  const navigate = useNavigate();
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIds, setSelectedIds] = useState(new Set());
-  const queryClient = useQueryClient();
-
-  const [formData, setFormData] = useState({
-    name: '', category: 'Luxury', price: '', stock: '',
-    description: '', imageGallery: ['', '', '', ''],
-    isOnDeal: false, dealPrice: ''
-  });
-  const [uploading, setUploading] = useState([false, false, false, false]);
 
   useEffect(() => {
-    const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'));
+    // Fetch all products without orderBy to avoid hiding docs missing the field
+    const q = query(collection(db, 'products'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      setProducts(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+      const allProducts = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      
+      // Sort client-side: updatedAt desc, then createdAt desc
+      allProducts.sort((a, b) => {
+        const timeA = a.updatedAt?.toMillis?.() || a.createdAt?.toMillis?.() || 0;
+        const timeB = b.updatedAt?.toMillis?.() || b.createdAt?.toMillis?.() || 0;
+        return timeB - timeA;
+      });
+
+      setProducts(allProducts);
       setIsLoading(false);
     }, err => { console.error(err); setIsLoading(false); });
     return () => unsubscribe();
   }, []);
-
-  const productMutation = useMutation({
-    mutationFn: (data) => {
-      const method = editingProduct ? 'put' : 'post';
-      const endpoint = editingProduct ? `/api/products/${editingProduct.id}` : '/api/products';
-      return apiCall(method, endpoint, data);
-    },
-    onSuccess: () => { toast.success(editingProduct ? 'Updated' : 'Created'); setShowModal(false); resetForm(); },
-    onError: () => toast.error('Action failed')
-  });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => apiCall('delete', `/api/products/${id}`),
     onSuccess: () => { toast.success('Deleted'); setDeleteConfirm(null); },
     onError: () => toast.error('Delete failed')
   });
-
-  const resetForm = () => {
-    setFormData({ name: '', category: 'Luxury', price: '', stock: '', description: '', imageGallery: ['', '', '', ''], isOnDeal: false, dealPrice: '' });
-    setEditingProduct(null);
-  };
-
-  const handleEdit = (p) => {
-    setEditingProduct(p);
-    setFormData({ name: p.name, category: p.category, price: p.price, stock: p.stock, description: p.description, imageGallery: [...(p.imageGallery || []), '', '', '', ''].slice(0, 4), isOnDeal: p.isOnDeal || false, dealPrice: p.dealPrice || '' });
-    setShowModal(true);
-  };
-
-  const handleImageUpload = async (file, index) => {
-    if (!file) return;
-    const u = [...uploading]; u[index] = true; setUploading(u);
-    const storageRef = ref(storage, `products/${Date.now()}_${file.name}`);
-    const uploadTask = uploadBytesResumable(storageRef, file);
-    uploadTask.on('state_changed', null,
-      () => { toast.error('Upload failed'); const u2 = [...uploading]; u2[index] = false; setUploading(u2); },
-      async () => {
-        const url = await getDownloadURL(uploadTask.snapshot.ref);
-        setFormData(f => { const g = [...f.imageGallery]; g[index] = url; return { ...f, imageGallery: g }; });
-        const u2 = [...uploading]; u2[index] = false; setUploading(u2);
-      }
-    );
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (uploading.some(u => u)) return toast.error('Images uploading...');
-    productMutation.mutate({
-      ...formData,
-      price: Number(formData.price),
-      stock: Number(formData.stock),
-      dealPrice: formData.isOnDeal ? Number(formData.dealPrice) : null,
-      imageGallery: formData.imageGallery.filter(url => url?.trim())
-    });
-  };
 
   const toggleSelection = (id) => setSelectedIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const toggleAll = () => selectedIds.size === filteredProducts.length ? setSelectedIds(new Set()) : setSelectedIds(new Set(filteredProducts.map(p => p.id)));
@@ -116,7 +69,7 @@ const Products = () => {
           </h1>
           <p style={{ color: '#6B7280', fontSize: '14px', margin: 0 }}>Manage your timepiece inventory.</p>
         </div>
-        <button onClick={() => { resetForm(); setShowModal(true); }} className="btn btn-amber d-flex align-items-center gap-2">
+        <button onClick={() => navigate('/products/new')} className="btn btn-amber d-flex align-items-center gap-2">
           <HiOutlinePlus size={18} /> Add Product
         </button>
       </div>
@@ -224,7 +177,7 @@ const Products = () => {
                   <td className="text-end pe-4">
                     <div className="d-flex justify-content-end gap-2">
                       {[
-                        { icon: HiOutlinePencil, title: 'Edit', action: () => handleEdit(p), hoverBg: '#FEF3C7', hoverColor: '#92400E' },
+                        { icon: HiOutlinePencil, title: 'Edit', action: () => navigate(`/products/edit/${p.id}`), hoverBg: '#FEF3C7', hoverColor: '#92400E' },
                         { icon: HiOutlineTrash, title: 'Delete', action: () => setDeleteConfirm(p.id), hoverBg: '#FEE2E2', hoverColor: '#991B1B' },
                       ].map(({ icon: Ico, title, action, hoverBg, hoverColor }) => (
                         <button
@@ -269,95 +222,8 @@ const Products = () => {
           </div>
         )}
       </AnimatePresence>
-
-      {/* Add/Edit Modal */}
-      <AnimatePresence>
-        {showModal && (
-          <div className="modal show d-block" style={{ background: 'rgba(17,24,39,0.2)', zIndex: 9999 }}>
-            <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable" style={{ maxWidth: '800px' }}>
-              <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 20, opacity: 0 }} className="modal-content">
-                <div className="modal-header px-5 py-4" style={{ borderBottom: '1px solid #E5E7EB' }}>
-                  <h4 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, color: '#111827', margin: 0 }}>
-                    {editingProduct ? 'Edit Product' : 'New Product'}
-                  </h4>
-                  <button className="btn-close shadow-none" style={{ opacity: 0.4 }} onClick={() => { setShowModal(false); resetForm(); }} />
-                </div>
-                <div className="modal-body px-5 py-4" style={{ maxHeight: '72vh', overflowY: 'auto' }}>
-                  <form onSubmit={handleSubmit}>
-                    {/* Section: Basic Info */}
-                    <SectionDivider label="Basic Info" />
-                    <div className="row g-3 mb-4">
-                      <div className="col-12">
-                        <FormLabel>Product Name</FormLabel>
-                        <input className="form-control" placeholder="e.g. Royal Oak Chronograph" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
-                      </div>
-                      <div className="col-md-6">
-                        <FormLabel>Category</FormLabel>
-                        <select className="form-select" value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })}>
-                          {Categories.map(c => <option key={c}>{c}</option>)}
-                        </select>
-                      </div>
-                    </div>
-
-                    {/* Section: Pricing */}
-                    <SectionDivider label="Pricing & Inventory" />
-                    <div className="row g-3 mb-4">
-                      <div className="col-md-4"><FormLabel>Price (₹)</FormLabel><input className="form-control" type="number" placeholder="29999" required value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} /></div>
-                      <div className="col-md-4"><FormLabel>Stock Units</FormLabel><input className="form-control" type="number" placeholder="50" required value={formData.stock} onChange={e => setFormData({ ...formData, stock: e.target.value })} /></div>
-                      <div className="col-12">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '10px' }}>
-                          <input type="checkbox" id="isOnDeal" style={{ width: 16, height: 16, accentColor: '#D97706' }} checked={formData.isOnDeal} onChange={e => setFormData({ ...formData, isOnDeal: e.target.checked })} />
-                          <label htmlFor="isOnDeal" style={{ fontSize: '14px', color: '#374151', cursor: 'pointer', margin: 0 }}>Currently on deal</label>
-                        </div>
-                      </div>
-                      {formData.isOnDeal && (
-                        <div className="col-md-4"><FormLabel>Deal Price (₹)</FormLabel><input className="form-control" type="number" placeholder="19999" value={formData.dealPrice} onChange={e => setFormData({ ...formData, dealPrice: e.target.value })} /></div>
-                      )}
-                    </div>
-
-                    {/* Section: Images */}
-                    <SectionDivider label="Image Gallery" />
-                    <div className="d-flex gap-3 flex-wrap mb-4">
-                      {formData.imageGallery.map((url, index) => (
-                        <label key={index} className={`img-upload-slot ${url ? 'has-image' : ''}`}>
-                          <input type="file" accept="image/*" className="d-none" onChange={e => handleImageUpload(e.target.files[0], index)} />
-                          {uploading[index] ? <div className="spinner-border spinner-border-sm" style={{ color: '#D97706' }} /> :
-                            url ? <img src={url} style={{ width: '100%', height: '100%', objectFit: 'contain' }} alt="" /> :
-                            <div className="text-center"><HiOutlinePhotograph size={22} style={{ color: '#D1D5DB', marginBottom: 4 }} /><p style={{ fontSize: '11px', color: '#D1D5DB', margin: 0 }}>{index === 0 ? 'Main' : `Photo ${index + 1}`}</p></div>}
-                        </label>
-                      ))}
-                    </div>
-
-                    {/* Section: Description */}
-                    <SectionDivider label="Description" />
-                    <textarea className="form-control mb-4" rows={3} placeholder="Describe the timepiece..." required value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} />
-
-                    <div className="d-flex gap-2 justify-content-end pt-2">
-                      <button type="button" className="btn btn-obsidian px-4" onClick={() => { setShowModal(false); resetForm(); }}>Cancel</button>
-                      <button type="submit" disabled={productMutation.isPending} className="btn btn-amber px-5">
-                        {productMutation.isPending ? 'Saving...' : editingProduct ? 'Update' : 'Create'}
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </motion.div>
-            </div>
-          </div>
-        )}
-      </AnimatePresence>
     </motion.div>
   );
 };
-
-const SectionDivider = ({ label }) => (
-  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-    <span style={{ fontSize: '11px', fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>{label}</span>
-    <div style={{ flex: 1, height: 1, background: '#E5E7EB' }} />
-  </div>
-);
-
-const FormLabel = ({ children }) => (
-  <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '6px', display: 'block' }}>{children}</label>
-);
 
 export default Products;

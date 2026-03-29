@@ -155,7 +155,7 @@ const Customers = () => {
                 <div className="row g-3 mb-5">
                   {[
                     { label: 'Total Orders', value: customerOrders.length },
-                    { label: 'Lifetime Value', value: `₹${customerOrders.reduce((s, o) => s + (o.totalAmount || 0), 0).toLocaleString('en-IN')}` }
+                    { label: 'Lifetime Value', value: `₹${customerOrders.reduce((s, o) => s + (o.totalPrice || 0), 0).toLocaleString('en-IN')}` }
                   ].map(({ label, value }) => (
                     <div className="col-6" key={label}>
                       <div style={{ background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '12px', padding: '20px 16px', textAlign: 'center' }}>
@@ -194,7 +194,7 @@ const Customers = () => {
                             </p>
                           </div>
                           <div className="text-end">
-                            <p style={{ fontWeight: 700, color: '#111827', margin: '0 0 4px', fontSize: '14px' }}>₹{o.totalAmount?.toLocaleString('en-IN')}</p>
+                            <p style={{ fontWeight: 700, color: '#111827', margin: '0 0 4px', fontSize: '14px' }}>₹{o.totalPrice?.toLocaleString('en-IN')}</p>
                             <span className={getStatusClass(o.status)}>{o.status}</span>
                           </div>
                         </div>

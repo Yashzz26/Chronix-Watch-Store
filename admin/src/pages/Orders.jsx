@@ -126,10 +126,18 @@ const Orders = () => {
                   <td style={{ position: 'relative' }}>
                     <button
                       className={getStatusClass(o.status)}
-                      style={{ border: 'none', cursor: 'pointer' }}
-                      onClick={() => setStatusDropdown(statusDropdown === o.id ? null : o.id)}
+                      style={{ 
+                        border: 'none', 
+                        cursor: 'pointer',
+                        position: 'relative',
+                        zIndex: statusDropdown === o.id ? 501 : 1 
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setStatusDropdown(statusDropdown === o.id ? null : o.id);
+                      }}
                     >
-                      {o.status || 'pending'} ▾
+                      {o.status || 'pending'} <span style={{ opacity: 0.5 }}>▾</span>
                     </button>
                     <AnimatePresence>
                       {statusDropdown === o.id && (

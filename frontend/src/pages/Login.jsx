@@ -16,21 +16,37 @@ import toast from 'react-hot-toast';
 import { auth } from '../lib/firebase';
 import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 
-// 🔴 Error Mapping Helper
+// 🔴 Error Mapping Helper (S1.3)
 const mapAuthError = (code) => {
-  switch (code) {
-    case 'auth/invalid-verification-code': return 'Invalid security code. Please check and try again.';
-    case 'auth/code-expired': return 'Security code has expired. Request a new one.';
-    case 'auth/too-many-requests': return 'Too many attempts. Please wait before trying again.';
-    case 'auth/invalid-phone-number': return 'The phone number provided is not valid.';
-    case 'auth/user-disabled': return 'This account has been suspended.';
-    default: return 'Authentication failed. Please try again later.';
-  }
+  const errors = {
+    'auth/invalid-verification-code': 'Invalid security code. Please check and try again.',
+    'auth/code-expired': 'Security code has expired. Request a new one.',
+    'auth/too-many-requests': 'Too many attempts. Please wait before trying again.',
+    'auth/invalid-phone-number': 'The phone number provided is not valid.',
+    'auth/user-disabled': 'This account has been suspended.',
+    'auth/user-not-found': 'No account associated with this identity.',
+    'auth/wrong-password': 'The passphrase provided is incorrect.',
+    'auth/email-already-in-use': 'This email handle is already registered.',
+    'auth/weak-password': 'The passphrase is too weak for our standards.',
+    'auth/popup-closed-by-user': 'Authentication window was closed early.',
+    'auth/network-request-failed': 'Network interruption. Check your connection.',
+    'auth/operation-not-allowed': 'This authentication method is currently restricted.',
+    'auth/account-exists-with-different-credential': 'Security Protocol: This email is already linked. Please login to merge your identities.'
+  };
+  return errors[code] || 'Authentication failed. Please check your credentials.';
 };
 
 export default function Login() {
-  const navigate = useNavigate();
-  const { login, signup, googleSignIn, completePhoneLogin, isLoggedIn, lastAuthMethod } = useAuthStore();
+  const { 
+    login, 
+    signup, 
+    googleSignIn, 
+    completePhoneLogin, 
+    isLoggedIn, 
+    lastAuthMethod,
+    pendingEmail,
+    setLoading: setStoreLoading 
+  } = useAuthStore();
 
   const [activeTab, setActiveTab ] = useState(lastAuthMethod === 'phone' ? 'phone' : 'email');
   const [isLogin, setIsLogin] = useState(true);
@@ -55,11 +71,17 @@ export default function Login() {
     }
   }, [isLoggedIn, navigate]);
 
-  // Recaptcha Cleanup Lifecycle
+  // Recaptcha Cleanup Lifecycle (S1.2)
   useEffect(() => {
     return () => {
       if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear();
+        try {
+          window.recaptchaVerifier.clear();
+          const container = document.getElementById('recaptcha-container');
+          if (container) container.innerHTML = ''; // Full wipe
+        } catch (e) {
+          console.warn('Recaptcha cleanup minor error');
+        }
         window.recaptchaVerifier = null;
       }
     };
@@ -115,6 +137,10 @@ export default function Login() {
     if (result.success) {
       toast.success('Google Authentication Successful');
       navigate('/');
+    } else if (result.error === 'auth/account-exists-with-different-credential') {
+      setEmail(result.email || ''); // Pre-fill the email for the user
+      setIsLogin(true); // Force login mode
+      toast('Identity Linkage Required. Please verify your password.', { icon: '🔐' });
     } else {
       toast.error(mapAuthError(result.error));
     }
@@ -158,17 +184,23 @@ export default function Login() {
 
     setLoading(true);
     try {
-      if (!window.confirmationResult) throw new Error('auth/code-expired');
+      // 🛡️ S1.4: Explicit Session Expiry Verification
+      if (!window.confirmationResult) {
+        throw { code: 'auth/session-expired' };
+      }
+
       const result = await window.confirmationResult.confirm(otpCode);
       const storeResult = await completePhoneLogin(result.user);
+      
       if (storeResult.success) {
         toast.success('Mobile Identity Verified');
         navigate('/');
       } else {
-        throw new Error('Profile synchronization error');
+        throw { code: 'auth/sync-error' };
       }
     } catch (error) {
       triggerShake();
+      console.error('OTP Verification Error:', error.code || error.message);
       toast.error(mapAuthError(error.code || 'invalid-verification-code'));
       setLoading(false);
     }
@@ -230,10 +262,23 @@ export default function Login() {
         className="chronix-card p-4 p-md-5 position-relative overflow-hidden"
         style={{ width: '100%', maxWidth: 460, background: '#fff' }}
       >
+        {pendingEmail && (
+          <motion.div 
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            className="mb-4 p-3 rounded-3 bg-gold bg-opacity-10 border border-gold border-opacity-20 d-flex align-items-center gap-3"
+          >
+            <HiOutlineLockClosed className="text-gold flex-shrink-0" size={24} />
+            <div className="small">
+              <p className="fw-bold m-0 text-gold" style={{ fontSize: '0.75rem' }}>Identity Linkage Active</p>
+              <p className="m-0 text-t2 opacity-75" style={{ fontSize: '0.65rem' }}>Verify your password for <strong>{pendingEmail}</strong> to merge your Google profile.</p>
+            </div>
+          </motion.div>
+        )}
         <div className="position-absolute top-0 start-0 w-100 h-1" style={{ height: 3, background: 'var(--gold)' }} />
 
         <div className="text-center mb-4">
-          <h1 className="font-display h2 text-t1 mb-2">{isLogin ? 'Entrance' : 'Induction'}</h1>
+          <h1 className="font-display h2 text-t1 mb-2">{isLogin ? 'Sign In' : 'Create Account'}</h1>
           <p className="text-t3 text-uppercase tracking-widest m-0" style={{ fontSize: '0.65rem', letterSpacing: '0.15em' }}>
             Production-Grade Auth Security
           </p>
@@ -293,7 +338,7 @@ export default function Login() {
                 </div>
 
                 <button disabled={loading} className="btn-chronix-primary w-100 py-3 d-flex align-items-center justify-content-center gap-3 shadow-sm border-0">
-                  {loading ? <div className="spinner-border spinner-border-sm" /> : isLogin ? 'Establish Session' : 'Request Induction'}
+                  {loading ? <div className="spinner-border spinner-border-sm" /> : isLogin ? 'Access Account' : 'Establish Membership'}
                 </button>
               </form>
             </motion.div>
@@ -394,9 +439,9 @@ export default function Login() {
           <button 
             onClick={() => setIsLogin(!isLogin)}
             className="btn btn-link text-t3 text-uppercase tracking-widest text-decoration-none"
-            style={{ fontSize: '0.6rem', fontWeight: 600 }}
+            style={{ fontSize: '0.65rem', fontWeight: 700 }}
           >
-            {isLogin ? "Member Inductions" : "Voucher for Return"}
+            {isLogin ? "New to Chronix? Create an account" : "Already a member? Sign in"}
           </button>
         </div>
 

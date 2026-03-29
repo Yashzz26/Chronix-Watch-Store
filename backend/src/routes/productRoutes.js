@@ -47,7 +47,10 @@ router.get('/:id', async (req, res) => {
  */
 router.post('/', verifyToken, verifyAdmin, async (req, res) => {
   try {
-    const { name, price, category, description, imageGallery, stock, isOnDeal, dealPrice, dealEndsAt, tags } = req.body;
+    const { 
+      name, price, category, description, imageGallery, stock, 
+      isOnDeal, dealPrice, dealEndsAt, tags, variants, attributes 
+    } = req.body;
 
     if (!name || !price || !category) {
       return res.status(400).json({ error: 'name, price, and category are required' });
@@ -64,6 +67,8 @@ router.post('/', verifyToken, verifyAdmin, async (req, res) => {
       dealPrice: dealPrice ? Number(dealPrice) : null,
       dealEndsAt: dealEndsAt || null,
       tags: tags || [],
+      variants: variants || [],
+      attributes: attributes || {},
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };

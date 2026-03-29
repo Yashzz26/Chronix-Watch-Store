@@ -9,7 +9,6 @@ const { verifyToken, verifyAdmin } = require('../middleware/verifyToken');
  * POST /api/orders
  * Customer: Create a new order (COD or Online)
  * Body: { items, totalPrice, paymentMethod, shippingAddress }
- */
 router.post('/', verifyToken, async (req, res) => {
   try {
     const { items, totalPrice, paymentMethod, shippingAddress } = req.body;
@@ -18,45 +17,101 @@ router.post('/', verifyToken, async (req, res) => {
       return res.status(400).json({ error: 'Missing order details' });
     }
 
-    const orderData = {
-      userId: req.user.uid,
-      userEmail: req.user.email,
-      items,
-      totalPrice,
-      paymentMethod,
-      shippingAddress: shippingAddress || {},
-      status: paymentMethod === 'cod' ? 'pending' : 'unpaid',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    // 🚀 S4.3: Atomic Transaction for Stock Decrement & Order Creation
+    const orderId = await db.runTransaction(async (transaction) => {
+      const orderRef = db.collection('orders').doc();
+      
+      const orderData = {
+        userId: req.user.uid,
+        userEmail: req.user.email,
+        items: items.map(i => ({
+          productId: i.productId || i.id,
+          name: i.name,
+          image: i.image,
+          selectedVariant: i.selectedVariant || i.variants || null,
+          priceAtPurchase: Number(i.priceAtPurchase || i.price),
+          qty: Number(i.qty)
+        })),
+        totalPrice,
+        paymentMethod,
+        shippingAddress: shippingAddress || {},
+        status: paymentMethod === 'cod' ? 'pending' : 'unpaid',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
 
-    // If online payment, verify the signature before saving
-    if (paymentMethod === 'online') {
-      const { razorpayDetails } = req.body;
-      if (!razorpayDetails) {
-        return res.status(400).json({ error: 'Missing payment details' });
+      // 1. Process Stock for every item
+      for (const item of items) {
+        const productRef = db.collection('products').doc(item.id);
+        const productDoc = await transaction.get(productRef);
+
+        if (!productDoc.exists) {
+          throw new Error(`Product ${item.id} not found in repository.`);
+        }
+
+        const productData = productDoc.data();
+        let updatedVariants = productData.variants || [];
+        let stockAvailable = 0;
+
+        // 🛡️ T8.1: Strict Stock Validation
+        const vKey = item.selectedVariant || item.variants;
+        if (vKey && vKey.sku) {
+          const variant = updatedVariants.find(v => v.sku === vKey.sku);
+          if (!variant) throw new Error(`Specific iteration (${vKey.sku}) not found.`);
+          stockAvailable = Number(variant.stock) || 0;
+          
+          if (stockAvailable < item.qty) {
+            throw new Error(`Insufficient inventory: ${item.name} (${vKey.sku}). Requested: ${item.qty}, Available: ${stockAvailable}`);
+          }
+
+          // Update the specific variant
+          updatedVariants = updatedVariants.map(v => 
+            v.sku === vKey.sku 
+              ? { ...v, stock: v.stock - item.qty } 
+              : v
+          );
+        } else {
+          // Fallback to base stock if no variants
+          stockAvailable = Number(productData.stock) || 0;
+          if (stockAvailable < item.qty) {
+            throw new Error(`Insufficient inventory for base model: ${item.name}. Requested: ${item.qty}, Available: ${stockAvailable}`);
+          }
+        }
+
+        const newTotalStock = Math.max(0, (Number(productData.stock) || 0) - item.qty);
+
+        transaction.update(productRef, { 
+          stock: newTotalStock,
+          variants: updatedVariants,
+          updatedAt: new Date().toISOString()
+        });
       }
 
-      const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = razorpayDetails;
-      const body = `${razorpay_order_id}|${razorpay_payment_id}`;
-      const expectedSignature = crypto
-        .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-        .update(body)
-        .digest('hex');
+      // 2. Handle Razorpay details if present
+      if (paymentMethod === 'online' && req.body.razorpayDetails) {
+        const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body.razorpayDetails;
+        const body = `${razorpay_order_id}|${razorpay_payment_id}`;
+        const expectedSignature = crypto
+          .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+          .update(body)
+          .digest('hex');
 
-      if (expectedSignature === razorpay_signature) {
-        orderData.status = 'paid';
-        orderData.razorpayDetails = {
-          orderId: razorpay_order_id,
-          paymentId: razorpay_payment_id
-        };
-      } else {
-        return res.status(400).json({ error: 'Payment verification failed' });
+        if (expectedSignature === razorpay_signature) {
+          orderData.status = 'paid';
+          orderData.razorpayDetails = {
+            orderId: razorpay_order_id,
+            paymentId: razorpay_payment_id
+          };
+        } else {
+          throw new Error('Payment verification failed');
+        }
       }
-    }
 
-    const docRef = await db.collection('orders').add(orderData);
-    res.status(201).json({ success: true, orderId: docRef.id });
+      transaction.set(orderRef, orderData);
+      return orderRef.id;
+    });
+
+    res.status(201).json({ success: true, orderId });
   } catch (err) {
     res.status(500).json({ error: 'Failed to create order', details: err.message });
   }

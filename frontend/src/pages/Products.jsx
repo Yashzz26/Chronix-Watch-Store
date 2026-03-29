@@ -272,7 +272,16 @@ export default function Products({ filterCategory }) {
 function ProductCardElite({ product, index, addItem }) {
     const handleAddToCart = (e) => {
       e.preventDefault();
-      addItem(product);
+      const defaultVariant = product.variants?.[0] || null;
+      addItem({
+        ...product,
+        variants: defaultVariant ? {
+          size: defaultVariant.dialSize,
+          color: defaultVariant.colorName,
+          strap: defaultVariant.strap,
+          sku: defaultVariant.sku
+        } : null
+      });
       toast.success(`${product.name} Archived`, {
         style: { background: '#fff', color: '#111', border: '1px solid var(--border)' }
       });
