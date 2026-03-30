@@ -16,6 +16,7 @@ import SkeletonCard from '../components/ui/SkeletonCard';
 import SkeletonHero from '../components/ui/SkeletonHero';
 import useCartStore from '../store/cartStore';
 import toast from 'react-hot-toast';
+import WatchModel from '../components/ui/WatchModel';
 
 export default function Home() {
   const heroRef = useRef(null);
@@ -228,6 +229,18 @@ export default function Home() {
           filter: brightness(1.05);
         }
 
+        /* SUBDUED HIERARCHY FIX */
+        .feature-prestige-card.subdued .feature-bg-img {
+          filter: brightness(0.35) grayscale(0.4);
+          opacity: 0.7;
+        }
+        .feature-prestige-card.subdued:hover .feature-bg-img {
+          filter: brightness(1) grayscale(0);
+          opacity: 1;
+        }
+        .feature-prestige-card.subdued .feature-lbl { opacity: 0.4; }
+        .feature-prestige-card.subdued:hover .feature-lbl { opacity: 1; }
+
         .feature-content-overlay {
           position: absolute;
           inset: 0;
@@ -282,12 +295,33 @@ export default function Home() {
            .f-stack-cell .feature-prestige-card { height: 400px; }
            .feature-h { font-size: 2rem !important; }
         }
+
+        /* PREMIUM POLISH UTILITIES */
+        .premium-radial-light {
+           background: radial-gradient(circle at center, #F9F8F6 0%, #F5F4F0 100%);
+        }
+        .hero-transition-mask {
+           position: absolute;
+           bottom: 0;
+           left: 0;
+           right: 0;
+           height: 320px;
+           background: linear-gradient(to bottom, transparent, #F5F4F0);
+           z-index: 5;
+           pointer-events: none;
+        }
+        .section-spacing {
+           padding-top: var(--section-spacing);
+           padding-bottom: var(--section-spacing);
+        }
+
       `}</style>
 
       {loading && <SkeletonHero />}
       {!loading && (
         <section className="hero-cinematic-v2" ref={heroRef}>
         <div className="hero-v2-glow" />
+        <div className="hero-transition-mask" />
         <div className="container position-relative" style={{ zIndex: 10 }}>
           <div className="row align-items-center min-vh-100 py-5">
             <div className="col-12 col-lg-6">
@@ -338,13 +372,9 @@ export default function Home() {
                    transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
                    className="animate-float"
                  >
-                   <img 
-                     src={heroProduct?.imageGallery?.[0] || 'https://via.placeholder.com/600'} 
-                     className="img-fluid" 
-                     style={{ maxHeight: '700px', objectFit: 'contain', filter: 'drop-shadow(0 40px 100px rgba(212,175,55,0.15))' }} 
-                     loading="eager" 
-                     alt="Luxury Watch Hero" 
-                   />
+                   <div style={{ height: '700px', width: '100%', filter: 'drop-shadow(0 40px 100px rgba(212,175,55,0.15))' }}>
+                     <WatchModel />
+                   </div>
                  </motion.div>
             </div>
           </div>
@@ -352,32 +382,44 @@ export default function Home() {
         </section>
       )}
 
-      {/* 2. NEW ARRIVALS V2 */}
-      <section className="section-padding container">
-        <div className="text-center mb-5 pb-3">
-          <span className="section-label">THE NEW ERA</span>
-          <h2 className="section-title">New Arrivals</h2>
-        </div>
-        <div className="row g-4">
-          <AnimatePresence mode="wait">
-            {loading ? (
-              [1, 2, 3, 4].map(i => <div key={i} className="col-12 col-md-6 col-lg-3"><SkeletonCard /></div>)
-            ) : (
-              newArrivals.map((p, i) => (
-                <div key={p.id} className="col-12 col-md-6 col-lg-3">
-                  <ProductCardEditorial product={p} index={i} addItem={addItem} />
-                </div>
-              ))
-            )}
-          </AnimatePresence>
-        </div>
-        <div className="text-center mt-5 pt-4">
-           <Link to="/allcollection" className="btn-ghost px-5">View All Products</Link>
+      {/* 2. NEW ARRIVALS — warm neutral, bridges hero dark to mid-section */}
+      <section
+        className="section-spacing container premium-radial-light rounded-5"
+        style={{ marginTop: -120, position: 'relative', zIndex: 10, boxShadow: '0 -40px 100px rgba(0,0,0,0.4)' }}
+      >
+        <div style={{ padding: '80px 40px' }}>
+          <div className="text-center mb-5 pb-3">
+            <span className="section-label">THE NEW ERA</span>
+            <h2 className="section-title">New Arrivals</h2>
+          </div>
+          <div className="row g-4 position-relative">
+            <AnimatePresence mode="wait">
+              {loading ? (
+                <motion.div key="skeleton-state" className="row g-4 m-0 w-100" exit={{ opacity: 0, transition: { duration: 0.2 } }}>
+                  {[1, 2, 3, 4].map(i => <div key={i} className="col-12 col-md-6 col-lg-3"><SkeletonCard /></div>)}
+                </motion.div>
+              ) : (
+                <motion.div key="loaded-state" className="row g-4 m-0 w-100" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  {newArrivals.map((p, i) => (
+                    <div key={p.id} className="col-12 col-md-6 col-lg-3">
+                      <ProductCardEditorial product={p} index={i} addItem={addItem} />
+                    </div>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+          <div className="text-center mt-5 pt-4">
+             <Link to="/allcollection" className="btn-ghost px-5">View All Products</Link>
+          </div>
         </div>
       </section>
 
-      {/* 3. FEATURE FOCUS SECTION */}
-      <section className="feature-focus-system bg-white">
+      {/* 3. DESIGNED FOR EXCELLENCE — same warm off-white, no hard white break */}
+      <section
+        className="feature-focus-system premium-radial-light"
+        style={{ borderTop: '1px solid #E8E6E1' }}
+      >
         <div className="container">
           <div className="text-center mb-5 pb-5">
             <span className="section-label">THE ARCHITECTURE</span>
@@ -424,22 +466,25 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 4. PREMIUM FEATURE SHOWCASE (STRICT RECONSTRUCTION FIX) */}
-      <section className="premium-feature-grid">
+      {/* 4. BUILT FOR PRECISION — dark section, flows into dark CTA at the bottom */}
+      <section
+        className="premium-feature-grid section-spacing"
+        style={{ background: 'linear-gradient(180deg, #111111 0%, #1a1508 100%)' }}
+      >
         <div className="container">
           <div className="d-flex justify-content-between align-items-end mb-5 pb-4">
             <div>
                <span className="section-label text-gold">THE CHRONIX PHILOSOPHY</span>
-               <h2 className="section-title text-start m-0">Built for Precision.</h2>
+               <h2 className="section-title text-start m-0 text-white">Built for Precision.</h2>
             </div>
-            <Link to="/about" className="btn-ghost d-none d-md-block">The Maison Story</Link>
+            <Link to="/about" className="btn-ghost d-none d-md-block" style={{ borderColor: 'rgba(255,255,255,0.25)', color: '#fff' }}>The Maison Story</Link>
           </div>
           
           <div className="feature-grid-manual">
              {/* LEFT SIDE (65%) */}
              <div className="f-large-cell">
                 <LuxuryFeatureCard 
-                  img="/images/features/crafted.png" 
+                  img="https://res.cloudinary.com/dwfm8qeoz/image/upload/v1774856863/elegance-gold-luxury-watch-success-generated-by-ai_xtu3ez.jpg" 
                   label="MECHANICAL EXCELLENCE"
                   title="Crafted for Every Second"
                   showCTA
@@ -449,51 +494,58 @@ export default function Home() {
              {/* RIGHT SIDE (35%) */}
              <div className="f-stack-cell">
                 <LuxuryFeatureCard 
-                  img="/images/features/materials.png" 
+                  img="https://res.cloudinary.com/dwfm8qeoz/image/upload/v1774856864/20420_cln2fv.jpg" 
                   label="STRUCTURAL ART"
                   title="Premium Materials"
+                  className="subdued"
                 />
                 <LuxuryFeatureCard 
-                  img="/images/features/precision.png" 
+                  img="https://res.cloudinary.com/dwfm8qeoz/image/upload/v1774856674/20420_evxmpx.jpg" 
                   label="THE ESCAPEMENT"
                   title="Precision Inside"
+                  className="subdued"
                 />
              </div>
           </div>
         </div>
       </section>
 
-      {/* 5. CATEGORY STORYTELLING */}
-      <section className="section-padding container">
-        <div className="row g-4">
-          <div className="col-12 col-md-6">
-            <Link to="/allcollection?cat=classic" className="category-story-card">
-              <img src="https://images.unsplash.com/photo-1547996160-81dfa63595aa?q=80&w=2574&auto=format&fit=crop" alt="Classic Collection" />
-              <div className="category-story-content">
-                <span className="section-label text-white opacity-75">LIMITED EDITION</span>
-                <h3 className="hero-headline h2 text-white">The Classic <br /> Series</h3>
-                <p className="small text-white opacity-50">Explore the foundation of our archival collection.</p>
-              </div>
-            </Link>
-          </div>
-          <div className="col-12 col-md-6">
-            <Link to="/allcollection?cat=modern" className="category-story-card">
-              <img src="https://images.unsplash.com/photo-1523170335258-f5ed11844a49?q=80&w=2680&auto=format&fit=crop" alt="Modern Collection" />
-              <div className="category-story-content">
-                <span className="section-label text-white opacity-75">TECHNICAL CRAFT</span>
-                <h3 className="hero-headline h2 text-white">Modern <br /> Minimalism</h3>
-                <p className="small text-white opacity-50">Engineered for the contemporary landscape.</p>
-              </div>
-            </Link>
+      {/* 5. CATEGORY STORYTELLING — dark continuation */}
+      <section
+        className="section-spacing"
+        style={{ background: '#111111' }}
+      >
+        <div className="container pb-5">
+          <div className="row g-4">
+            <div className="col-12 col-md-6">
+              <Link to="/allcollection?cat=classic" className="category-story-card">
+                <img src="https://res.cloudinary.com/dwfm8qeoz/image/upload/v1774856865/2151923179_ljyifn.jpg" alt="Classic Collection" />
+                <div className="category-story-content">
+                  <span className="section-label text-white opacity-75">LIMITED EDITION</span>
+                  <h3 className="hero-headline h2 text-white">The Classic <br /> Series</h3>
+                  <p className="small text-white opacity-50">Explore the foundation of our archival collection.</p>
+                </div>
+              </Link>
+            </div>
+            <div className="col-12 col-md-6">
+              <Link to="/allcollection?cat=modern" className="category-story-card">
+                <img src="https://res.cloudinary.com/dwfm8qeoz/image/upload/v1774856617/2151923179_si5iqe.jpg" alt="Modern Collection" />
+                <div className="category-story-content">
+                  <span className="section-label text-white opacity-75">TECHNICAL CRAFT</span>
+                  <h3 className="hero-headline h2 text-white">Modern <br /> Minimalism</h3>
+                  <p className="small text-white opacity-50">Engineered for the contemporary landscape.</p>
+                </div>
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* 5. EDITORIAL STORY BLOCKS */}
-      <section className="bg-white overflow-hidden">
+      {/* 6. EDITORIAL STORY BLOCKS — warm cream, soft palette breather */}
+      <section style={{ background: '#F5F4F0' }} className="overflow-hidden section-spacing">
         <div className="story-block">
           <div className="story-img-wrap">
-            <img src="https://images.unsplash.com/photo-1622353382113-838c93f4129b?q=80&w=2670&auto=format&fit=crop" alt="Precision" />
+            <img src="https://res.cloudinary.com/dwfm8qeoz/image/upload/v1774856286/close-up-clock-with-time-change_jyy7jd.jpg" alt="Precision" />
           </div>
           <div className="story-content">
             <span className="section-label">HOROLOGICAL STORY</span>
@@ -505,7 +557,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="story-block" style={{ gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)' }}>
+        <div className="story-block" style={{ gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', borderTop: '1px solid #E0DED9' }}>
           <div className="story-content order-2 order-md-1">
             <span className="section-label">MATERIAL MASTERY</span>
             <h2 className="hero-headline h1">Built to <br /> Last.</h2>
@@ -524,27 +576,44 @@ export default function Home() {
             </div>
           </div>
           <div className="story-img-wrap order-1 order-md-2">
-            <img src="https://images.unsplash.com/photo-1548171916-c0ea9869685e?q=80&w=2672&auto=format&fit=crop" alt="Materials" />
+            <img src="https://res.cloudinary.com/dwfm8qeoz/image/upload/v1774856865/2151923179_ljyifn.jpg" alt="Materials" />
           </div>
         </div>
       </section>
 
-      {/* 6. FINAL FINAL CTA SECTION */}
-      <section className="final-cta-section">
-        <div className="container">
+      {/* 7. FINAL CTA SECTION — Bridges warm story blocks back to dark luxury footer */}
+      <section 
+        className="final-cta-section"
+        style={{ 
+          background: 'linear-gradient(180deg, #F5F4F0 0%, #080808 120px)',
+          paddingTop: 0,
+          paddingBottom: 120,
+          marginTop: -1
+        }}
+      >
+        <div 
+          className="container" 
+          style={{ 
+            background: 'radial-gradient(circle at center, rgba(212,175,55,0.05) 0%, transparent 70%)',
+            padding: '120px 0'
+          }}
+        >
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
+            initial={{ opacity: 0, scale: 0.95 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
+            transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
           >
-            <span className="section-label text-gold">THE FINAL WORD</span>
-            <h2 className="display-4 font-display mb-4 text-white">Own the Moment.</h2>
-            <p className="mx-auto mb-5 opacity-50" style={{ maxWidth: 600 }}>
-              Join thousands of collectors who refuse to settle for anything less than horological excellence. Your next legacy piece is waiting.
+            <span className="section-label" style={{ color: 'var(--gold)', opacity: 0.8 }}>THE FINAL WORD</span>
+            <h2 className="display-3 font-display mb-4 text-white" style={{ fontWeight: 700 }}>Own the Moment.</h2>
+            <p className="mx-auto mb-5 text-white opacity-50" style={{ maxWidth: 640, fontSize: '1.1rem', lineHeight: 1.8 }}>
+              Join thousands of collectors who refuse to settle for anything less than horological excellence. Your next legacy piece is waiting to be discovered.
             </p>
-            <Link to="/allcollection" className="btn-gold px-5 py-3">Access the Collection</Link>
-            <div className="mt-5 pt-4">
-              <span className="x-small tracking-widest opacity-25 fw-bold">CHRONIX. GENÈVE — SINCE 2024</span>
+            <div className="d-flex justify-content-center gap-4">
+              <Link to="/allcollection" className="btn-gold px-5 py-3">Access the Collection</Link>
+            </div>
+            <div className="mt-5 pt-5 border-top border-white border-opacity-10">
+              <span className="x-small tracking-widest opacity-25 fw-bold text-white">CHRONIX. GENÈVE — EST. 2024</span>
             </div>
           </motion.div>
         </div>
@@ -609,14 +678,14 @@ function ProductCardEditorial({ product, index, addItem }) {
 }
 
 // LUXURY FEATURE CARD COMPONENT
-function LuxuryFeatureCard({ img, label, title, showCTA = false }) {
+function LuxuryFeatureCard({ img, label, title, className = "", showCTA = false }) {
   return (
     <motion.div 
       initial={{ opacity: 0, scale: 0.98 }}
       whileInView={{ opacity: 1, scale: 1 }}
       viewport={{ once: true }}
       transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-      className="feature-prestige-card"
+      className={`feature-prestige-card ${className}`}
     >
       <img src={img} alt={title} className="feature-bg-img" loading="lazy" />
       <div className="feature-content-overlay">

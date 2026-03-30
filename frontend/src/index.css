@@ -24,6 +24,10 @@
   --shadow-md: 0 8px 24px rgba(0,0,0,0.08);
   --shadow-lg: 0 20px 40px rgba(0,0,0,0.10);
   --shadow-gold: 0 8px 24px rgba(212,175,55,0.18);
+  /* --- 1.1 LUXURY SPACING SYSTEM --- */
+  --section-spacing: 140px;
+  --item-gap: 32px;
+  --container-width: 1320px;
 }
 
 /* --- 2. RESET & BASE --- */
@@ -358,7 +362,15 @@ button { font-family: inherit; }
 
 .feature-focus-system {
   position: relative;
-  padding: 140px 0;
+  padding: var(--section-spacing) 0;
+}
+
+.premium-gradient-light {
+   background: radial-gradient(circle at center, #F9F8F6 0%, #F5F4F0 100%);
+}
+
+.premium-gradient-dark {
+   background: linear-gradient(180deg, #111111 0%, #080808 100%);
 }
 
 .feature-block-item {
@@ -376,35 +388,47 @@ button { font-family: inherit; }
 .story-block {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  align-items: center;
-  min-height: 600px;
+  align-items: stretch;
+  /* Removed min-height: 600px — let content dictate height */
+  overflow: hidden;
 }
 
 .story-img-wrap {
-  height: 100%;
+  /* Cap image at 560px tall — cinematic but not overwhelming */
+  max-height: 560px;
+  min-height: 400px;
   width: 100%;
   overflow: hidden;
+  position: relative;
 }
 
 .story-img-wrap img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center;
   transition: transform 1.5s cubic-bezier(0.16, 1, 0.3, 1);
+  /* Ensure it fully covers the constrained container */
+  position: absolute;
+  inset: 0;
 }
 
 .story-block:hover .story-img-wrap img {
-  transform: scale(1.05);
+  transform: scale(1.04);
 }
 
 .story-content {
-  padding: 80px;
+  /* Reduced from 80px — tighter and more premium */
+  padding: 60px 72px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 @media (max-width: 991px) {
-  .story-block { grid-template-columns: 1fr; min-height: auto; }
-  .story-img-wrap { height: 400px; }
-  .story-content { padding: 40px 20px; }
+  .story-block { grid-template-columns: 1fr; }
+  .story-img-wrap { max-height: 340px; min-height: 280px; position: relative; }
+  .story-content { padding: 40px 24px; }
 }
 
 .category-story-card {

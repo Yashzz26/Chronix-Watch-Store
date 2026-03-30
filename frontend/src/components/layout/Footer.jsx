@@ -47,9 +47,9 @@ export default function Footer() {
     <footer className="footer-main">
       <style>{`
         .footer-main {
-          background: var(--t1);
+          background: #080808;
           color: #fff;
-          margin-top: 120px;
+          margin-top: 0;
           font-family: var(--font-body);
         }
 
