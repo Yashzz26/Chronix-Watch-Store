@@ -1,33 +1,64 @@
 /* --- 1. CSS CUSTOM PROPERTIES (:root) --- */
 :root {
-  --bg: #FAFAF8;
-  --bg-2: #F4F3EF;
-  --bg-3: #EEECEA;
-  --s1: #FFFFFF;
-  --s2: #F0EEE9;
-  --s3: #E5E3DE;
-  --border: #E0DED9;
-  --gold: #D4AF37;
-  --gold-light: #E8C97A;
-  --gold-dim: #B8952A;
-  --gold-glow: rgba(212,175,55,0.12);
-  --t1: #111111;
-  --t2: #444444;
-  --t3: #888888;
-  --font-display: 'Cormorant Garamond', Georgia, serif;
-  --font-body: 'DM Sans', system-ui, sans-serif;
-  --font-mono: 'DM Mono', 'Courier New', monospace;
-  --transition: all 0.25s ease;
-  --radius: 6px;
-  --radius-lg: 12px;
-  --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
-  --shadow-md: 0 8px 24px rgba(0,0,0,0.08);
+  /* Colors */
+  --color-white: #FFFFFF;
+  --color-cream: #F8F6F3;
+  --color-off-white: #FAFAFA;
+  --color-black: #000000;
+  --color-charcoal: #1a1a1a;
+  --color-gray-dark: #4a4a4a;
+  --color-gray-light: #6a6a6a;
+  --color-gold: #D4AF37;
+  --color-gold-hover: #c9a96e;
+  --color-gold-light: #e8c97a;
+  
+  /* Typography */
+  --font-heading: 'Playfair Display', serif;
+  --font-body: 'DM Sans', sans-serif;
+  
+  /* Font Sizes */
+  --font-size-xs: 13px;
+  --font-size-sm: 15px;
+  --font-size-base: 17px;
+  --font-size-lg: 22px;
+  --font-size-xl: 28px;
+  --font-size-2xl: 42px;
+  --font-size-3xl: 54px;
+  --font-size-4xl: 64px;
+  --font-size-5xl: 76px;
+  
+  /* Spacing */
+  --spacing-xs: 8px;
+  --spacing-sm: 16px;
+  --spacing-md: 24px;
+  --spacing-lg: 32px;
+  --spacing-xl: 48px;
+  --spacing-2xl: 64px;
+  --spacing-3xl: 80px;
+  --spacing-4xl: 120px;
+  
+  /* Layout */
+  --max-width: 1200px;
+  
+  /* Transitions */
+  --transition-fast: 0.2s ease;
+  --transition-base: 0.3s ease;
+  --transition-slow: 0.4s ease;
+
+  /* Legacy Compat (Mapping new to old where needed) */
+  --bg: var(--color-white);
+  --bg-2: var(--color-cream);
+  --gold: var(--color-gold);
+  --t1: var(--color-charcoal);
+  --t2: var(--color-gray-dark);
+  --font-display: var(--font-heading);
+  
+  --transition: var(--transition-base);
+  --radius: 0px; 
+  --radius-lg: 0px;
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.04);
+  --shadow-md: 0 8px 20px rgba(0,0,0,0.08);
   --shadow-lg: 0 20px 40px rgba(0,0,0,0.10);
-  --shadow-gold: 0 8px 24px rgba(212,175,55,0.18);
-  /* --- 1.1 LUXURY SPACING SYSTEM --- */
-  --section-spacing: 140px;
-  --item-gap: 32px;
-  --container-width: 1320px;
 }
 
 /* --- 2. RESET & BASE --- */
@@ -40,6 +71,7 @@ body {
   font-weight: 400;
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'liga' 1;
   min-height: 100vh;
 }
 img { 
