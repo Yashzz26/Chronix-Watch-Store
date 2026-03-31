@@ -6,98 +6,106 @@ export default function CraftingTheSecond() {
     <section className="horological-story">
       <style>{`
         .horological-story {
-          background: var(--color-white);
+          background: var(--s2);
           overflow: hidden;
+          color: #FFFFFF;
         }
         .story-container {
           display: flex;
           align-items: stretch;
-          min-height: 600px;
+          min-height: 700px;
         }
         .story-image-side {
-          flex: 1;
+          flex: 1.2;
           position: relative;
+          overflow: hidden;
         }
         .story-image-side img {
           width: 100%;
           height: 100%;
           object-fit: cover;
           display: block;
+          transition: transform 2s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        .gold-accent-bar {
-          width: 4px;
-          height: 80px;
-          background: var(--color-gold);
+        .horological-story:hover .story-image-side img {
+          transform: scale(1.05);
+        }
+
+        .gold-border-accent {
           position: absolute;
           left: 0;
-          top: 50%;
-          transform: translateY(-50%);
+          top: 0;
+          bottom: 0;
+          width: 2px;
+          background: var(--gold);
           z-index: 2;
         }
+
         .story-text-side {
           flex: 1;
-          padding: var(--spacing-4xl) var(--spacing-4xl) var(--spacing-4xl) 80px;
+          padding: var(--spacing-4xl);
           display: flex;
           flex-direction: column;
           justify-content: center;
+          position: relative;
         }
-        .story-overline {
-          font-family: var(--font-body);
-          font-size: var(--font-size-xs);
-          color: var(--color-gold);
-          text-transform: uppercase;
-          letter-spacing: 3px;
-          margin-bottom: var(--spacing-sm);
-          font-weight: 600;
-        }
+        
         .story-heading {
           font-family: var(--font-heading);
-          font-size: 52px;
-          color: var(--color-charcoal);
-          margin-top: var(--spacing-sm);
-          margin-bottom: var(--spacing-md);
-          line-height: 1.1;
-          letter-spacing: -1px;
+          font-size: clamp(2.5rem, 6vw, 4.5rem);
+          color: #FFFFFF;
+          margin-bottom: 32px;
+          line-height: 1.05;
+          letter-spacing: -0.02em;
+          font-weight: 700;
         }
         .story-body {
-          font-family: var(--font-body);
-          font-size: var(--font-size-base);
-          color: var(--color-gray-dark);
-          line-height: 1.9;
+          font-size: 1.1rem;
+          color: rgba(255, 255, 255, 0.6);
+          line-height: 1.8;
           max-width: 480px;
-          margin-top: var(--spacing-lg);
         }
+
         @media (max-width: 991px) {
-          .story-container { flex-direction: column; }
-          .story-text-side { padding: var(--spacing-2xl) var(--spacing-md); }
-          .story-heading { font-size: var(--font-size-2xl); }
+          .story-container { flex-direction: column-reverse; }
+          .story-text-side { padding: var(--spacing-2xl) 24px; }
           .story-image-side { height: 400px; }
         }
       `}</style>
       
       <div className="story-container">
-        <div className="story-image-side">
-          <div className="gold-accent-bar" />
-          <img src="https://res.cloudinary.com/dwfm8qeoz/image/upload/v1774856286/close-up-clock-with-time-change_jyy7jd.jpg" alt="Crafting the Second" />
-        </div>
-        
         <div className="story-text-side">
           <motion.div
-            initial={{ opacity: 0, x: 40 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 1, ease: "easeOut" }}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.3 }}
+            variants={{
+              hidden: { opacity: 0, x: -30 },
+              visible: { opacity: 1, x: 0, transition: { duration: 1.2, ease: [0.16, 1, 0.3, 1] } }
+            }}
           >
-            <span className="story-overline">HOROLOGICAL STORY</span>
-            <h2 className="story-heading">Crafting the <br /> Second.</h2>
+            <span className="section-label-gold">Notebook</span>
+            <h2 className="story-heading">Why we build.</h2>
             <p className="story-body">
-              Every Chronix watch is a result of hundreds of hours of design and engineering. 
-              We believe that a timepiece shouldn't just tell time—it should embody it, 
-              connecting generations through the language of precision.
+              Each release starts with sketches, rough brass cases, and weeks of small changes. The goal is simple:
+              a watch that disappears on the wrist, keeps time without drama, and can be serviced decades from now.
             </p>
           </motion.div>
+        </div>
+
+        <div className="story-image-side">
+          <div className="gold-border-accent" />
+          <motion.img 
+            initial={{ scale: 1.1, opacity: 0 }}
+            whileInView={{ scale: 1, opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
+            src="https://res.cloudinary.com/dwfm8qeoz/image/upload/v1774856286/close-up-clock-with-time-change_jyy7jd.jpg" 
+            alt="Craftsmanship" 
+          />
         </div>
       </div>
     </section>
   );
 }
+

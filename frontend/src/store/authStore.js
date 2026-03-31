@@ -1,62 +1,79 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { auth, db } from '../lib/firebase';
-import { 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  signOut, 
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
   onAuthStateChanged,
   GoogleAuthProvider,
+  FacebookAuthProvider,
   signInWithPopup,
-  signInWithPhoneNumber,
-  RecaptchaVerifier,
   linkWithCredential,
   EmailAuthProvider,
-  PhoneAuthProvider,
-  fetchSignInMethodsForEmail
+  fetchSignInMethodsForEmail,
+  updateProfile as firebaseUpdateProfile
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp, arrayUnion } from 'firebase/firestore';
 
-const createOrUpdateUser = async (user, provider) => {
+const createOrUpdateUser = async (user, provider, extra = {}) => {
+  if (!user) return null;
   const ref = doc(db, 'users', user.uid);
   const snap = await getDoc(ref);
-  const exists = snap.exists();
+  const existing = snap.data() || {};
 
-  // 🛡️ S1.2: Hardened createOrUpdateUser logic
   const data = {
     uid: user.uid,
-    name: user.displayName || snap.data()?.name || '',
-    email: user.email || snap.data()?.email || '',
-    phone: user.phoneNumber || snap.data()?.phone || '',
-    photo: user.photoURL || snap.data()?.photo || '',
-    providers: arrayUnion(provider),
+    name: user.displayName ?? existing.name ?? '',
+    email: user.email ?? existing.email ?? '',
+    phone: user.phoneNumber ?? existing.phone ?? '',
+    photo: user.photoURL ?? existing.photo ?? '',
+    loginProvider: provider || existing.loginProvider || 'password',
+    isPhoneVerified: user.phoneNumber ? true : (extra.isPhoneVerified ?? existing.isPhoneVerified ?? false),
     lastLogin: serverTimestamp(),
+    ...extra,
   };
 
-  // Only set createdAt once
-  if (!exists) {
-    data.createdAt = serverTimestamp();
-    data.role = 'customer'; // Default role
+  if (provider) {
+    data.providers = arrayUnion(provider);
   }
-  
-  // Clean empty fields
-  Object.keys(data).forEach(key => data[key] === undefined && delete data[key]);
-  
-  // 🚫 Role is never updated from frontend simple syncs
+
+  if (!snap.exists()) {
+    data.createdAt = serverTimestamp();
+    data.role = 'customer';
+  }
+
+  Object.keys(data).forEach((key) => data[key] === undefined && delete data[key]);
+
   await setDoc(ref, data, { merge: true });
+  const updatedSnap = await getDoc(ref);
+  return updatedSnap.data();
 };
 
-// 🔐 T1.3: User-friendly Error Mapping
 const getReadableError = (code) => {
   switch (code) {
-    case 'auth/user-not-found': return 'Profile not found. Please register.';
-    case 'auth/wrong-password': return 'Incorrect credentials. Please try again.';
-    case 'auth/email-already-in-use': return 'Email already registered. Try logging in.';
-    case 'auth/account-exists-with-different-credential': return 'Account linked to another method. Use Google/Email to sign in.';
-    case 'auth/invalid-verification-code': return 'Invalid OTP. Please check and retry.';
-    case 'auth/too-many-requests': return 'Suspicious activity detected. Account temporarily locked.';
-    default: return 'Authentication failed. Please contact support.';
+    case 'auth/user-not-found':
+      return 'Account not found. Please sign up first.';
+    case 'auth/wrong-password':
+      return 'Incorrect password. Please try again.';
+    case 'auth/email-already-in-use':
+      return 'Email is already registered.';
+    case 'auth/account-exists-with-different-credential':
+      return 'This email is linked to another provider. Sign in with that method to continue.';
+    case 'auth/invalid-verification-code':
+      return 'Invalid OTP. Please re-enter the code.';
+    case 'auth/too-many-requests':
+      return 'Too many attempts. Please wait a moment and try again.';
+    case 'auth/popup-closed-by-user':
+      return 'Sign-in window was closed before completing.';
+    default:
+      return 'Something went wrong. Please try again.';
   }
+};
+
+const getInitialMethod = () => {
+  if (typeof window === 'undefined') return 'email';
+  return localStorage.getItem('chronix_last_auth') || 'email';
 };
 
 const useAuthStore = create(
@@ -65,15 +82,19 @@ const useAuthStore = create(
       isLoggedIn: false,
       user: null,
       profile: {},
-      loading: false,
-      lastAuthMethod: localStorage.getItem('chronix_last_auth') || 'email',
+      loading: true,
+      lastAuthMethod: getInitialMethod(),
       pendingCredential: null,
       pendingEmail: null,
 
       setLoading: (loading) => set({ loading }),
 
       setLastAuthMethod: (method) => {
-        localStorage.setItem('chronix_last_auth', method);
+        try {
+          localStorage.setItem('chronix_last_auth', method);
+        } catch (error) {
+          console.warn('Could not persist auth method', error);
+        }
         set({ lastAuthMethod: method });
       },
 
@@ -81,54 +102,50 @@ const useAuthStore = create(
         if (get().loading) return;
         set({ loading: true });
         try {
-          const userCredential = await signInWithEmailAndPassword(auth, email, password);
-          
-          // 🛡️ T1.2: Automatic Linking Resolution
+          const credential = await signInWithEmailAndPassword(auth, email, password);
+
           if (get().pendingCredential && get().pendingEmail === email) {
             try {
-              await linkWithCredential(userCredential.user, get().pendingCredential);
+              await linkWithCredential(credential.user, get().pendingCredential);
             } catch (linkError) {
-              console.warn('Silent linking handoff failed:', linkError.code);
+              console.warn('Linking failed', linkError.code);
             } finally {
               set({ pendingCredential: null, pendingEmail: null });
             }
           }
 
-          await createOrUpdateUser(userCredential.user, 'password');
+          const profileData = await createOrUpdateUser(credential.user, 'password');
           get().setLastAuthMethod('email');
-          set({ isLoggedIn: true, user: userCredential.user, loading: false });
-          return { success: true, user: userCredential.user };
+          set({ isLoggedIn: true, user: credential.user, profile: profileData, loading: false });
+          return { success: true, user: credential.user, requiresOtp: !(profileData?.isPhoneVerified) };
         } catch (error) {
-          set({ loading: false });
           console.error('Login error:', error.code);
+          set({ loading: false });
           return { success: false, error: error.code, message: getReadableError(error.code) };
         }
       },
 
-      async signup(email, password, userData) {
+      async signup(email, password, userData = {}) {
         if (get().loading) return;
         set({ loading: true });
         try {
-          const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-          const user = userCredential.user;
-          
-          // 🛡️ T1.2: Share same hardened sync logic
-          await createOrUpdateUser(user, 'password');
-          
-          // Apply initial userData provided from form
-          if (userData) {
-            await setDoc(doc(db, 'users', user.uid), {
-              ...userData,
-              lastLogin: serverTimestamp()
-            }, { merge: true });
+          const credential = await createUserWithEmailAndPassword(auth, email, password);
+          if (userData?.name) {
+            try {
+              await firebaseUpdateProfile(credential.user, { displayName: userData.name });
+            } catch (err) {
+              console.warn('Display name update failed', err);
+            }
           }
-
+          const profileData = await createOrUpdateUser(credential.user, 'password', {
+            name: userData?.name ?? credential.user.displayName ?? '',
+          });
           get().setLastAuthMethod('email');
-          set({ isLoggedIn: true, user, loading: false });
-          return { success: true, user };
+          set({ isLoggedIn: true, user: credential.user, profile: profileData, loading: false });
+          return { success: true, user: credential.user, requiresOtp: !(profileData?.isPhoneVerified) };
         } catch (error) {
-          set({ loading: false });
           console.error('Signup error:', error.code);
+          set({ loading: false });
           return { success: false, error: error.code, message: getReadableError(error.code) };
         }
       },
@@ -138,77 +155,101 @@ const useAuthStore = create(
         set({ loading: true });
         try {
           const provider = new GoogleAuthProvider();
+          provider.setCustomParameters({ prompt: 'select_account' });
           const result = await signInWithPopup(auth, provider);
-          await createOrUpdateUser(result.user, 'google.com');
+          const profileData = await createOrUpdateUser(result.user, 'google.com');
           get().setLastAuthMethod('google.com');
-          set({ isLoggedIn: true, user: result.user, loading: false });
-          return { success: true, user: result.user };
+          set({ isLoggedIn: true, user: result.user, profile: profileData, loading: false });
+          return { success: true, user: result.user, requiresOtp: !(profileData?.isPhoneVerified) };
         } catch (error) {
+          console.error('Google sign-in error', error.code);
           set({ loading: false });
-          // 🛡️ T1.1: Automatic Linking Check
-          if (error.code === "auth/account-exists-with-different-credential") {
+          if (error.code === 'auth/account-exists-with-different-credential') {
             try {
               const credential = GoogleAuthProvider.credentialFromError(error);
               set({ pendingCredential: credential, pendingEmail: error.customData.email });
               const methods = await fetchSignInMethodsForEmail(auth, error.customData.email);
-              return { 
-                success: false, 
-                error: error.code, 
-                methods, 
+              return {
+                success: false,
+                error: error.code,
+                methods,
                 email: error.customData.email,
-                message: getReadableError(error.code) 
+                message: getReadableError(error.code),
               };
-            } catch (e) {
-              return { success: false, error: e.code, message: 'Network error or rate limit hit.' };
+            } catch (linkError) {
+              return { success: false, error: linkError.code, message: 'Unable to complete link. Please try email login.' };
             }
           }
           return { success: false, error: error.code, message: getReadableError(error.code) };
         }
       },
 
-      async completePhoneLogin(user) {
+      async facebookSignIn() {
         if (get().loading) return;
         set({ loading: true });
         try {
-          await createOrUpdateUser(user, 'phone');
-          get().setLastAuthMethod('phone');
-          set({ isLoggedIn: true, user, loading: false });
-          return { success: true, user };
+          const provider = new FacebookAuthProvider();
+          provider.setCustomParameters({ display: 'popup' });
+          const result = await signInWithPopup(auth, provider);
+          const profileData = await createOrUpdateUser(result.user, 'facebook.com');
+          get().setLastAuthMethod('facebook.com');
+          set({ isLoggedIn: true, user: result.user, profile: profileData, loading: false });
+          return { success: true, user: result.user, requiresOtp: !(profileData?.isPhoneVerified) };
         } catch (error) {
+          console.error('Facebook sign-in error', error.code);
           set({ loading: false });
-          console.error('Phone Auth Store Error:', error.code);
-          return { success: false, error: error.code };
+          if (error.code === 'auth/account-exists-with-different-credential') {
+            return { success: false, error: error.code, message: getReadableError(error.code) };
+          }
+          return { success: false, error: error.code, message: getReadableError(error.code) };
         }
       },
 
-      // Advanced linking: Link the current user with a new credential
       async linkCurrentAccount(credential) {
         if (get().loading) return;
-        set({ loading: true });
         const currentUser = auth.currentUser;
         if (!currentUser) {
-          set({ loading: false });
           return { success: false, error: 'No active session' };
         }
+        set({ loading: true });
         try {
           const result = await linkWithCredential(currentUser, credential);
-          await createOrUpdateUser(result.user, credential.providerId);
-          set({ user: result.user, loading: false });
+          const profileData = await createOrUpdateUser(result.user, credential.providerId);
+          set({ user: result.user, profile: profileData, loading: false });
           return { success: true };
         } catch (error) {
-          set({ loading: false });
           console.error('Linking error:', error.code);
-          return { success: false, error: error.code };
+          set({ loading: false });
+          return { success: false, error: error.code, message: getReadableError(error.code) };
+        }
+      },
+
+      async markPhoneVerified(phoneNumber) {
+        const user = auth.currentUser;
+        if (!user) return { success: false, error: 'No active session' };
+        try {
+          await setDoc(doc(db, 'users', user.uid), {
+            phone: phoneNumber,
+            isPhoneVerified: true,
+            phoneVerifiedAt: serverTimestamp(),
+          }, { merge: true });
+          await user.reload();
+          const updatedProfile = (await getDoc(doc(db, 'users', user.uid))).data() || {};
+          set({ profile: updatedProfile, user: auth.currentUser, loading: false });
+          return { success: true, profile: updatedProfile };
+        } catch (error) {
+          console.error('markPhoneVerified error', error);
+          return { success: false, error: error.code, message: getReadableError(error.code) };
         }
       },
 
       async logout() {
         try {
-          // Cleanup recaptcha via window if necessary, but typically handled in component
           await signOut(auth);
-          set({ isLoggedIn: false, user: null, profile: {} });
         } catch (error) {
           console.error('Logout error:', error.message);
+        } finally {
+          set({ isLoggedIn: false, user: null, profile: {}, loading: false });
         }
       },
 
@@ -217,66 +258,63 @@ const useAuthStore = create(
           const profileDoc = await getDoc(doc(db, 'users', uid));
           if (profileDoc.exists()) {
             set({ profile: profileDoc.data() });
+            return profileDoc.data();
           }
+          return null;
         } catch (error) {
           console.error('Fetch profile error:', error.message);
+          return null;
         }
       },
 
       updateProfile(data) {
-        // 🔥 NEVER include role in profile updates from local state
-        const { photo, role, createdAt, ...rest } = data;
-        const updated = { ...get().profile, ...rest };
-        set({ profile: updated });
-
+        const { photo, role, createdAt, isPhoneVerified, ...rest } = data;
+        const patched = { ...get().profile, ...rest };
         if (photo) {
-          try {
-            sessionStorage.setItem('chronix-profile-photo', photo);
-          } catch (e) {
-            console.warn('Profile photo storage failed', e);
-          }
+          patched.photo = photo;
         }
+        set({ profile: patched });
 
         if (get().user) {
-          setDoc(doc(db, 'users', get().user.uid), updated, { merge: true });
+          setDoc(doc(db, 'users', get().user.uid), patched, { merge: true });
         }
       },
     }),
     {
       name: 'chronix-auth',
-      partialize: (s) => ({
-        isLoggedIn: s.isLoggedIn,
-        user: s.user,
-        profile: s.profile,
-        lastAuthMethod: s.lastAuthMethod
+      partialize: (state) => ({
+        isLoggedIn: state.isLoggedIn,
+        user: state.user,
+        profile: state.profile,
+        lastAuthMethod: state.lastAuthMethod,
       }),
     }
   )
 );
 
-// Initialize auth listener
 export const initAuthListener = () => {
-  onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      const profileDoc = await getDoc(doc(db, 'users', user.uid));
-      useAuthStore.setState({ 
-        isLoggedIn: true, 
-        user, 
-        profile: profileDoc.exists() ? profileDoc.data() : {},
-        loading: false 
-      });
-
-      // Update last login
-      setDoc(doc(db, 'users', user.uid), {
-        lastLogin: serverTimestamp()
-      }, { merge: true });
-    } else {
-      useAuthStore.setState({ isLoggedIn: false, user: null, profile: {}, loading: false });
+  useAuthStore.setState({ loading: true });
+  const unsubscribe = onAuthStateChanged(
+    auth,
+    async (user) => {
+      if (user) {
+        const profileDoc = await getDoc(doc(db, 'users', user.uid));
+        useAuthStore.setState({
+          isLoggedIn: true,
+          user,
+          profile: profileDoc.exists() ? profileDoc.data() : {},
+          loading: false,
+        });
+      } else {
+        useAuthStore.setState({ isLoggedIn: false, user: null, profile: {}, loading: false });
+      }
+    },
+    (error) => {
+      console.error('Auth listener error:', error);
+      useAuthStore.setState({ loading: false });
     }
-  }, (error) => {
-    console.error('Auth state auth listener error:', error);
-    useAuthStore.setState({ loading: false });
-  });
+  );
+  return unsubscribe;
 };
 
 export default useAuthStore;

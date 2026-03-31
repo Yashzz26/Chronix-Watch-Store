@@ -49,8 +49,8 @@ export default function DealBanner({ product }) {
       >
         <div className="row w-100 g-4 align-items-center">
           <div className="col-md-6 order-2 order-md-1">
-            <div className="section-label mb-3">Limited Acquisition</div>
-            <h2 className="font-display mb-2" style={{ fontSize: '2.5rem', color: '#fff' }}>Deal of the Day</h2>
+            <div className="section-label mb-3">Limited offer</div>
+            <h2 className="font-display mb-2" style={{ fontSize: '2.5rem', color: '#fff' }}>Deal of the day</h2>
             <h3 className="h4 text-t2 mb-4">{product.name}</h3>
             
             <div className="d-flex align-items-center gap-4 mb-5">
@@ -81,7 +81,7 @@ export default function DealBanner({ product }) {
 
             <div className="mt-5">
                 <Link to={`/product/${product.id}`} className="btn-gold text-decoration-none">
-                    Acquire Now
+                    Shop this watch
                 </Link>
             </div>
           </div>
@@ -101,3 +101,4 @@ export default function DealBanner({ product }) {
     </section>
   );
 }
+

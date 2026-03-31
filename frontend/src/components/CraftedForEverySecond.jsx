@@ -4,19 +4,19 @@ import { HiOutlineClock, HiOutlineCube, HiOutlineUserGroup } from 'react-icons/h
 
 const details = [
   {
-    icon: <HiOutlineCube />,
-    title: "Material Mastery",
-    description: "We source the world's most resilient materials—316L stainless steel and scratch-resistant sapphire crystal."
+    icon: <HiOutlineCube size={28} strokeWidth={1} />,
+    title: "Honest materials",
+    description: "316L steel, sapphire, and vegetable-tanned leather stay wearable and easy to service anywhere."
   },
   {
-    icon: <HiOutlineClock />,
-    title: "Precision Timekeeping",
-    description: "Discover timepieces curated with absolute precision, premium materials, and horological mastery."
+    icon: <HiOutlineClock size={28} strokeWidth={1} />,
+    title: "Reliable movements",
+    description: "Regulated calibres ship running within ±10 seconds a day so you spend less time correcting them."
   },
   {
-    icon: <HiOutlineUserGroup />,
-    title: "For the Collector",
-    description: "Join thousands of collectors who refuse to settle for anything less than excellence on their wrist."
+    icon: <HiOutlineUserGroup size={28} strokeWidth={1} />,
+    title: "For real wearers",
+    description: "Watches built to be worn, knocked, and used without babying them."
   }
 ];
 
@@ -25,88 +25,101 @@ export default function CraftedForEverySecond() {
     <section className="crafted-section">
       <style>{`
         .crafted-section {
-          background: var(--color-white);
-          padding: var(--spacing-4xl) 0;
+          background: var(--bg-1);
+          padding: var(--spacing-4xl) 32px;
+          border-bottom: 1px solid var(--border);
         }
         .crafted-header {
           text-align: center;
-          margin-bottom: var(--spacing-3xl);
+          margin-bottom: 64px;
         }
         .crafted-title {
           font-family: var(--font-heading);
-          font-size: var(--font-size-3xl);
-          color: var(--color-charcoal);
-          letter-spacing: -0.5px;
+          font-size: clamp(2rem, 5vw, 3rem);
+          color: var(--t1);
+          letter-spacing: -0.02em;
+          font-weight: 700;
         }
         .crafted-grid {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
-          gap: var(--spacing-lg);
+          gap: 32px;
+          max-width: 1200px;
+          margin: 0 auto;
         }
         .crafted-card {
-          background: var(--color-white);
-          border: 1px solid rgba(0, 0, 0, 0.06);
-          padding: 40px 32px;
+          background: #FFFFFF;
+          border: 1px solid var(--border);
+          border-radius: var(--radius);
+          padding: 48px 32px;
           text-align: center;
-          transition: all var(--transition-base);
+          transition: var(--transition);
           display: flex;
           flex-direction: column;
           align-items: center;
         }
         .crafted-card:hover {
-          border-color: rgba(212, 175, 55, 0.3);
-          transform: translateY(-4px);
+          border-color: var(--gold);
+          transform: translateY(-8px);
+          box-shadow: var(--shadow-md);
         }
         .crafted-icon-wrap {
-          font-size: 48px;
-          color: var(--color-gold);
-          margin-bottom: var(--spacing-md);
-          display: flex;
-          align-items: center;
-          justify-content: center;
+          color: var(--gold);
+          margin-bottom: 24px;
         }
         .crafted-card-title {
           font-family: var(--font-heading);
-          font-size: var(--font-size-xl);
-          color: var(--color-charcoal);
-          margin-bottom: var(--spacing-sm);
-          margin-top: var(--spacing-md);
+          font-size: 1.25rem;
+          color: var(--t1);
+          margin-bottom: 16px;
+          font-weight: 600;
         }
         .crafted-card-desc {
-          font-family: var(--font-body);
-          font-size: var(--font-size-sm);
-          color: var(--color-gray-dark);
+          font-size: 0.875rem;
+          color: var(--t2);
           line-height: 1.7;
-          margin-top: var(--spacing-sm);
         }
         @media (max-width: 991px) {
-          .crafted-grid {
-            grid-template-columns: 1fr;
-          }
+          .crafted-grid { grid-template-columns: 1fr; }
         }
       `}</style>
 
       <div className="container">
         <div className="crafted-header">
-          <motion.h2 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            className="crafted-title"
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.3 }}
+            variants={{
+              hidden: { opacity: 0, y: 20 },
+              visible: { opacity: 1, y: 0, transition: { duration: 0.8 } }
+            }}
           >
-            Crafted for Every Second
-          </motion.h2>
+            <span className="section-label-gold mb-2">Details that matter</span>
+            <h2 className="crafted-title">Built for real life</h2>
+          </motion.div>
         </div>
 
-        <div className="crafted-grid">
+        <motion.div 
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.2 }}
+          variants={{
+            hidden: { opacity: 0 },
+            visible: { 
+              opacity: 1, 
+              transition: { staggerChildren: 0.15 } 
+            }
+          }}
+          className="crafted-grid"
+        >
           {details.map((detail, i) => (
             <motion.div 
               key={i}
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.15 }}
+              variants={{
+                hidden: { opacity: 0, scale: 0.98 },
+                visible: { opacity: 1, scale: 1, transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] } }
+              }}
               className="crafted-card"
             >
               <div className="crafted-icon-wrap">
@@ -116,8 +129,9 @@ export default function CraftedForEverySecond() {
               <p className="crafted-card-desc">{detail.description}</p>
             </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );
 }
+

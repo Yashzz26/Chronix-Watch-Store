@@ -14,6 +14,18 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
+
+// Allow developers to bypass phone verification locally when the Firebase
+// project isn't yet on the Blaze plan. Opt-in with VITE_FIREBASE_DISABLE_PHONE_VERIFICATION=true.
+if (
+  import.meta.env.DEV &&
+  import.meta.env.VITE_FIREBASE_DISABLE_PHONE_VERIFICATION === 'true' &&
+  auth.settings
+) {
+  auth.settings.appVerificationDisabledForTesting = true;
+  console.warn('[Chronix] Phone verification disabled for local testing.');
+}
+
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 export default app;

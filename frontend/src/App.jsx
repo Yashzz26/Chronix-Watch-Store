@@ -1,25 +1,26 @@
 // Last updated: 2026-03-22T22:00:00Z (To force Vite rebuild)
 import { lazy, Suspense, useEffect } from 'react';
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import { useShallow } from 'zustand/react/shallow';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import ScrollToTop from './components/layout/ScrollToTop';
 import useAuthStore, { initAuthListener } from './store/authStore';
+import ProtectedRoute from './components/ProtectedRoute';
 
 const Home           = lazy(() => import('./pages/Home'));
 const ProductDetail  = lazy(() => import('./pages/ProductDetail'));
 const Cart           = lazy(() => import('./pages/Cart'));
 const Checkout       = lazy(() => import('./pages/Checkout'));
 const Confirmation   = lazy(() => import('./pages/Confirmation'));
-const Login          = lazy(() => import('./pages/Login'));
+const LoginSignup    = lazy(() => import('./pages/LoginSignup'));
 const Profile        = lazy(() => import('./pages/Profile'));
 const Orders         = lazy(() => import('./pages/Orders'));
 const Products       = lazy(() => import('./pages/Products'));
-const About         = lazy(() => import('./pages/About'));
-const Invoice       = lazy(() => import('./pages/Invoice'));
-const Register      = lazy(() => import('./pages/Register'));
+const About          = lazy(() => import('./pages/About'));
+const Invoice        = lazy(() => import('./pages/Invoice'));
+const OTPVerification = lazy(() => import('./pages/OTPVerification'));
 const NotFound       = lazy(() => import('./pages/NotFound'));
 
 const Loader = () => (
@@ -30,21 +31,18 @@ const Loader = () => (
   </div>
 );
 
-const Protected = ({ children }) => {
-  const { isLoggedIn, loading } = useAuthStore();
-  
-  if (loading) return <Loader />;
-
-  if (!isLoggedIn) {
-    return <Navigate to="/login" replace />;
-  }
-
-  return children;
-};
-
 export default function App() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { loading, isLoggedIn, profile } = useAuthStore(useShallow((state) => ({
+    loading: state.loading,
+    isLoggedIn: state.isLoggedIn,
+    profile: state.profile,
+  })));
+  const requiresOtp = isLoggedIn && !profile?.isPhoneVerified;
+
   useEffect(() => {
-    initAuthListener();
+    const unsubscribe = initAuthListener();
 
     const observer = new IntersectionObserver(entries => {
       entries.forEach(e => {
@@ -55,15 +53,35 @@ export default function App() {
       });
     }, { threshold: 0.1 });
     
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
     }, 100);
 
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      clearTimeout(timer);
+      unsubscribe?.();
+    };
   }, []);
 
-  const loading = useAuthStore(s => s.loading);
-  const location = useLocation();
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    if (requiresOtp && location.pathname !== '/verify-otp') {
+      if (!['/login', '/register'].includes(location.pathname)) {
+        sessionStorage.setItem('chronix_post_verify_path', `${location.pathname}${location.search}`);
+      }
+      navigate('/verify-otp', { replace: true, state: { from: location } });
+      return;
+    }
+
+    if (!requiresOtp && location.pathname === '/verify-otp') {
+      const stored = sessionStorage.getItem('chronix_post_verify_path') || '/';
+      sessionStorage.removeItem('chronix_post_verify_path');
+      const destination = stored === '/verify-otp' ? '/' : stored;
+      navigate(destination, { replace: true });
+    }
+  }, [requiresOtp, isLoggedIn, location, navigate]);
+
   const isInvoicePage = location.pathname.startsWith('/invoice/');
 
   if (loading) return <Loader />;
@@ -78,14 +96,15 @@ export default function App() {
           <Routes>
             <Route path="/"                   element={<Home />} />
             <Route path="/product/:id"        element={<ProductDetail />} />
-            <Route path="/login"              element={<Login />} />
-            <Route path="/register"           element={<Register />} />
-            <Route path="/cart"               element={<Protected><Cart /></Protected>} />
-            <Route path="/checkout"           element={<Protected><Checkout /></Protected>} />
-            <Route path="/confirmation"       element={<Protected><Confirmation /></Protected>} />
-            <Route path="/profile"            element={<Protected><Profile /></Protected>} />
-            <Route path="/orders"             element={<Protected><Orders /></Protected>} />
-            <Route path="/invoice/:orderId"   element={<Protected><Invoice /></Protected>} />
+            <Route path="/login"              element={<LoginSignup />} />
+            <Route path="/register"           element={<LoginSignup />} />
+            <Route path="/verify-otp"         element={<OTPVerification />} />
+            <Route path="/cart"               element={<ProtectedRoute><Cart /></ProtectedRoute>} />
+            <Route path="/checkout"           element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
+            <Route path="/confirmation"       element={<ProtectedRoute><Confirmation /></ProtectedRoute>} />
+            <Route path="/profile"            element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="/orders"             element={<ProtectedRoute><Orders /></ProtectedRoute>} />
+            <Route path="/invoice/:orderId"   element={<ProtectedRoute><Invoice /></ProtectedRoute>} />
             <Route path="/allcollection"      element={<Products />} />
             <Route path="/giftsforher"        element={<Products filterCategory="Gifts for Her" />} />
             <Route path="/giftsforhim"        element={<Products filterCategory="Gifts for Him" />} />
@@ -113,3 +132,4 @@ export default function App() {
     </div>
   );
 }
+

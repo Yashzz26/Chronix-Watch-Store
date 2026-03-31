@@ -138,7 +138,7 @@ export default function Orders() {
         <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-5 pb-4 border-bottom border-border">
           <div>
             <h1 className="font-display display-4 text-t1 mb-2">My Orders</h1>
-            <p className="text-t3 tracking-widest text-uppercase m-0" style={{ fontSize: '0.75rem' }}>Track and manage your luxury acquisitions</p>
+            <p className="text-t3 tracking-widest text-uppercase m-0" style={{ fontSize: '0.75rem' }}>Track and manage your orders</p>
           </div>
           <div className="d-flex gap-4 mt-4 mt-md-0">
             <div className="text-center">
@@ -182,8 +182,8 @@ export default function Orders() {
           <div className="text-center py-5 rounded-4 bg-white border border-border">
             <HiOutlineShoppingBag size={80} className="text-t3 opacity-10 mb-4" />
             <h3 className="text-t2">No entries found</h3>
-            <p className="text-t3 mb-4">No acquisitions match your current filter parameters.</p>
-            <button onClick={() => { setSearchQuery(''); setStatusFilter('all'); }} className="btn-gold px-5 py-2">Reset Global Filter</button>
+            <p className="text-t3 mb-4">No orders match your current filter.</p>
+            <button onClick={() => { setSearchQuery(''); setStatusFilter('all'); }} className="btn-gold px-5 py-2">Reset filters</button>
           </div>
         ) : (
           <div className="d-flex flex-column gap-5">
@@ -238,7 +238,7 @@ export default function Orders() {
                     <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="order-card-detail">
                        <div className="row g-5">
                           <div className="col-lg-7">
-                             <h5 className="section-label mb-4 opacity-50">Detailed Breakdown</h5>
+                             <h5 className="section-label mb-4 opacity-50">Items</h5>
                              <div className="d-flex flex-column gap-3">
                                 {order.items.map((item, idx) => (
                                   <div key={idx} className="d-flex align-items-center justify-content-between p-3 bg-white rounded-3 border border-border border-opacity-50 transition-all hover:border-gold">
@@ -256,7 +256,7 @@ export default function Orders() {
                           </div>
                           <div className="col-lg-5">
                              <div className="mb-5">
-                                <h5 className="section-label mb-3 opacity-50">Delivery Logistics</h5>
+                                <h5 className="section-label mb-3 opacity-50">Delivery details</h5>
                                 <div className="p-4 bg-white rounded-4 border border-border border-opacity-50">
                                    <p className="mb-2 text-t1 fw-bold h6">{order.address?.fullName || user?.name || 'Authorized Recipient'}</p>
                                    <p className="small text-t3 mb-0">{order.address?.address}, {order.address?.city}</p>
@@ -264,14 +264,14 @@ export default function Orders() {
                                 </div>
                              </div>
                              <div>
-                                <h5 className="section-label mb-3 opacity-50">Financial Protocol</h5>
+                                <h5 className="section-label mb-3 opacity-50">Payment</h5>
                                 <div className="p-4 bg-white rounded-4 border border-border border-opacity-50 d-flex align-items-center gap-4">
                                    <div className="bg-bg-2 p-3 rounded-circle text-gold border border-border">
                                       {order.paymentMethod === 'online' ? <HiOutlineCreditCard size={24} /> : <HiOutlineBanknotes size={24} />}
                                    </div>
                                    <div>
-                                      <p className="small fw-bold m-0 text-uppercase tracking-widest">{order.paymentMethod === 'online' ? 'Digital Clearing' : 'COD Settlement'}</p>
-                                      <span className="x-small text-t3 opacity-50">Status: Secure Authorization</span>
+                                      <p className="small fw-bold m-0 text-uppercase tracking-widest">{order.paymentMethod === 'online' ? 'Online payment' : 'Cash on delivery'}</p>
+                                      <span className="x-small text-t3 opacity-50">Status: Confirmed</span>
                                    </div>
                                 </div>
                              </div>
@@ -288,3 +288,4 @@ export default function Orders() {
     </div>
   );
 }
+

@@ -629,7 +629,7 @@ export default function Invoice() {
                         </div>
                       </div>
                     </td>
-                    <td>{item.category || 'Luxury Timepiece'}</td>
+                    <td>{item.category || 'Chronix watch'}</td>
                     <td className="item-price-col">{item.qty}</td>
                     <td className="item-price-col">₹{getItemPrice(item).toLocaleString('en-IN')}</td>
                     <td className="item-price-col fw-bold text-dark">₹{(getItemPrice(item) * item.qty).toLocaleString('en-IN')}</td>
@@ -695,3 +695,4 @@ export default function Invoice() {
     </>
   );
 }
+

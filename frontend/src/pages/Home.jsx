@@ -1,227 +1,236 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useSearchParams, Link, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
-import { 
-  HiArrowRight, 
-  HiOutlineShoppingCart,
-  HiStar,
-  HiOutlineArrowUpRight,
-  HiOutlineShieldCheck,
-  HiOutlineArrowPath,
-  HiOutlineCheckBadge
-} from 'react-icons/hi2';
-import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { HiArrowLongRight } from 'react-icons/hi2';
+import { collection, limit, onSnapshot, orderBy, query } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import useCartStore from '../store/cartStore';
-import toast from 'react-hot-toast';
 import WatchModel from '../components/ui/WatchModel';
 import SkeletonHero from '../components/ui/SkeletonHero';
-
-// New Modular Components
 import NewArrivals from '../components/NewArrivals';
-import BuildForPrecision from '../components/BuildForPrecision';
-import OwnTheMoment from '../components/OwnTheMoment';
-import DesignedForExcellence from '../components/DesignedForExcellence';
-import CraftedForEverySecond from '../components/CraftedForEverySecond';
-import ClassicSeries from '../components/ClassicSeries';
-import CraftingTheSecond from '../components/CraftingTheSecond';
-import BuiltToLast from '../components/BuiltToLast';
+import './home.css';
+
+const stats = [
+  {
+    value: '48 hrs',
+    label: 'Service response',
+    detail: 'Average support ticket resolution time this quarter.'
+  },
+  {
+    value: '850+',
+    label: 'Repairs handled',
+    detail: 'Completed at our Mumbai workshop since 2018.'
+  },
+  {
+    value: '2 yrs',
+    label: 'Warranty coverage',
+    detail: 'Movement + water resistance included with every watch.'
+  }
+];
+
+const highlights = [
+  {
+    tag: 'Regulated in-house',
+    title: 'Honest automatic movements',
+    description: 'Every automatic ships with a regulated NH35 tuned to +/-10 seconds a day before it leaves our bench.'
+  },
+  {
+    tag: 'Daily wear',
+    title: 'Comfort-first bracelets',
+    description: 'Solid links, chamfered edges, and five micro-adjust points keep the fit light even in humid weather.'
+  },
+  {
+    tag: 'Readable dials',
+    title: 'No-nonsense typography',
+    description: 'Applied markers, AR-coated sapphire, and restrained text so you can read the time at a glance.'
+  }
+];
+
+const materials = [
+  {
+    title: '316L stainless steel',
+    description: 'Hypoallergenic steel with brushed and polished surfaces that can be refinished years later.'
+  },
+  {
+    title: 'Sapphire crystal',
+    description: 'Double-domed with clear anti-reflective coating to keep glare down indoors and outside.'
+  },
+  {
+    title: 'Vegetable-tanned leather',
+    description: 'Sealed edges and quick-release pins for humid days and easy swaps.'
+  },
+  {
+    title: 'Seiko NH35 movement',
+    description: 'Serviceable, dependable, and easy to regulate anywhere in the world.'
+  }
+];
+
+const stories = [
+  {
+    title: 'Design notes',
+    description: 'A short read on how we slimmed the bezel and dial text for the new Classic Series.',
+    link: '/about'
+  },
+  {
+    title: 'Ownership checklist',
+    description: 'What we inspect before shipping and how to keep the watch looking fresh.',
+    link: '/products'
+  },
+  {
+    title: 'Service promise',
+    description: 'Plain-language coverage for the included two-year warranty.',
+    link: '/about'
+  }
+];
 
 export default function Home() {
-  const heroRef = useRef(null);
-  const { scrollYProgress } = useScroll({ target: heroRef });
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.4], [1, 0]);
-  const heroScale = useTransform(scrollYProgress, [0, 0.4], [1, 0.95]);
-
-  const [searchParams] = useSearchParams();
-  const addItem = useCartStore((s) => s.addItem);
-  
-  // Database State
+  const addItem = useCartStore((state) => state.addItem);
   const [dbProducts, setDbProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const q = query(collection(db, 'products'), orderBy('createdAt', 'desc'), limit(8));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setDbProducts(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
-      setLoading(false);
-    }, (err) => {
-      console.error(err);
-      setLoading(false);
-    });
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        setDbProducts(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+        setLoading(false);
+      },
+      () => setLoading(false)
+    );
+
     return () => unsubscribe();
   }, []);
 
   const newArrivals = useMemo(() => dbProducts.slice(0, 4), [dbProducts]);
 
   return (
-    <div className="home-minimal">
-      <style>{`
-        .home-minimal { 
-          background: #FFFFFF; 
-          color: var(--color-charcoal); 
-          overflow-x: hidden; 
-        }
-        
-        .hero-cinematic-v2 { 
-          min-height: 100vh; 
-          background: #080808; 
-          color: #fff; 
-          display: flex; 
-          align-items: center; 
-          position: relative; 
-          overflow: hidden; 
-        }
-        
-        .hero-headline { 
-          font-family: var(--font-heading); 
-          font-size: clamp(3.5rem, 8vw, 72px); 
-          line-height: 1.1; 
-          letter-spacing: -0.04em; 
-          font-weight: 700; 
-          margin-bottom: 24px; 
-        }
-        
-        .hero-sub { 
-          color: rgba(255, 255, 255, 0.7); 
-          max-width: 480px; 
-          font-size: 1.1rem; 
-          line-height: 1.8; 
-          margin-bottom: 40px; 
-        }
-        
-        .text-gold-accent { 
-          color: var(--color-gold);
-        }
-        
-        .review-pill { 
-          background: rgba(255,255,255,0.05); 
-          backdrop-filter: blur(8px); 
-          border: 1px solid rgba(255,255,255,0.1); 
-          border-radius: 99px; 
-          padding: 8px 16px; 
-          display: inline-flex; 
-          align-items: center; 
-          gap: 10px; 
-          margin-bottom: 24px; 
-        }
-        
-        .btn-hero-gold { 
-          background: var(--color-gold); 
-          color: var(--color-charcoal); 
-          padding: 16px 52px; 
-          font-weight: 700; 
-          text-transform: uppercase; 
-          letter-spacing: 2px;
-          transition: all var(--transition-base); 
-          box-shadow: 0 4px 20px rgba(212, 175, 55, 0.2);
-          text-decoration: none;
-          display: inline-block;
-        }
-        
-        .btn-hero-gold:hover { 
-          background: var(--color-gold-light); 
-          transform: translateY(-2px);
-          box-shadow: 0 8px 30px rgba(212, 175, 55, 0.3);
-          color: var(--color-charcoal);
-        }
-
-        .avatar-group {
-          display: flex;
-          align-items: center;
-          gap: -12px;
-        }
-
-        .avatar-img {
-          width: 32px;
-          height: 32px;
-          border-radius: 50%;
-          border: 2px solid #080808;
-          object-fit: cover;
-          margin-left: -12px;
-        }
-        .avatar-img:first-child { margin-left: 0; }
-      `}</style>
-
-      {loading && <SkeletonHero />}
-      {!loading && (
-        <section className="hero-cinematic-v2" ref={heroRef}>
-          <div className="container position-relative" style={{ zIndex: 10 }}>
-            <div className="row align-items-center min-vh-100 py-5">
-              <div className="col-12 col-lg-6">
-                <motion.div 
-                  initial={{ opacity: 0, y: 30 }} 
-                  whileInView={{ opacity: 1, y: 0 }} 
-                  viewport={{ once: true }}
-                  transition={{ duration: 1, ease: "easeOut" }}
-                >
-                  <div className="review-pill">
-                    <div className="d-flex gap-1 text-gold">
-                      <HiStar size={14} /><HiStar size={14} /><HiStar size={14} /><HiStar size={14} /><HiStar size={14} />
-                    </div>
-                    <span className="x-small fw-bold tracking-widest text-white opacity-75">4.9/5 FROM 1200+ REVIEWS</span>
-                  </div>
-
-                  <h1 className="hero-headline text-white mb-4">
-                    Timeless Elegance <br /> 
-                    <span className="text-gold-accent">on Your Wrist</span>
-                  </h1>
-                  <p className="hero-sub mb-5 pe-lg-5">
-                    Discover timepieces curated with absolute precision, premium materials, and designs that define generations of horological mastery.
-                  </p>
-                  <div className="d-flex flex-wrap gap-4 align-items-center">
-                    <Link to="/allcollection" className="btn-hero-gold">Explore Collection</Link>
-                    <motion.div 
-                      initial={{ opacity: 0 }} 
-                      animate={{ opacity: 1 }} 
-                      transition={{ delay: 0.5 }}
-                      className="d-none d-md-flex align-items-center gap-3 ms-3"
-                    >
-                      <div className="avatar-group">
-                         <img src="https://i.pravatar.cc/100?img=1" className="avatar-img" alt="User" />
-                         <img src="https://i.pravatar.cc/100?img=2" className="avatar-img" alt="User" />
-                         <img src="https://i.pravatar.cc/100?img=3" className="avatar-img" alt="User" />
-                      </div>
-                      <span className="x-small text-white opacity-50 fw-bold tracking-wider">JOIN 10K+ COLLECTORS</span>
-                    </motion.div>
-                  </div>
-                </motion.div>
+    <div className="home">
+      {loading ? (
+        <SkeletonHero />
+      ) : (
+        <section className="home-hero">
+          <div className="container home-hero__grid">
+            <div>
+              <p className="home-eyebrow">Spring 2026 drop</p>
+              <h1 className="home-hero__title">Watches built to be worn, not stored.</h1>
+              <p className="home-lead">
+                Less manifesto, more clarity. We design everyday watches with serviceable parts, realistic pricing,
+                and support that writes back in plain language.
+              </p>
+              <div className="home-hero__actions">
+                <Link to="/allcollection" className="btn-chronix btn-chronix-primary">
+                  Shop the line
+                </Link>
+                <Link to="/about" className="home-hero__link">
+                  Meet the workshop <HiArrowLongRight size={20} />
+                </Link>
               </div>
-              
-              <div className="col-12 col-lg-6 mt-5 mt-lg-0 text-center text-lg-end">
-                   <motion.div 
-                     initial={{ opacity: 0, scale: 0.8 }}
-                     whileInView={{ opacity: 1, scale: 1 }}
-                     viewport={{ once: true }}
-                     transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-                     className="animate-float"
-                   >
-                     <div style={{ height: '700px', width: '100%', filter: 'drop-shadow(0 40px 100px rgba(212,175,55,0.15))' }}>
-                       <WatchModel />
-                     </div>
-                   </motion.div>
+            </div>
+            <div className="home-hero__visual">
+              <div className="home-hero__badge">Ships free across India</div>
+              <div className="home-hero__canvas">
+                <WatchModel />
               </div>
+              <p className="home-hero__note">Rendered from the same CAD file we hand off to production.</p>
             </div>
           </div>
         </section>
       )}
 
+      <section className="home-section">
+        <div className="container home-stat-grid">
+          {stats.map((stat) => (
+            <article key={stat.label} className="home-stat">
+              <div className="home-stat__value">{stat.value}</div>
+              <div className="home-stat__label">{stat.label}</div>
+              <p className="home-stat__detail">{stat.detail}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
       <NewArrivals products={newArrivals} loading={loading} addItem={addItem} />
 
-      <DesignedForExcellence />
+      <section className="home-section">
+        <div className="container">
+          <div className="home-section__header">
+            <p className="home-eyebrow">Why Chronix</p>
+            <h2>Everyday details we refuse to skip.</h2>
+            <p className="home-lead">
+              Clear copy, grounded materials, and a support team that replies within two business days.
+            </p>
+          </div>
+          <div className="home-highlight-grid">
+            {highlights.map((item) => (
+              <article key={item.title} className="home-highlight-card">
+                <span className="tag">{item.tag}</span>
+                <h3>{item.title}</h3>
+                <p>{item.description}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
 
-      <BuildForPrecision />
+      <section className="home-section">
+        <div className="container">
+          <div className="home-section__header">
+            <p className="home-eyebrow">Materials</p>
+            <h2>Tools first, luxury second.</h2>
+            <p className="home-lead">Everything we use can be serviced locally. No mystery alloys or glued parts.</p>
+          </div>
+          <div className="home-material-grid">
+            {materials.map((item) => (
+              <article key={item.title} className="home-material-card">
+                <h4>{item.title}</h4>
+                <p>{item.description}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
 
-      <CraftedForEverySecond />
+      <section className="home-section home-stories">
+        <div className="container">
+          <div className="home-section__header">
+            <p className="home-eyebrow">Notes from the bench</p>
+            <h2>Short reads, zero fluff.</h2>
+          </div>
+          <div className="home-stories__grid">
+            {stories.map((story) => (
+              <article key={story.title} className="home-story-card">
+                <h3>{story.title}</h3>
+                <p>{story.description}</p>
+                <Link to={story.link} className="subtle-link">
+                  Keep reading <HiArrowLongRight size={18} />
+                </Link>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
 
-      <ClassicSeries />
-
-      <CraftingTheSecond />
-
-      <BuiltToLast />
-
-      <OwnTheMoment />
-
+      <section className="home-section home-cta">
+        <div className="container">
+          <div className="cta-card">
+            <p className="home-eyebrow">Ready when you are</p>
+            <h2>Book a video sizing or drop by the studio.</h2>
+            <p className="home-lead">
+              Put the watch on alongside our team, ask honest questions, and only check out when it feels right.
+            </p>
+            <div className="home-hero__actions home-hero__actions--center">
+              <Link to="/about" className="btn-chronix btn-gold">
+                Book a fitting
+              </Link>
+              <Link to="/allcollection" className="home-hero__link">
+                Browse the catalog <HiArrowLongRight size={20} />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
+
+

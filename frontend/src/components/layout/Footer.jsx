@@ -36,67 +36,54 @@ export default function Footer() {
     <footer className="footer-main">
       <style>{`
         .footer-main {
-          background: #000000;
-          color: rgba(255, 255, 255, 0.7);
-          border-top: 1px solid rgba(212, 175, 55, 0.25);
-          padding: 80px 0 40px;
+          background: var(--s2);
+          color: var(--t3);
+          border-top: 1px solid var(--border);
+          padding: var(--spacing-4xl) 32px;
           font-family: var(--font-body);
-        }
-
-        .footer-brand-col {
-          display: flex;
-          flex-direction: column;
         }
 
         .footer-logo {
           font-family: var(--font-heading);
-          font-size: 32px;
+          font-size: 2rem;
           font-weight: 700;
-          color: #fff;
-          margin-bottom: 0;
-          display: inline-block;
+          color: #FFFFFF;
           text-decoration: none;
+          margin-bottom: 24px;
+          display: block;
         }
-
-        .footer-logo span {
-          color: var(--color-gold);
-        }
+        .footer-logo span { color: var(--gold); }
 
         .footer-tagline {
-          font-family: var(--font-body);
-          font-size: 15px;
-          color: rgba(255, 255, 255, 0.6);
-          margin-top: 16px;
-          max-width: 240px;
-          line-height: 1.6;
+          font-size: 0.9375rem;
+          line-height: 1.7;
+          max-width: 280px;
+          margin-bottom: 32px;
+          color: rgba(255, 255, 255, 0.5);
         }
 
         .social-icons-wrap {
           display: flex;
           gap: 20px;
-          margin-top: 32px;
         }
 
         .social-icon {
-          color: rgba(255, 255, 255, 0.6);
-          font-size: 20px;
-          transition: all var(--transition-base);
-          text-decoration: none;
+          color: rgba(255, 255, 255, 0.4);
+          font-size: 1.25rem;
+          transition: var(--transition);
         }
-
         .social-icon:hover {
-          color: var(--color-gold);
-          transform: scale(1.1);
+          color: var(--gold);
+          transform: translateY(-2px);
         }
 
         .footer-col-title {
-          font-family: var(--font-body);
-          font-size: 14px;
-          color: #fff;
+          font-size: 0.75rem;
+          font-weight: 700;
           text-transform: uppercase;
-          letter-spacing: 2px;
-          font-weight: 600;
-          margin-bottom: 20px;
+          letter-spacing: 0.15em;
+          color: #FFFFFF;
+          margin-bottom: 24px;
         }
 
         .footer-links {
@@ -105,73 +92,58 @@ export default function Footer() {
           margin: 0;
         }
 
-        .footer-link-item {
-          margin-bottom: 8px;
-        }
+        .footer-link-item { margin-bottom: 12px; }
 
         .footer-link {
-          color: rgba(255, 255, 255, 0.7);
+          color: rgba(255, 255, 255, 0.5);
           text-decoration: none;
-          font-size: 15px;
-          line-height: 2.2;
-          transition: all var(--transition-fast);
+          font-size: 0.875rem;
+          transition: var(--transition);
         }
-
-        .footer-link:hover {
-          color: var(--color-gold);
-        }
+        .footer-link:hover { color: #FFFFFF; }
 
         .newsletter-text {
-          font-size: 15px;
-          color: rgba(255, 255, 255, 0.7);
-          margin-bottom: 20px;
+          font-size: 0.875rem;
+          margin-bottom: 24px;
         }
 
         .newsletter-input-group {
           display: flex;
-          gap: 0;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
           padding-bottom: 8px;
         }
 
         .newsletter-input {
           background: transparent;
           border: none;
-          color: #fff;
-          width: 100%;
-          font-family: var(--font-body);
-          font-size: 14px;
+          color: #FFFFFF;
+          flex: 1;
+          font-size: 0.875rem;
           padding: 8px 0;
         }
-
-        .newsletter-input:focus {
-          outline: none;
-        }
+        .newsletter-input:focus { outline: none; }
 
         .btn-subscribe {
           background: transparent;
           border: none;
-          color: var(--color-gold);
-          font-family: var(--font-body);
-          font-size: 13px;
+          color: var(--gold);
+          font-size: 0.75rem;
           font-weight: 700;
           text-transform: uppercase;
-          letter-spacing: 1.5px;
+          letter-spacing: 0.1em;
           cursor: pointer;
-          padding: 0 8px;
         }
 
         .footer-bottom {
-          border-top: 1px solid rgba(255, 255, 255, 0.08);
+          border-top: 1px solid rgba(255, 255, 255, 0.05);
           padding-top: 48px;
-          margin-top: 60px;
+          margin-top: 64px;
         }
 
         .copyright-text {
-          font-family: var(--font-body);
-          font-size: 13px;
-          color: rgba(255, 255, 255, 0.5);
-          margin: 0;
+          font-size: 0.75rem;
+          color: rgba(255, 255, 255, 0.3);
+          letter-spacing: 0.05em;
         }
 
         .payment-icons {
@@ -179,23 +151,12 @@ export default function Footer() {
           gap: 24px;
           justify-content: flex-end;
           align-items: center;
-        }
-
-        .payment-icon {
-          font-size: 24px;
-          color: rgba(255, 255, 255, 0.4);
-          filter: grayscale(100%);
-          transition: all var(--transition-base);
-        }
-
-        .payment-icon:hover {
-          filter: grayscale(0%);
-          color: var(--color-gold);
+          opacity: 0.4;
         }
 
         @media (max-width: 991px) {
-          .footer-main { padding: 60px 20px 40px; }
-          .payment-icons { justify-content: flex-start; margin-top: 20px; }
+          .footer-main { padding: var(--spacing-3xl) 24px; }
+          .payment-icons { justify-content: flex-start; }
         }
       `}</style>
 
@@ -208,7 +169,7 @@ export default function Footer() {
                 Chronix<span>.</span>
               </Link>
               <p className="footer-tagline">
-                Providing a sanctuary for horological enthusiasts seeking precision, elegance, and a lasting legacy since 2024.
+                Independent watch studio designing honest everyday pieces from Mumbai since 2024.
               </p>
               <div className="social-icons-wrap">
                 <a href="#" className="social-icon" aria-label="Instagram"><FaInstagram /></a>
@@ -221,20 +182,20 @@ export default function Footer() {
           <div className="col-6 col-md-3 col-lg-2">
             <h4 className="footer-col-title">Collection</h4>
             <ul className="footer-links">
-              <li className="footer-link-item"><Link to="/products" className="footer-link">Analog Selection</Link></li>
-              <li className="footer-link-item"><Link to="/products" className="footer-link">Digital Mastery</Link></li>
-              <li className="footer-link-item"><Link to="/products" className="footer-link">Limited Editions</Link></li>
-              <li className="footer-link-item"><Link to="/products" className="footer-link">Luxury Archive</Link></li>
+              <li className="footer-link-item"><Link to="/allcollection" className="footer-link">Classic line</Link></li>
+              <li className="footer-link-item"><Link to="/allcollection?cat=modern" className="footer-link">Modern line</Link></li>
+              <li className="footer-link-item"><Link to="/giftsforher" className="footer-link">Gifts for her</Link></li>
+              <li className="footer-link-item"><Link to="/giftsforhim" className="footer-link">Gifts for him</Link></li>
             </ul>
           </div>
 
           <div className="col-6 col-md-3 col-lg-2">
-            <h4 className="footer-col-title">Maison</h4>
+            <h4 className="footer-col-title">Studio</h4>
             <ul className="footer-links">
-              <li className="footer-link-item"><Link to="/about" className="footer-link">Our Story</Link></li>
-              <li className="footer-link-item"><Link to="#" className="footer-link">Service Atelier</Link></li>
-              <li className="footer-link-item"><Link to="#" className="footer-link">Boutique Locator</Link></li>
-              <li className="footer-link-item"><Link to="#" className="footer-link">Support</Link></li>
+              <li className="footer-link-item"><Link to="/about" className="footer-link">About Chronix</Link></li>
+              <li className="footer-link-item"><Link to="/about" className="footer-link">Service pledge</Link></li>
+              <li className="footer-link-item"><Link to="/about" className="footer-link">Visit the studio</Link></li>
+              <li className="footer-link-item"><Link to="/about" className="footer-link">Support</Link></li>
             </ul>
           </div>
 
@@ -242,10 +203,10 @@ export default function Footer() {
             <h4 className="footer-col-title">The Journal</h4>
             <p className="newsletter-text">Subscribe for exclusive drops and technical insights.</p>
             <form onSubmit={handleSubscribe}>
-              <AnimatePresence mode="wait">
+              <AnimatePresence>
                 {isSubscribed ? (
                   <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-gold mt-2 fw-bold" style={{ fontSize: '14px' }}>
-                    Observation Logged.
+                    Thanks for joining.
                   </motion.p>
                 ) : (
                   <div className="newsletter-input-group">
@@ -269,7 +230,7 @@ export default function Footer() {
           <div className="row align-items-center g-4">
             <div className="col-12 col-md-6">
               <p className="copyright-text">
-                © 2024 CHRONIX HOROLOGICAL GROUP. ALL RIGHTS RESERVED.
+                © {new Date().getFullYear()} Chronix. All rights reserved.
               </p>
             </div>
             <div className="col-12 col-md-6">
@@ -286,3 +247,4 @@ export default function Footer() {
     </footer>
   );
 }
+

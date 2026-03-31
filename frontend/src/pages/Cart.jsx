@@ -6,50 +6,26 @@ import {
   HiOutlineShoppingBag, 
   HiPlus, 
   HiMinus, 
-  HiArrowLeft, 
-  HiOutlineBookmark, 
-  HiOutlineShieldCheck
+  HiOutlineShieldCheck 
 } from 'react-icons/hi2';
 import useCartStore from '../store/cartStore';
-import { products } from '../data/products';
-import toast from 'react-hot-toast';
 
-// Stepper Component
 const CheckoutStepper = ({ currentStep }) => {
   const steps = [
     { label: 'Cart', id: 'cart' },
-    { label: 'Shipping', id: 'address' },
+    { label: 'Address', id: 'address' },
     { label: 'Payment', id: 'payment' }
   ];
 
   return (
-    <div className="d-flex align-items-center justify-content-center gap-4 mb-5 pb-5">
+    <div className="d-flex align-items-center justify-content-center gap-5 mb-5 pb-4 border-bottom border-border border-opacity-30">
       {steps.map((step, idx) => (
         <React.Fragment key={step.id}>
           <div className="d-flex align-items-center gap-3">
-            <span 
-              className="font-mono"
-              style={{ 
-                fontSize: '0.75rem', 
-                color: currentStep === step.id ? 'var(--gold)' : 'var(--t3)',
-                fontWeight: currentStep === step.id ? 700 : 400
-              }}
-            >
-              0{idx + 1}
-            </span>
-            <span 
-              className="text-uppercase tracking-widest fw-bold"
-              style={{ 
-                fontSize: '0.65rem', 
-                color: currentStep === step.id ? 'var(--t1)' : 'var(--t3)'
-              }}
-            >
-              {step.label}
-            </span>
+            <span className="font-mono x-small fw-bold" style={{ color: currentStep === step.id ? 'var(--gold)' : 'var(--t3)' }}>0{idx + 1}</span>
+            <span className="text-uppercase tracking-widest fw-bold" style={{ fontSize: '0.7rem', color: currentStep === step.id ? 'var(--t1)' : 'var(--t3)' }}>{step.label}</span>
           </div>
-          {idx < steps.length - 1 && (
-            <div style={{ width: '40px', height: '1px', background: 'var(--border)' }} />
-          )}
+          {idx < steps.length - 1 && <div style={{ width: '30px', height: '1px', background: 'var(--border)' }} />}
         </React.Fragment>
       ))}
     </div>
@@ -65,78 +41,129 @@ export default function Cart() {
 
   if (items.length === 0 && savedItems.length === 0) {
     return (
-      <div className="cart-empty-state d-flex flex-column align-items-center justify-content-center px-4 text-center">
-        <style>{`
-          .cart-empty-state { min-height: 80vh; background: var(--bg); }
-        `}</style>
-        <HiOutlineShoppingBag size={60} className="text-gold mb-4 opacity-20" />
-        <h1 className="font-display display-4 text-t1 mb-3">Your Cart is Empty</h1>
-        <p className="text-t3 mb-5 mx-auto" style={{ maxWidth: 400 }}>No timepieces have been selected for purchase at this moment.</p>
-        <Link to="/allcollection" className="btn-gold px-5 py-3">Explore Inventory</Link>
+      <div className="cart-empty-state d-flex flex-column align-items-center justify-content-center vh-100 bg-bg text-center">
+        <HiOutlineShoppingBag size={80} className="text-gold mb-4 opacity-10" />
+        <h1 className="font-display display-4 text-t1 mb-3">Your bag is empty</h1>
+        <p className="text-t3 mb-5 tracking-wide max-w-sm">Browse the collection to add a watch you’d like to wear every day.</p>
+        <Link to="/allcollection" className="btn-gold px-5 py-3 text-uppercase">Shop the line</Link>
       </div>
     );
   }
 
   return (
-    <div className="cart-page pb-5">
+    <div className="cart-page">
       <style>{`
-        .cart-page { background: var(--bg); min-height: 100vh; padding-top: 120px; color: var(--t1); font-family: var(--font-body); }
-        
-        .cart-item { border-bottom: 1px solid var(--border); padding: 40px 0; transition: var(--transition); }
+        .cart-page {
+          background: var(--bg);
+          color: var(--t1);
+          min-height: 100vh;
+          padding-top: 120px;
+          padding-bottom: 100px;
+        }
+
+        .cart-item {
+          border-bottom: 1px solid var(--border);
+          padding: 32px 0;
+        }
         .cart-item:first-child { border-top: 1px solid var(--border); }
-        
-        .item-img-wrap { width: 160px; height: 160px; background: var(--bg-2); border-radius: 12px; padding: 24px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-        .item-img { max-width: 100%; max-height: 100%; object-fit: contain; transition: transform 0.6s ease; }
-        .item-img-wrap:hover .item-img { transform: scale(1.1); }
-        
-        .qty-control { display: flex; align-items: center; border: 1px solid var(--border); border-radius: 30px; padding: 4px; background: #fff; }
-        .qty-btn { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border: none; background: transparent; color: var(--t1); border-radius: 50%; transition: var(--transition); }
-        .qty-btn:hover { background: var(--bg-2); color: var(--gold); }
-        .qty-val { width: 40px; text-align: center; font-family: var(--font-body); font-weight: 700; font-size: 0.9rem; }
 
-        .summary-card { 
-          position: sticky; 
-          top: 120px; 
-          border: 1px solid var(--border); 
-          padding: 40px; 
-          border-radius: 16px; 
-          background: #fff; 
-          box-shadow: 0 20px 40px rgba(0,0,0,0.03);
-        }
-        .summary-row { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 0.9rem; color: var(--t2); }
-        .summary-total { border-top: 1px solid var(--border); padding-top: 30px; margin-top: 30px; color: var(--t1); }
-        
-        .action-link { font-size: 0.7rem; letter-spacing: 0.1em; font-weight: 700; color: var(--t3); text-decoration: none; text-transform: uppercase; transition: var(--transition); border: none; background: transparent; }
-        .action-link:hover { color: var(--gold); }
-        .action-link.remove:hover { color: #dc3545; }
-
-        .cart-invoice-label {
-          font-size: 0.65rem;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.2em;
-          color: var(--t3, #888888);
-          margin-bottom: 10px;
-        }
-
-        .cart-invoice-gst {
+        .item-image-box {
+          width: 140px;
+          height: 140px;
+          background: #FFFFFF;
+          border: 1px solid var(--border);
           display: flex;
-          flex-direction: column;
-          gap: 6px;
-          font-size: 0.82rem;
-          color: var(--t2, #444444);
-          padding: 14px;
-          background: var(--bg-2, #F4F3EF);
-          border-radius: 8px;
-          border: 1px solid var(--border, #E0DED9);
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+          overflow: hidden;
         }
 
-        .cart-gst-total {
+        .item-image {
+          max-width: 100%;
+          max-height: 100%;
+          object-fit: contain;
+          transition: transform 0.5s ease;
+        }
+        .item-image-box:hover .item-image { transform: scale(1.05); }
+
+        .qty-stepper-cart {
+          display: flex;
+          align-items: center;
+          border: 1px solid var(--border);
+          background: transparent;
+        }
+        .qty-btn-cart {
+          width: 40px;
+          height: 40px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: none;
+          background: transparent;
+          color: var(--t1);
+          transition: var(--transition);
+        }
+        .qty-btn-cart:hover { background: var(--bg-1); }
+        .qty-val-cart {
+          width: 40px;
+          text-align: center;
           font-weight: 700;
-          color: var(--t1, #111111);
-          border-top: 1px solid var(--border, #E0DED9);
-          padding-top: 8px;
-          margin-top: 4px;
+          font-size: 0.9rem;
+        }
+
+        .acquisition-summary {
+          position: sticky;
+          top: 120px;
+          background: #FFFFFF;
+          border: 1px solid var(--border);
+          padding: 40px;
+        }
+
+        .summary-label {
+          font-size: 0.7rem;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.15em;
+          color: var(--t3);
+          margin-bottom: 24px;
+          display: block;
+          border-bottom: 1px solid var(--border);
+          padding-bottom: 12px;
+        }
+
+        .summary-row {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: 16px;
+          font-size: 0.875rem;
+          color: var(--t2);
+        }
+
+        .summary-total-row {
+          border-top: 1px solid var(--border);
+          margin-top: 24px;
+          padding-top: 24px;
+          color: var(--t1);
+        }
+
+        .action-link-btn {
+          font-size: 0.65rem;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          color: var(--t3);
+          background: transparent;
+          border: none;
+          padding: 0;
+          transition: var(--transition);
+        }
+        .action-link-btn:hover { color: var(--gold); }
+        .action-link-btn.danger:hover { color: #dc3545; }
+
+        @media (max-width: 991px) {
+          .item-image-box { width: 100px; height: 100px; }
+          .acquisition-summary { margin-top: 48px; }
         }
       `}</style>
 
@@ -144,11 +171,11 @@ export default function Cart() {
         <CheckoutStepper currentStep="cart" />
         
         <div className="row g-5">
-          {/* Main List */}
+          {/* LEFT: ITEM LIST */}
           <div className="col-lg-8">
             <div className="d-flex justify-content-between align-items-end mb-5">
-              <h1 className="font-display display-4 m-0">Your Cart</h1>
-              <span className="small text-t3 uppercase tracking-widest">{totalItems} {totalItems === 1 ? 'Item' : 'Items'}</span>
+               <h1 className="font-display h1 m-0">Your bag</h1>
+               <span className="section-label m-0">{totalItems} {totalItems === 1 ? 'item' : 'items'}</span>
             </div>
 
             <div className="cart-list">
@@ -157,53 +184,46 @@ export default function Cart() {
                   <motion.div
                     key={item.id + JSON.stringify(item.variants || {})}
                     layout
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
+                    exit={{ opacity: 0, scale: 0.98 }}
                     className="cart-item"
                   >
                     <div className="row align-items-center g-4">
-                      <div className="col-12 col-sm-3 col-md-2">
-                        <Link to={`/product/${item.id}`} className="item-img-wrap aspect-square">
-                          <img 
-                            src={item.imageGallery[0]} 
-                            alt={item.name} 
-                            className="item-img" 
-                            loading="lazy" 
-                            width="160" 
-                            height="160" 
-                          />
+                      <div className="col-auto">
+                        <Link to={`/product/${item.id}`} className="item-image-box">
+                          <img src={item.imageGallery[0]} alt={item.name} className="item-image" />
                         </Link>
                       </div>
-                      <div className="col-12 col-sm-9 col-md-10">
-                        <div className="d-flex justify-content-between align-items-start mb-4">
+                      <div className="col">
+                        <div className="d-flex justify-content-between align-items-start mb-3">
                           <div>
-                            <span className="section-label mb-1" style={{ fontSize: '0.6rem' }}>{item.category}</span>
-                            <h3 className="h4 font-display text-t1 m-0">{item.name}</h3>
+                            <span className="section-label-gold mb-1" style={{ fontSize: '0.6rem' }}>{item.category}</span>
+                            <h3 className="h5 font-display m-0 mb-1">{item.name}</h3>
                             {item.variants && (
-                              <p className="x-small text-gold fw-bold uppercase tracking-widest mt-1" style={{ fontSize: '0.65rem' }}>
+                              <p className="x-small text-t3 fw-bold uppercase tracking-widest m-0">
                                 {item.variants.size} • {item.variants.color} • {item.variants.strap}
                               </p>
                             )}
                           </div>
                           <div className="text-end">
-                            <span className="h5 font-body fw-bold">₹{item.price.toLocaleString()}</span>
+                            <span className="small fw-bold">₹{item.price.toLocaleString()}</span>
                           </div>
                         </div>
 
-                        <div className="d-flex justify-content-between align-items-center">
-                          <div className="qty-control">
-                            <button className="qty-btn" onClick={() => updateQty(item.id, item.variants, item.qty - 1)} aria-label="Decrease quantity">
+                        <div className="d-flex justify-content-between align-items-center mt-4">
+                          <div className="qty-stepper-cart">
+                            <button className="qty-btn-cart" onClick={() => updateQty(item.id, item.variants, item.qty - 1)}>
                                {item.qty === 1 ? <HiOutlineTrash size={14} /> : <HiMinus size={14} />}
                             </button>
-                            <span className="qty-val">{item.qty}</span>
-                            <button className="qty-btn" onClick={() => updateQty(item.id, item.variants, item.qty + 1)} aria-label="Increase quantity">
+                            <span className="qty-val-cart">{item.qty}</span>
+                            <button className="qty-btn-cart" onClick={() => updateQty(item.id, item.variants, item.qty + 1)}>
                                <HiPlus size={14} />
                             </button>
                           </div>
                           <div className="d-flex gap-4">
-                            <button className="action-link" onClick={() => moveToSaved(item.id, item.variants)}>Save for Later</button>
-                            <button className="action-link remove" onClick={() => removeItem(item.id, item.variants)}>Remove Item</button>
+                            <button className="action-link-btn" onClick={() => moveToSaved(item.id, item.variants)}>Save for later</button>
+                            <button className="action-link-btn danger" onClick={() => removeItem(item.id, item.variants)}>Remove</button>
                           </div>
                         </div>
                       </div>
@@ -213,91 +233,66 @@ export default function Cart() {
               </AnimatePresence>
             </div>
 
-            {/* Saved Portfolio */}
+            {/* SAVED */}
             {savedItems.length > 0 && (
               <div className="mt-5 pt-5">
-                <h2 className="section-label mb-4 opacity-50">Saved for Later</h2>
+                <span className="summary-label">Saved for later</span>
                 <div className="row g-4">
-                  {savedItems.map(item => (
+                   {savedItems.map(item => (
                       <div key={item.id + JSON.stringify(item.variants || {})} className="col-md-6">
-                        <div className="chronix-card p-4 d-flex gap-4 align-items-center border border-border rounded-4">
-                          <img 
-                            src={item.imageGallery[0]} 
-                            className="img-fluid aspect-square" 
-                            style={{ width: 60, height: 60 }} 
-                            loading="lazy" 
-                            alt="" 
-                          />
-                          <div className="flex-grow-1">
-                             <h4 className="h6 text-t1 m-0 mb-2">{item.name}</h4>
-                             <div className="d-flex gap-3">
-                               <button className="action-link text-gold" style={{ fontSize: '0.6rem' }} onClick={() => moveToCart(item.id, item.variants)}>Add to Cart</button>
-                               <button className="action-link" style={{ fontSize: '0.6rem' }} onClick={() => removeSaved(item.id, item.variants)}>Delete</button>
-                             </div>
-                          </div>
+                        <div className="bg-white border border-border p-3 d-flex gap-3 align-items-center">
+                           <img src={item.imageGallery[0]} style={{ width: 60, height: 60, objectFit: 'contain' }} alt="" />
+                           <div className="flex-grow-1">
+                              <h4 className="small fw-bold m-0 mb-1">{item.name}</h4>
+                              <div className="d-flex gap-3">
+                                 <button className="action-link-btn text-gold" onClick={() => moveToCart(item.id, item.variants)}>RESTORE</button>
+                                 <button className="action-link-btn danger" onClick={() => removeSaved(item.id, item.variants)}>DELETE</button>
+                              </div>
+                           </div>
                         </div>
                       </div>
-                  ))}
+                   ))}
                 </div>
               </div>
             )}
           </div>
 
-          {/* Summary */}
+          {/* RIGHT: SUMMARY */}
           <div className="col-lg-4">
-             <div className="summary-card">
-                <h2 className="section-label mb-5 text-center">Order Summary</h2>
-                
-                <div className="summary-row">
-                   <span>Subtotal</span>
-                   <span className="text-t1 fw-bold">₹{totalPrice.toLocaleString()}</span>
-                </div>
-                <div className="summary-row">
-                   <span>Shipping</span>
-                   <span className="text-success fw-bold">FREE</span>
-                </div>
-                <div className="summary-row">
-                   <span>Taxes</span>
-                   <span className="text-t3">Calculated at checkout</span>
-                </div>
+            <div className="acquisition-summary">
+                <span className="summary-label">Order summary</span>
+              
+              <div className="summary-row">
+                <span>Subtotal</span>
+                <span className="fw-bold">₹{totalPrice.toLocaleString()}</span>
+              </div>
+              <div className="summary-row">
+                <span>Shipping</span>
+                <span className="text-success fw-bold text-uppercase tracking-widest small">Complimentary</span>
+              </div>
+              <div className="summary-row">
+                <span>Tax Allocation</span>
+                <span className="text-t3">₹{(totalPrice * 0.18).toLocaleString('en-IN', { maximumFractionDigits: 0 })} (Estimated)</span>
+              </div>
 
-                <div className="summary-total summary-row align-items-end mb-4">
-                   <span className="section-label m-0">Estimated Total</span>
-                   <span className="h2 text-t1 m-0 fw-bold">₹{totalPrice.toLocaleString()}</span>
-                </div>
+              <div className="summary-total-row d-flex justify-content-between align-items-end mb-5">
+                <span className="section-label m-0">Estimated total</span>
+                <span className="h3 fw-bold m-0">₹{(totalPrice * 1.18).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+              </div>
 
-                <div className="cart-invoice-preview mb-5">
-                  <p className="cart-invoice-label">Order Summary</p>
-                  <div className="cart-invoice-gst">
-                    <div className="d-flex justify-content-between">
-                      <span>Subtotal</span>
-                      <span>₹{totalPrice.toLocaleString('en-IN')}</span>
-                    </div>
-                    <div className="d-flex justify-content-between">
-                      <span>CGST (9%)</span>
-                      <span>₹{(totalPrice * 0.09).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
-                    </div>
-                    <div className="d-flex justify-content-between">
-                      <span>SGST (9%)</span>
-                      <span>₹{(totalPrice * 0.09).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
-                    </div>
-                    <div className="d-flex justify-content-between cart-gst-total">
-                      <span>Grand Total (incl. GST)</span>
-                      <span>₹{(totalPrice * 1.18).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <button className="btn-gold w-100 py-3 mb-4 transition-all hover:-translate-y-1" onClick={() => navigate('/checkout')}>Continue to Shipping</button>
-                
-                <div className="d-flex align-items-center gap-3 justify-content-center text-t3 opacity-50" style={{ fontSize: '0.7rem' }}>
-                   <HiOutlineShieldCheck size={18} className="text-gold" />
-                   <span className="uppercase tracking-widest font-mono">Secure Payment</span>
-                </div>
-             </div>
+              <button className="btn-gold w-100 py-3 mb-4" onClick={() => navigate('/checkout')}>
+                Go to checkout
+              </button>
+              
+              <div className="d-flex align-items-center gap-2 justify-content-center opacity-40">
+                <HiOutlineShieldCheck className="text-gold" />
+                <span className="x-small fw-bold tracking-widest uppercase">Secure checkout</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
   );
 }
+

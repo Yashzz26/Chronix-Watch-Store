@@ -39,3 +39,4 @@ const SkeletonHero = () => {
 };
 
 export default SkeletonHero;
+

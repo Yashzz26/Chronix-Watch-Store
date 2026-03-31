@@ -4,19 +4,19 @@ import { HiOutlineAdjustmentsHorizontal, HiOutlineShieldCheck, HiOutlineSparkles
 
 const features = [
   {
-    icon: <HiOutlineAdjustmentsHorizontal />,
-    title: "Precision Engineering",
-    description: "Every movement is calibrated to within microseconds of accuracy, ensuring timeless reliability."
+    icon: <HiOutlineAdjustmentsHorizontal size={32} strokeWidth={1} />,
+    title: "Set-and-forget accuracy",
+    description: "Regulated movements, tested gaskets, and clean layout keep the watch dependable."
   },
   {
-    icon: <HiOutlineShieldCheck />,
-    title: "Uncompromising Durability",
-    description: "Built with 316L stainless steel and scratch-resistant sapphire crystal to withstand the test of time."
+    icon: <HiOutlineShieldCheck size={32} strokeWidth={1} />,
+    title: "Day-one finish for years",
+    description: "316L steel, sapphire, and airtight tolerances mean the case can be refinished again and again."
   },
   {
-    icon: <HiOutlineSparkles />,
-    title: "Artisanal Finish",
-    description: "Hand-polished surfaces and meticulous detailing define the signature Chronix aesthetic."
+    icon: <HiOutlineSparkles size={32} strokeWidth={1} />,
+    title: "Softer details",
+    description: "Chamfered lugs, rounded edges, and slim markers keep the dial readable without shouting."
   }
 ];
 
@@ -25,32 +25,29 @@ export default function DesignedForExcellence() {
     <section className="excellence-section">
       <style>{`
         .excellence-section {
-          background: var(--color-white);
-          padding: var(--spacing-4xl) 0;
-          border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+          background: var(--bg);
+          padding: var(--spacing-4xl) 32px;
+          border-bottom: 1px solid var(--border);
         }
         .excellence-header {
           text-align: center;
-          margin-bottom: var(--spacing-3xl);
+          margin-bottom: 64px;
         }
         .excellence-title {
           font-family: var(--font-heading);
-          font-size: var(--font-size-3xl);
-          color: var(--color-charcoal);
-          letter-spacing: -0.5px;
-          margin-bottom: var(--spacing-sm);
+          font-size: clamp(2.5rem, 5vw, 3.5rem);
+          color: var(--t1);
+          letter-spacing: -0.02em;
+          margin-bottom: 12px;
+          font-weight: 700;
         }
-        .excellence-tagline {
-          font-family: var(--font-body);
-          font-size: var(--font-size-sm);
-          color: var(--color-gray-dark);
-          text-transform: uppercase;
-          letter-spacing: 3px;
-        }
+        
         .excellence-grid {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
-          gap: var(--spacing-xl);
+          gap: 48px;
+          max-width: 1200px;
+          margin: 0 auto;
         }
         .excellence-card {
           text-align: center;
@@ -59,76 +56,79 @@ export default function DesignedForExcellence() {
           align-items: center;
         }
         .excellence-icon-wrap {
-          width: 64px;
-          height: 64px;
-          color: var(--color-gold);
-          margin-bottom: var(--spacing-lg);
+          width: 80px;
+          height: 80px;
+          color: var(--gold);
+          margin-bottom: 32px;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 48px; /* Visual scale for line-art icons */
+          background: #FFFFFF;
+          border-radius: 50%;
+          border: 1px solid var(--border);
+          transition: var(--transition);
         }
+        .excellence-card:hover .excellence-icon-wrap {
+          border-color: var(--gold);
+          transform: translateY(-8px);
+          box-shadow: var(--shadow-gold);
+        }
+
         .excellence-card-title {
           font-family: var(--font-heading);
-          font-size: var(--font-size-xl);
-          color: var(--color-charcoal);
-          margin-bottom: var(--spacing-sm);
+          font-size: 1.5rem;
+          color: var(--t1);
+          margin-bottom: 16px;
+          font-weight: 600;
         }
         .excellence-card-desc {
-          font-family: var(--font-body);
-          font-size: var(--font-size-base);
-          color: var(--color-gray-dark);
+          font-size: 0.9375rem;
+          color: var(--t2);
           line-height: 1.7;
-          max-width: 280px;
-        }
-        .excellence-divider {
-          width: 80%;
-          height: 1px;
-          background: rgba(212, 175, 55, 0.15);
-          margin: var(--spacing-2xl) auto 0;
+          max-width: 300px;
         }
 
         @media (max-width: 991px) {
-          .excellence-grid {
-            grid-template-columns: 1fr;
-            gap: var(--spacing-2xl);
-          }
-          .excellence-title {
-            font-size: var(--font-size-2xl);
-          }
+          .excellence-grid { grid-template-columns: 1fr; gap: 48px; }
         }
       `}</style>
 
       <div className="container">
         <div className="excellence-header">
-          <motion.h2 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            className="excellence-title"
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.3 }}
+            variants={{
+              hidden: { opacity: 0, y: 20 },
+              visible: { opacity: 1, y: 0, transition: { duration: 0.8 } }
+            }}
           >
-            Designed for Excellence
-          </motion.h2>
-          <motion.p 
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.3 }}
-            className="excellence-tagline"
-          >
-            HANDPICKED MASTERPIECES
-          </motion.p>
+            <span className="section-label mb-2">Design focus</span>
+            <h2 className="excellence-title">Designed for clarity</h2>
+          </motion.div>
         </div>
 
-        <div className="excellence-grid">
+        <motion.div 
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.2 }}
+          variants={{
+            hidden: { opacity: 0 },
+            visible: { 
+              opacity: 1, 
+              transition: { staggerChildren: 0.2 } 
+            }
+          }}
+          className="excellence-grid"
+        >
           {features.map((feature, i) => (
             <motion.div 
               key={i}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.2 }}
+              variants={{
+                hidden: { opacity: 0, y: 30 },
+                visible: { opacity: 1, y: 0, transition: { duration: 1, ease: [0.16, 1, 0.3, 1] } }
+              }}
               className="excellence-card"
             >
               <div className="excellence-icon-wrap">
@@ -138,10 +138,9 @@ export default function DesignedForExcellence() {
               <p className="excellence-card-desc">{feature.description}</p>
             </motion.div>
           ))}
-        </div>
-
-        <div className="excellence-divider" />
+        </motion.div>
       </div>
     </section>
   );
 }
+

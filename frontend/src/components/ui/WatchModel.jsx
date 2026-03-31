@@ -126,3 +126,4 @@ export default function WatchModel() {
 }
 
 useGLTF.preload('/homewatch.glb');
+
