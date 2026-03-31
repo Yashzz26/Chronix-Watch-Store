@@ -27,6 +27,7 @@ app.use('/api/products', require('./routes/productRoutes'));
 app.use('/api/coupons', require('./routes/couponRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/reviews', require('./routes/reviewRoutes'));
+app.use('/api/auth', require('./routes/authRoutes'));
 
 // Health check
 app.get('/health', (req, res) => {

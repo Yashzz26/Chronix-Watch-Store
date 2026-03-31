@@ -10,7 +10,6 @@ import {
   FacebookAuthProvider,
   signInWithPopup,
   linkWithCredential,
-  EmailAuthProvider,
   fetchSignInMethodsForEmail,
   updateProfile as firebaseUpdateProfile
 } from 'firebase/auth';
@@ -220,25 +219,6 @@ const useAuthStore = create(
         } catch (error) {
           console.error('Linking error:', error.code);
           set({ loading: false });
-          return { success: false, error: error.code, message: getReadableError(error.code) };
-        }
-      },
-
-      async markPhoneVerified(phoneNumber) {
-        const user = auth.currentUser;
-        if (!user) return { success: false, error: 'No active session' };
-        try {
-          await setDoc(doc(db, 'users', user.uid), {
-            phone: phoneNumber,
-            isPhoneVerified: true,
-            phoneVerifiedAt: serverTimestamp(),
-          }, { merge: true });
-          await user.reload();
-          const updatedProfile = (await getDoc(doc(db, 'users', user.uid))).data() || {};
-          set({ profile: updatedProfile, user: auth.currentUser, loading: false });
-          return { success: true, profile: updatedProfile };
-        } catch (error) {
-          console.error('markPhoneVerified error', error);
           return { success: false, error: error.code, message: getReadableError(error.code) };
         }
       },

@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { HiOutlineArrowLeft, HiOutlineDevicePhoneMobile } from 'react-icons/hi2';
 import toast from 'react-hot-toast';
-import { RecaptchaVerifier, linkWithPhoneNumber } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import useAuthStore from '../store/authStore';
+import { sendOtp, verifyOtp } from '../services/authService';
 
 const otpError = (code) => {
   switch (code) {
@@ -20,6 +20,13 @@ const otpError = (code) => {
       return 'Too many attempts. Please wait a minute.';
     case 'auth/credential-already-in-use':
       return 'This number is already linked to another account.';
+    case 'otp_send_failed':
+      return 'Unable to send OTP via MSG91. Please check the number and try again.';
+    case 'otp_verify_failed':
+      return 'The code did not match what MSG91 generated.';
+    case 'invalid_phone':
+    case 'invalid_payload':
+      return 'Enter the phone number again and resend the code.';
     default:
       return 'Could not verify the code. Please retry.';
   }
@@ -27,8 +34,7 @@ const otpError = (code) => {
 
 export default function OTPVerification() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const { isLoggedIn, profile, markPhoneVerified } = useAuthStore();
+  const { isLoggedIn, profile, fetchProfile } = useAuthStore();
 
   const [phone, setPhone] = useState(() => {
     if (profile?.phone?.startsWith('+91')) return profile.phone.replace('+91', '');
@@ -60,26 +66,6 @@ export default function OTPVerification() {
     return () => clearInterval(id);
   }, []);
 
-  useEffect(() => {
-    return () => {
-      if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear();
-        window.recaptchaVerifier = null;
-      }
-      window.confirmationResult = null;
-    };
-  }, []);
-
-  const initRecaptcha = () => {
-    if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'otp-recaptcha', {
-        size: 'invisible',
-        callback: () => null,
-      });
-    }
-    return window.recaptchaVerifier;
-  };
-
   const formattedPhone = () => {
     if (!phone) return '';
     return phone.startsWith('+') ? phone : `+91${phone}`;
@@ -91,16 +77,9 @@ export default function OTPVerification() {
       toast.error('Enter a valid 10-digit number');
       return;
     }
-    if (!auth.currentUser) {
-      toast.error('Please sign in again');
-      navigate('/login', { replace: true });
-      return;
-    }
     setSending(true);
     try {
-      const verifier = initRecaptcha();
-      const confirmation = await linkWithPhoneNumber(auth.currentUser, formattedPhone(), verifier);
-      window.confirmationResult = confirmation;
+      await sendOtp(formattedPhone());
       setStep('otp');
       setOtp(Array(6).fill(''));
       setTimer(60);
@@ -108,11 +87,7 @@ export default function OTPVerification() {
       setTimeout(() => otpRefs.current[0]?.focus(), 80);
     } catch (error) {
       console.error('Send OTP error', error);
-      toast.error(otpError(error.code));
-      if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear();
-        window.recaptchaVerifier = null;
-      }
+      toast.error(error.message || otpError(error.code));
     } finally {
       setSending(false);
     }
@@ -125,21 +100,19 @@ export default function OTPVerification() {
       toast.error('Enter the 6-digit code');
       return;
     }
-    if (!window.confirmationResult) {
-      toast.error('Please request a new code');
-      return;
-    }
     setSending(true);
     try {
-      await window.confirmationResult.confirm(code);
-      await markPhoneVerified(formattedPhone());
+      await verifyOtp(formattedPhone(), code);
+      if (auth.currentUser?.uid) {
+        await fetchProfile(auth.currentUser.uid);
+      }
       toast.success('Phone verified');
       const stored = sessionStorage.getItem('chronix_post_verify_path') || '/';
       sessionStorage.removeItem('chronix_post_verify_path');
       navigate(stored === '/verify-otp' ? '/' : stored, { replace: true });
     } catch (error) {
       console.error('Verify OTP error', error);
-      toast.error(otpError(error.code));
+      toast.error(error.message || otpError(error.code));
     } finally {
       setSending(false);
     }
@@ -273,7 +246,6 @@ export default function OTPVerification() {
           font-weight: 600;
         }
       `}</style>
-      <div id="otp-recaptcha" />
       <div className="otp-card">
         <p className="section-label-gold mb-2">Two-step login</p>
         <h1>Verify your mobile</h1>

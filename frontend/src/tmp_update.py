@@ -11,7 +11,7 @@ replacements = [
     ("toast.error('Sync failure'", "toast.error(\"Couldn't fetch location\""),
     ("toast.error('Access denied'", "toast.error('Location permission blocked'"),
     ("toast.error('Credential required')", "toast.error('Enter a code first')"),
-    ("toast.success(Access code accepted: % offset)", "toast.success(Code applied. % off)",
+    ("toast.success(Access code accepted: % offset)", "toast.success(Code applied. % off)"),
     ("toast.error('Invalid credential')", "toast.error('Code not valid')"),
     ("toast.error('Verification offline')", "toast.error(\"Couldn't verify code\")"),
     ("toast.loading('Finalizing transaction...')", "toast.loading('Confirming payment...')"),
