@@ -38,3 +38,5 @@ export const verifyOtp = (phone, otp) =>
   authorizedFetch('/api/auth/otp/verify', {
     body: { phone, otp },
   });
+
+export const bypassOtp = () => authorizedFetch('/api/auth/otp/bypass');

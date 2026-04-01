@@ -4,7 +4,7 @@ import { HiOutlineArrowLeft, HiOutlineDevicePhoneMobile } from 'react-icons/hi2'
 import toast from 'react-hot-toast';
 import { auth } from '../lib/firebase';
 import useAuthStore from '../store/authStore';
-import { sendOtp, verifyOtp } from '../services/authService';
+import { sendOtp, verifyOtp, bypassOtp } from '../services/authService';
 
 const otpError = (code) => {
   switch (code) {
@@ -113,6 +113,22 @@ export default function OTPVerification() {
     } catch (error) {
       console.error('Verify OTP error', error);
       toast.error(error.message || otpError(error.code));
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleBypass = async () => {
+    setSending(true);
+    try {
+      await bypassOtp();
+      if (auth.currentUser?.uid) {
+        await fetchProfile(auth.currentUser.uid);
+      }
+      toast.success('Validation bypassed');
+    } catch (error) {
+      console.error('Bypass error', error);
+      toast.error('Failed to bypass validation');
     } finally {
       setSending(false);
     }
@@ -245,6 +261,23 @@ export default function OTPVerification() {
           color: var(--gold);
           font-weight: 600;
         }
+        .otp-skip {
+          width: 100%;
+          background: none;
+          border: 1px solid var(--border);
+          border-radius: 14px;
+          padding: 12px;
+          margin-top: 16px;
+          color: var(--t3);
+          font-size: 0.85rem;
+          font-weight: 500;
+          transition: all 0.2s;
+        }
+        .otp-skip:hover {
+          background: #fdfdfd;
+          border-color: var(--t3);
+          color: var(--t1);
+        }
       `}</style>
       <div className="otp-card">
         <p className="section-label-gold mb-2">Two-step login</p>
@@ -316,6 +349,15 @@ export default function OTPVerification() {
             </button>
           </form>
         )}
+
+        <button 
+          type="button" 
+          className="otp-skip"
+          onClick={handleBypass}
+          disabled={sending}
+        >
+          Skip for now
+        </button>
       </div>
     </div>
   );

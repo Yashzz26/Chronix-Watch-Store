@@ -20,6 +20,7 @@ router.post('/otp/send', verifyToken, async (req, res) => {
   try {
     const mobile = normalizePhone(phone);
     await sendOtpSMS(mobile);
+
     await db.collection('users').doc(req.user.uid).set(
       {
         phone: mobile,
@@ -52,7 +53,9 @@ router.post('/otp/verify', verifyToken, async (req, res) => {
   try {
     const mobile = normalizePhone(phone);
     await verifyOtpSMS(mobile, otp);
-    await db.collection('users').doc(req.user.uid).set(
+
+    const userRef = db.collection('users').doc(req.user.uid);
+    await userRef.set(
       {
         phone: mobile,
         isPhoneVerified: true,
@@ -61,7 +64,7 @@ router.post('/otp/verify', verifyToken, async (req, res) => {
       { merge: true }
     );
 
-    const profileSnap = await db.collection('users').doc(req.user.uid).get();
+    const profileSnap = await userRef.get();
     const profile = profileSnap.data() || {};
 
     if (profile?.email) {
@@ -77,6 +80,26 @@ router.post('/otp/verify', verifyToken, async (req, res) => {
       error: error.response?.data?.message || error.message || 'OTP verification failed',
       code: error.response?.data?.type || error.code || 'otp_verify_failed',
     });
+  }
+});
+
+/**
+ * POST /api/auth/otp/bypass
+ * TEMPORARY: Bypasses OTP validation to allow user to proceed.
+ */
+router.post('/otp/bypass', verifyToken, async (req, res) => {
+  try {
+    await db.collection('users').doc(req.user.uid).set(
+      {
+        isPhoneVerified: true,
+        phoneBypassedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+    res.json({ success: true, message: 'OTP verification bypassed' });
+  } catch (error) {
+    console.error('Bypass failed:', error.message);
+    res.status(500).json({ error: 'Bypass failed' });
   }
 });
 
