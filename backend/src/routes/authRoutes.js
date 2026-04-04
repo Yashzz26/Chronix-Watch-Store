@@ -2,62 +2,43 @@ const express = require('express');
 const router = express.Router();
 const { verifyToken } = require('../middleware/verifyToken');
 const { db, admin } = require('../config/firebase');
-const { sendOtpSMS, verifyOtpSMS, sendEmailConfirmation, normalizePhone } = require('../services/msg91');
+const { sendEmailConfirmation } = require('../services/emailService');
+const { normalizePhone } = require('../utils/phone');
 
 const serverTimestamp = () =>
   admin.firestore ? admin.firestore.FieldValue.serverTimestamp() : new Date();
 
 /**
- * POST /api/auth/otp/send
+ * POST /api/auth/phone/mark-verified
  * Body: { phone: "+91XXXXXXXXXX" }
- * Requires Firebase ID token. Sends OTP via MSG91.
+ * Used after successful Client-side Firebase Phone Auth to sync profile.
  */
-router.post('/otp/send', verifyToken, async (req, res) => {
+router.post('/phone/mark-verified', verifyToken, async (req, res) => {
   const { phone } = req.body || {};
   if (!phone) {
     return res.status(400).json({ error: 'Phone number is required' });
   }
-  try {
-    const mobile = normalizePhone(phone);
-    await sendOtpSMS(mobile);
-
-    await db.collection('users').doc(req.user.uid).set(
-      {
-        phone: mobile,
-        isPhoneVerified: false,
-        lastOtpRequestedAt: serverTimestamp(),
-      },
-      { merge: true }
-    );
-    res.json({ success: true, phone: mobile });
-  } catch (error) {
-    console.error('MSG91 OTP send failed:', error.response?.data || error.message);
-    res.status(400).json({
-      error: error.response?.data?.message || error.message || 'OTP send failed',
-      code: error.response?.data?.type || error.code || 'otp_send_failed',
-    });
-  }
-});
-
-/**
- * POST /api/auth/otp/verify
- * Body: { phone: "+91XXXXXXXXXX", otp: "123456" }
- * On success, marks Firestore user as phone verified and sends confirmation email.
- */
-router.post('/otp/verify', verifyToken, async (req, res) => {
-  const { phone, otp } = req.body || {};
-  if (!phone || !otp) {
-    return res.status(400).json({ error: 'Phone and OTP are required' });
-  }
 
   try {
     const mobile = normalizePhone(phone);
-    await verifyOtpSMS(mobile, otp);
-
     const userRef = db.collection('users').doc(req.user.uid);
+    
+    // Extract the verified phone number from the Firebase Auth token
+    const userRecord = await admin.auth().getUser(req.user.uid);
+    
+    // Security check: Match payload with token claim
+    if (userRecord.phoneNumber !== mobile) {
+      console.warn(`[Auth] Sync mismatch: Token phone ${userRecord.phoneNumber} vs Payload ${mobile}`);
+      if (!userRecord.phoneNumber) {
+        return res.status(400).json({ error: 'Phone number not verified in Firebase' });
+      }
+    }
+
+    const verifiedPhone = userRecord.phoneNumber || mobile;
+
     await userRef.set(
       {
-        phone: mobile,
+        phone: verifiedPhone,
         isPhoneVerified: true,
         phoneVerifiedAt: serverTimestamp(),
       },
@@ -69,23 +50,20 @@ router.post('/otp/verify', verifyToken, async (req, res) => {
 
     if (profile?.email) {
       sendEmailConfirmation({ to: profile.email, name: profile.name }).catch((err) =>
-        console.warn('MSG91 confirmation email failed:', err.message)
+        console.warn('[Email] Welcome email failed:', err.message)
       );
     }
 
     res.json({ success: true, profile });
   } catch (error) {
-    console.error('MSG91 OTP verify failed:', error.response?.data || error.message);
-    res.status(400).json({
-      error: error.response?.data?.message || error.message || 'OTP verification failed',
-      code: error.response?.data?.type || error.code || 'otp_verify_failed',
-    });
+    console.error('[Auth] Phone sync failed:', error.message);
+    res.status(500).json({ error: 'Sync failed' });
   }
 });
 
 /**
  * POST /api/auth/otp/bypass
- * TEMPORARY: Bypasses OTP validation to allow user to proceed.
+ * TEMPORARY: Allows bypassing phone verification for testing.
  */
 router.post('/otp/bypass', verifyToken, async (req, res) => {
   try {
@@ -104,3 +82,5 @@ router.post('/otp/bypass', verifyToken, async (req, res) => {
 });
 
 module.exports = router;
+
+

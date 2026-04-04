@@ -2,11 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { HiOutlineArrowLeft, HiOutlineDevicePhoneMobile } from 'react-icons/hi2';
 import toast from 'react-hot-toast';
+import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import useAuthStore from '../store/authStore';
-import { sendOtp, verifyOtp, bypassOtp } from '../services/authService';
+import { markPhoneVerified, bypassOtp } from '../services/authService';
 
-const otpError = (code) => {
+const otpError = (error) => {
+  if (typeof error === 'string' && error.length > 5) return error;
+  const code = error?.code || error;
   switch (code) {
     case 'auth/invalid-phone-number':
       return 'Please enter a valid mobile number.';
@@ -20,15 +23,12 @@ const otpError = (code) => {
       return 'Too many attempts. Please wait a minute.';
     case 'auth/credential-already-in-use':
       return 'This number is already linked to another account.';
-    case 'otp_send_failed':
-      return 'Unable to send OTP via MSG91. Please check the number and try again.';
-    case 'otp_verify_failed':
-      return 'The code did not match what MSG91 generated.';
-    case 'invalid_phone':
-    case 'invalid_payload':
-      return 'Enter the phone number again and resend the code.';
+    case 'auth/captcha-check-failed':
+      return 'Recaptcha failed. Please refresh the page.';
+    case 'auth/network-request-failed':
+      return 'Network error. Please check your connection.';
     default:
-      return 'Could not verify the code. Please retry.';
+      return error?.message || 'Could not verify the code. Please retry.';
   }
 };
 
@@ -45,7 +45,9 @@ export default function OTPVerification() {
   const [otp, setOtp] = useState(Array(6).fill(''));
   const [timer, setTimer] = useState(0);
   const [sending, setSending] = useState(false);
+  const [confirmationResult, setConfirmationResult] = useState(null);
   const otpRefs = useRef([]);
+  const recaptchaRef = useRef(null);
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -58,6 +60,32 @@ export default function OTPVerification() {
       navigate(stored === '/verify-otp' ? '/' : stored, { replace: true });
     }
   }, [isLoggedIn, profile?.isPhoneVerified, navigate]);
+
+  // Initialize Recaptcha
+  useEffect(() => {
+    if (!auth || recaptchaRef.current) return;
+    
+    try {
+      recaptchaRef.current = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        size: 'invisible',
+        callback: () => {
+          console.log('[Chronix] Recaptcha verified');
+        },
+        'expired-callback': () => {
+          toast.error('Recaptcha expired. Please try again.');
+        }
+      });
+    } catch (err) {
+      console.error('Recaptcha init failed:', err);
+    }
+
+    return () => {
+      if (recaptchaRef.current) {
+        recaptchaRef.current.clear();
+        recaptchaRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -79,15 +107,23 @@ export default function OTPVerification() {
     }
     setSending(true);
     try {
-      await sendOtp(formattedPhone());
+      const appVerifier = recaptchaRef.current;
+      const res = await signInWithPhoneNumber(auth, formattedPhone(), appVerifier);
+      setConfirmationResult(res);
       setStep('otp');
       setOtp(Array(6).fill(''));
       setTimer(60);
       toast.success(`OTP sent to ${formattedPhone()}`);
       setTimeout(() => otpRefs.current[0]?.focus(), 80);
     } catch (error) {
-      console.error('Send OTP error', error);
-      toast.error(error.message || otpError(error.code));
+      console.error('Firebase Phone Auth error:', error);
+      toast.error(otpError(error));
+      // Reset recaptcha if it fails
+      if (recaptchaRef.current) {
+        recaptchaRef.current.render().then((widgetId) => {
+          window.grecaptcha.reset(widgetId);
+        });
+      }
     } finally {
       setSending(false);
     }
@@ -100,19 +136,32 @@ export default function OTPVerification() {
       toast.error('Enter the 6-digit code');
       return;
     }
+    if (!confirmationResult) {
+      toast.error('Session expired. Please request a new OTP.');
+      setStep('form');
+      return;
+    }
+
     setSending(true);
     try {
-      await verifyOtp(formattedPhone(), code);
+      // 1. Verify on Client (Firebase)
+      await confirmationResult.confirm(code);
+      
+      // 2. Sync to Backend (Firestore Update)
+      await markPhoneVerified(formattedPhone());
+      
+      // 3. Refresh Profile
       if (auth.currentUser?.uid) {
         await fetchProfile(auth.currentUser.uid);
       }
+      
       toast.success('Phone verified');
       const stored = sessionStorage.getItem('chronix_post_verify_path') || '/';
       sessionStorage.removeItem('chronix_post_verify_path');
       navigate(stored === '/verify-otp' ? '/' : stored, { replace: true });
     } catch (error) {
-      console.error('Verify OTP error', error);
-      toast.error(error.message || otpError(error.code));
+      console.error('Verify OTP error:', error);
+      toast.error(otpError(error));
     } finally {
       setSending(false);
     }
@@ -298,6 +347,7 @@ export default function OTPVerification() {
                 required
               />
             </div>
+            <div id="recaptcha-container" className="mb-3"></div>
             <button className="otp-button" disabled={sending}>
               {sending ? 'Sending…' : 'Send OTP'}
             </button>

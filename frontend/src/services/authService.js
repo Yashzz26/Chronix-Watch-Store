@@ -32,11 +32,7 @@ const authorizedFetch = async (path, options = {}) => {
   return data;
 };
 
-export const sendOtp = (phone) => authorizedFetch('/api/auth/otp/send', { body: { phone } });
-
-export const verifyOtp = (phone, otp) =>
-  authorizedFetch('/api/auth/otp/verify', {
-    body: { phone, otp },
-  });
+export const markPhoneVerified = (phone) => 
+  authorizedFetch('/api/auth/phone/mark-verified', { body: { phone } });
 
 export const bypassOtp = () => authorizedFetch('/api/auth/otp/bypass');
