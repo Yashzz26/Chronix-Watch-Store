@@ -1,5 +1,5 @@
 // Last updated: 2026-03-22T22:00:00Z (To force Vite rebuild)
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect, useMemo } from 'react';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useShallow } from 'zustand/react/shallow';
@@ -39,7 +39,22 @@ export default function App() {
     isLoggedIn: state.isLoggedIn,
     profile: state.profile,
   })));
-  const requiresOtp = isLoggedIn && !profile?.isPhoneVerified;
+  const phoneBypass = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('chronix_phone_bypass') === 'true';
+  }, [isLoggedIn, profile?.isPhoneVerified]);
+
+  const requiresOtp = isLoggedIn && !profile?.isPhoneVerified && !phoneBypass;
+
+  useEffect(() => {
+    if (profile?.isPhoneVerified) {
+      try {
+        localStorage.removeItem('chronix_phone_bypass');
+      } catch (error) {
+        console.warn('Could not clear phone bypass flag', error);
+      }
+    }
+  }, [profile?.isPhoneVerified]);
 
   useEffect(() => {
     const unsubscribe = initAuthListener();

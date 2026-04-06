@@ -34,5 +34,3 @@ const authorizedFetch = async (path, options = {}) => {
 
 export const markPhoneVerified = (phone) => 
   authorizedFetch('/api/auth/phone/mark-verified', { body: { phone } });
-
-export const bypassOtp = () => authorizedFetch('/api/auth/otp/bypass');

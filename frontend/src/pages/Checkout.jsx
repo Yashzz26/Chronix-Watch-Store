@@ -128,6 +128,11 @@ export default function Checkout() {
 
   const handlePlaceOrder = async () => {
     if (loading || !auth.currentUser) return;
+    if (!profile?.isPhoneVerified) {
+      toast.error('Please verify your phone number before placing an order.');
+      navigate('/verify-otp', { replace: true });
+      return;
+    }
     setLoading(true);
     try {
       const token = await auth.currentUser.getIdToken();
@@ -164,16 +169,21 @@ export default function Checkout() {
           userInfo: { email: auth.currentUser.email },
           onSuccess: async (response) => {
             const verifyingToast = toast.loading('Confirming payment...');
-            const finalResponse = await fetch(`${backendUrl}/api/orders`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-              body: JSON.stringify({ ...orderPayload, razorpayDetails: response })
-            });
-            if (finalResponse.ok) {
-              const data = await finalResponse.json();
+            try {
+              const finalResponse = await fetch(`${backendUrl}/api/orders`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ ...orderPayload, razorpayDetails: response })
+              });
+              const data = await finalResponse.json().catch(() => ({}));
+              if (!finalResponse.ok) {
+                throw new Error(data.error || 'Payment verification failed. Any amount debited will be auto-refunded.');
+              }
               toast.success('Order placed', { id: verifyingToast });
               clearCart();
               navigate('/confirmation', { state: { orderId: data.orderId, displayId: data.orderDisplayId } });
+            } catch (verificationError) {
+              toast.error(verificationError.message || 'Unable to confirm payment. Please contact support.', { id: verifyingToast });
             }
           },
           onFailure: (err) => toast.error(err)
@@ -189,6 +199,9 @@ export default function Checkout() {
           clearCart();
           toast.success('Order placed');
           navigate('/confirmation', { state: { orderId: data.orderId, displayId: data.orderDisplayId } });
+        } else {
+          const data = await response.json().catch(() => ({}));
+          throw new Error(data.error || 'Unable to place order. Please try again.');
         }
       }
     } catch (error) { toast.error(error.message); }

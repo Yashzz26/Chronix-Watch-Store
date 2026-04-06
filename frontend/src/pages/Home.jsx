@@ -73,7 +73,7 @@ const stories = [
   {
     title: 'Ownership checklist',
     description: 'What we inspect before shipping and how to keep the watch looking fresh.',
-    link: '/products'
+    link: '/allcollection'
   },
   {
     title: 'Service promise',
@@ -150,6 +150,47 @@ export default function Home() {
       </section>
 
       <NewArrivals products={newArrivals} loading={loading} addItem={addItem} />
+
+      <section className="story-section">
+        <div className="container">
+          <div className="story-grid">
+            <div className="story-image">
+              <img src="/assets/images/mechanism.png" alt="Macro photograph of a Chronix watch movement" loading="lazy" />
+            </div>
+            <div className="story-content">
+              <p className="tag">HOROLOGICAL STORY</p>
+              <h2>Crafting the Second.</h2>
+              <p>
+                Every Chronix watch is a result of hours of design and engineering. We believe that a timepiece
+                shouldn&apos;t just tell time — it should embody it.
+              </p>
+              <button className="secondary-btn">READ OUR STORY</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="story-section">
+        <div className="container">
+          <div className="story-grid reverse">
+            <div className="story-content">
+              <p className="tag">MATERIAL MATTERS</p>
+              <h2>Built to Last.</h2>
+              <p>
+                We source high-grade materials and engineer every component for durability, precision, and long-term
+                performance.
+              </p>
+              <div className="specs">
+                <span>10 ATM</span>
+                <span>72 HRS</span>
+              </div>
+            </div>
+            <div className="story-image">
+              <img src="/assets/images/watchmaker.png" alt="Chronix watchmaker assembling a case" loading="lazy" />
+            </div>
+          </div>
+        </div>
+      </section>
 
       <section className="home-section">
         <div className="container">

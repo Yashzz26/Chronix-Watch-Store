@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -17,19 +17,45 @@ import {
   FaApplePay,
   FaGooglePay
 } from 'react-icons/fa6';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
 
 export default function Footer() {
   const [email, setEmail] = useState('');
-  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [feedback, setFeedback] = useState({ type: null, message: '' });
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubscribe = (e) => {
+  const handleInputChange = (value) => {
+    if (feedback.type) {
+      setFeedback({ type: null, message: '' });
+    }
+    setEmail(value);
+  };
+
+  const handleSubscribe = async (e) => {
     e.preventDefault();
-    if (!email) return;
-    setIsSubscribed(true);
-    setTimeout(() => {
-        setIsSubscribed(false);
-        setEmail('');
-    }, 3000);
+    const trimmed = email.trim();
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!trimmed || !emailPattern.test(trimmed)) {
+      setFeedback({ type: 'error', message: 'Enter a valid email address.' });
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await addDoc(collection(db, 'newsletter'), {
+        email: trimmed.toLowerCase(),
+        createdAt: serverTimestamp()
+      });
+      setFeedback({ type: 'success', message: 'Thanks for joining.' });
+      setEmail('');
+    } catch (error) {
+      console.error('Newsletter subscribe failed:', error);
+      setFeedback({ type: 'error', message: 'Could not subscribe right now. Please try again.' });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -172,9 +198,9 @@ export default function Footer() {
                 Independent watch studio designing honest everyday pieces from Mumbai since 2024.
               </p>
               <div className="social-icons-wrap">
-                <a href="#" className="social-icon" aria-label="Instagram"><FaInstagram /></a>
-                <a href="#" className="social-icon" aria-label="X"><FaXTwitter /></a>
-                <a href="#" className="social-icon" aria-label="Facebook"><FaFacebook /></a>
+                <span className="social-icon" aria-label="Instagram"><FaInstagram /></span>
+                <span className="social-icon" aria-label="X"><FaXTwitter /></span>
+                <span className="social-icon" aria-label="Facebook"><FaFacebook /></span>
               </div>
             </div>
           </div>
@@ -182,8 +208,8 @@ export default function Footer() {
           <div className="col-6 col-md-3 col-lg-2">
             <h4 className="footer-col-title">Collection</h4>
             <ul className="footer-links">
-              <li className="footer-link-item"><Link to="/allcollection" className="footer-link">Classic line</Link></li>
-              <li className="footer-link-item"><Link to="/allcollection?cat=modern" className="footer-link">Modern line</Link></li>
+              <li className="footer-link-item"><Link to="/allcollection?cat=Analog" className="footer-link">Classic line</Link></li>
+              <li className="footer-link-item"><Link to="/allcollection?cat=Luxury" className="footer-link">Modern line</Link></li>
               <li className="footer-link-item"><Link to="/giftsforher" className="footer-link">Gifts for her</Link></li>
               <li className="footer-link-item"><Link to="/giftsforhim" className="footer-link">Gifts for him</Link></li>
             </ul>
@@ -193,8 +219,6 @@ export default function Footer() {
             <h4 className="footer-col-title">Studio</h4>
             <ul className="footer-links">
               <li className="footer-link-item"><Link to="/about" className="footer-link">About Chronix</Link></li>
-              <li className="footer-link-item"><Link to="/about" className="footer-link">Service pledge</Link></li>
-              <li className="footer-link-item"><Link to="/about" className="footer-link">Visit the studio</Link></li>
               <li className="footer-link-item"><Link to="/about" className="footer-link">Support</Link></li>
             </ul>
           </div>
@@ -203,23 +227,32 @@ export default function Footer() {
             <h4 className="footer-col-title">The Journal</h4>
             <p className="newsletter-text">Subscribe for exclusive drops and technical insights.</p>
             <form onSubmit={handleSubscribe}>
+              <div className="newsletter-input-group">
+                <input 
+                  type="email" 
+                  className="newsletter-input" 
+                  placeholder="Email Address"
+                  value={email}
+                  onChange={e => handleInputChange(e.target.value)}
+                  required
+                  disabled={submitting}
+                />
+                <button type="submit" className="btn-subscribe" disabled={submitting}>
+                  {submitting ? 'Saving...' : 'Join'}
+                </button>
+              </div>
               <AnimatePresence>
-                {isSubscribed ? (
-                  <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-gold mt-2 fw-bold" style={{ fontSize: '14px' }}>
-                    Thanks for joining.
+                {feedback.type && (
+                  <motion.p
+                    key={`${feedback.type}-${feedback.message}`}
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    className="mt-2 fw-bold"
+                    style={{ fontSize: '14px', color: feedback.type === 'success' ? 'var(--gold)' : '#ff7b7b' }}
+                  >
+                    {feedback.message}
                   </motion.p>
-                ) : (
-                  <div className="newsletter-input-group">
-                    <input 
-                      type="email" 
-                      className="newsletter-input" 
-                      placeholder="Email Address"
-                      value={email}
-                      onChange={e => setEmail(e.target.value)}
-                      required
-                    />
-                    <button type="submit" className="btn-subscribe">Join</button>
-                  </div>
                 )}
               </AnimatePresence>
             </form>

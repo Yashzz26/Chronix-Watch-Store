@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { HiOutlineArrowLeft, HiOutlineDevicePhoneMobile } from 'react-icons/hi2';
 import toast from 'react-hot-toast';
-import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
+import { RecaptchaVerifier, PhoneAuthProvider, linkWithCredential } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import useAuthStore from '../store/authStore';
-import { markPhoneVerified, bypassOtp } from '../services/authService';
+import { markPhoneVerified } from '../services/authService';
 
 const otpError = (error) => {
   if (typeof error === 'string' && error.length > 5) return error;
@@ -45,9 +45,10 @@ export default function OTPVerification() {
   const [otp, setOtp] = useState(Array(6).fill(''));
   const [timer, setTimer] = useState(0);
   const [sending, setSending] = useState(false);
-  const [confirmationResult, setConfirmationResult] = useState(null);
+  const [verificationId, setVerificationId] = useState('');
   const otpRefs = useRef([]);
   const recaptchaRef = useRef(null);
+  const recaptchaWidgetId = useRef(null);
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -62,30 +63,75 @@ export default function OTPVerification() {
   }, [isLoggedIn, profile?.isPhoneVerified, navigate]);
 
   // Initialize Recaptcha
-  useEffect(() => {
-    if (!auth || recaptchaRef.current) return;
-    
+  const resetRecaptcha = useCallback(() => {
+    if (recaptchaRef.current) {
+      try {
+        recaptchaRef.current.clear();
+      } catch (err) {
+        console.warn('Recaptcha clear skipped:', err?.message);
+      }
+      recaptchaRef.current = null;
+    }
+    if (typeof window !== 'undefined' && window.grecaptcha && recaptchaWidgetId.current !== null) {
+      try {
+        window.grecaptcha.reset(recaptchaWidgetId.current);
+      } catch (err) {
+        console.warn('Recaptcha reset skipped:', err?.message);
+      }
+    }
+    recaptchaWidgetId.current = null;
+    if (typeof document !== 'undefined') {
+      const container = document.getElementById('recaptcha-container');
+      if (container) {
+        container.innerHTML = '';
+      }
+    }
+  }, []);
+
+  const buildRecaptcha = useCallback(async () => {
+    if (!auth || recaptchaRef.current) return recaptchaRef.current;
+    if (typeof document === 'undefined') return null;
     try {
-      recaptchaRef.current = new RecaptchaVerifier(auth, 'recaptcha-container', {
+      const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
         size: 'invisible',
         callback: () => {
           console.log('[Chronix] Recaptcha verified');
         },
         'expired-callback': () => {
           toast.error('Recaptcha expired. Please try again.');
-        }
+        },
       });
+      recaptchaWidgetId.current = await verifier.render();
+      recaptchaRef.current = verifier;
+      return verifier;
     } catch (err) {
-      console.error('Recaptcha init failed:', err);
-    }
-
-    return () => {
-      if (recaptchaRef.current) {
-        recaptchaRef.current.clear();
-        recaptchaRef.current = null;
+      if (err?.message?.includes('already been rendered')) {
+        resetRecaptcha();
+        try {
+          const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+            size: 'invisible',
+            callback: () => console.log('[Chronix] Recaptcha verified'),
+            'expired-callback': () => toast.error('Recaptcha expired. Please try again.')
+          });
+          recaptchaWidgetId.current = await verifier.render();
+          recaptchaRef.current = verifier;
+          return verifier;
+        } catch (retryError) {
+          console.error('Recaptcha init retry failed:', retryError);
+        }
+      } else {
+        console.error('Recaptcha init failed:', err);
       }
+    }
+    return null;
+  }, [auth, resetRecaptcha]);
+
+  useEffect(() => {
+    buildRecaptcha();
+    return () => {
+      resetRecaptcha();
     };
-  }, []);
+  }, [buildRecaptcha, resetRecaptcha]);
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -105,11 +151,21 @@ export default function OTPVerification() {
       toast.error('Enter a valid 10-digit number');
       return;
     }
+    if (!auth.currentUser) {
+      toast.error('Your session expired. Please log in again.');
+      navigate('/login', { replace: true });
+      return;
+    }
     setSending(true);
     try {
-      const appVerifier = recaptchaRef.current;
-      const res = await signInWithPhoneNumber(auth, formattedPhone(), appVerifier);
-      setConfirmationResult(res);
+      const appVerifier = recaptchaRef.current || (await buildRecaptcha());
+      if (!appVerifier) {
+        toast.error('Security check failed. Reload and try again.');
+        return;
+      }
+      const provider = new PhoneAuthProvider(auth);
+      const id = await provider.verifyPhoneNumber(formattedPhone(), appVerifier);
+      setVerificationId(id);
       setStep('otp');
       setOtp(Array(6).fill(''));
       setTimer(60);
@@ -119,11 +175,8 @@ export default function OTPVerification() {
       console.error('Firebase Phone Auth error:', error);
       toast.error(otpError(error));
       // Reset recaptcha if it fails
-      if (recaptchaRef.current) {
-        recaptchaRef.current.render().then((widgetId) => {
-          window.grecaptcha.reset(widgetId);
-        });
-      }
+      resetRecaptcha();
+      await buildRecaptcha();
     } finally {
       setSending(false);
     }
@@ -136,16 +189,23 @@ export default function OTPVerification() {
       toast.error('Enter the 6-digit code');
       return;
     }
-    if (!confirmationResult) {
+    if (!verificationId) {
       toast.error('Session expired. Please request a new OTP.');
       setStep('form');
+      setVerificationId('');
+      return;
+    }
+    if (!auth.currentUser) {
+      toast.error('Session expired. Please log in again.');
+      navigate('/login', { replace: true });
       return;
     }
 
     setSending(true);
     try {
-      // 1. Verify on Client (Firebase)
-      await confirmationResult.confirm(code);
+      const credential = PhoneAuthProvider.credential(verificationId, code);
+      await linkWithCredential(auth.currentUser, credential);
+      setVerificationId('');
       
       // 2. Sync to Backend (Firestore Update)
       await markPhoneVerified(formattedPhone());
@@ -162,22 +222,6 @@ export default function OTPVerification() {
     } catch (error) {
       console.error('Verify OTP error:', error);
       toast.error(otpError(error));
-    } finally {
-      setSending(false);
-    }
-  };
-
-  const handleBypass = async () => {
-    setSending(true);
-    try {
-      await bypassOtp();
-      if (auth.currentUser?.uid) {
-        await fetchProfile(auth.currentUser.uid);
-      }
-      toast.success('Validation bypassed');
-    } catch (error) {
-      console.error('Bypass error', error);
-      toast.error('Failed to bypass validation');
     } finally {
       setSending(false);
     }
@@ -213,6 +257,18 @@ export default function OTPVerification() {
       }
     });
     setTimeout(() => handleVerify(), 80);
+  };
+
+  const handleSkip = () => {
+    toast('You can finish phone verification later.', { icon: 'ℹ️' });
+    try {
+      localStorage.setItem('chronix_phone_bypass', 'true');
+    } catch (error) {
+      console.warn('Unable to persist phone bypass flag', error);
+    }
+    const stored = sessionStorage.getItem('chronix_post_verify_path') || '/';
+    sessionStorage.removeItem('chronix_post_verify_path');
+    navigate(stored === '/verify-otp' ? '/' : stored, { replace: true });
   };
 
   return (
@@ -322,7 +378,7 @@ export default function OTPVerification() {
           font-weight: 500;
           transition: all 0.2s;
         }
-        .otp-skip:hover {
+        .otp-skip:hover:not(:disabled) {
           background: #fdfdfd;
           border-color: var(--t3);
           color: var(--t1);
@@ -362,7 +418,10 @@ export default function OTPVerification() {
                 onClick={() => {
                   setStep('form');
                   setOtp(Array(6).fill(''));
+                  setVerificationId('');
                   otpRefs.current.forEach((input) => input && (input.value = ''));
+                  resetRecaptcha();
+                  buildRecaptcha();
                 }}
               >
                 <HiOutlineArrowLeft /> Change number
@@ -400,13 +459,13 @@ export default function OTPVerification() {
           </form>
         )}
 
-        <button 
-          type="button" 
+        <button
+          type="button"
           className="otp-skip"
-          onClick={handleBypass}
+          onClick={handleSkip}
           disabled={sending}
         >
-          Skip for now
+          Do it later
         </button>
       </div>
     </div>

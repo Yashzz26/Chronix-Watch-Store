@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -11,7 +11,7 @@ import {
 } from 'react-icons/hi2';
 import useCartStore from '../../store/cartStore';
 import useAuthStore from '../../store/authStore';
-import { products } from '../../data/products';
+import { ProductContext } from '../../context/ProductContext';
 import './navbar.css';
 
 const navLinks = [
@@ -26,6 +26,7 @@ export default function Navbar() {
   const cartItems = useCartStore((s) => s.items);
   const totalItems = cartItems.reduce((sum, i) => sum + i.qty, 0);
   const { isLoggedIn, user, profile, logout } = useAuthStore();
+  const { products, loading: productsLoading } = useContext(ProductContext);
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -65,20 +66,24 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
-    if (searchQuery.trim().length > 1) {
-      const filtered = products
-        .filter((p) =>
-          p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.category?.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-        .slice(0, 4);
-      setSearchResults(filtered);
-      setShowSearchDropdown(true);
-    } else {
-      setSearchResults([]);
-      setShowSearchDropdown(false);
-    }
-  }, [searchQuery]);
+    const timer = setTimeout(() => {
+      if (searchQuery.trim().length > 1) {
+        const filtered = products
+          .filter((p) =>
+            (p.name || p.title || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+            p.category?.toLowerCase().includes(searchQuery.toLowerCase())
+          )
+          .slice(0, 4);
+        setSearchResults(filtered);
+        setShowSearchDropdown(true);
+      } else {
+        setSearchResults([]);
+        setShowSearchDropdown(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, products]);
 
   const handleLogout = () => {
     logout();
@@ -124,22 +129,25 @@ export default function Navbar() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -6 }}
               >
-                {searchResults.map((item) => (
-                  <Link
-                    key={item.id}
-                    to={`/product/${item.id}`}
-                    className="site-nav__result"
-                    onClick={() => setShowSearchDropdown(false)}
-                  >
-                    <img src={item.imageGallery?.[0]} alt={item.name} style={{ width: 32, height: 32, objectFit: 'contain' }} />
-                    <div>
-                      <div>{item.name}</div>
-                      <small className="text-t3">?{item.price.toLocaleString('en-IN')}</small>
-                    </div>
-                  </Link>
-                ))}
-                {searchResults.length === 0 && (
-                  <div className="site-nav__result text-t3">No matches yet.</div>
+                {productsLoading ? (
+                  <div className="site-nav__result text-t3">Loading products...</div>
+                ) : searchResults.length > 0 ? (
+                  searchResults.map((item) => (
+                    <Link
+                      key={item.id}
+                      to={`/product/${item.id}`}
+                      className="site-nav__result"
+                      onClick={() => setShowSearchDropdown(false)}
+                    >
+                      <img src={item.imageGallery?.[0]} alt={item.name} style={{ width: 32, height: 32, objectFit: 'contain' }} />
+                      <div>
+                        <div>{item.name || item.title}</div>
+                        <small className="text-t3">₹{item.price?.toLocaleString('en-IN')}</small>
+                      </div>
+                    </Link>
+                  ))
+                ) : (
+                  <div className="site-nav__result text-t3">No products found.</div>
                 )}
               </motion.div>
             )}

@@ -6,6 +6,7 @@
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(18px);
   transition: box-shadow 0.25s ease;
+  padding: clamp(10px, 2.5vw, 18px) 0 clamp(6px, 2vw, 14px);
 }
 
 .site-nav--shadow {
@@ -15,10 +16,10 @@
 .site-nav__inner {
   width: min(1200px, 100% - 32px);
   margin: 0 auto;
-  height: 72px;
+  min-height: 56px;
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: clamp(16px, 3vw, 28px);
 }
 
 .site-nav__brand {
