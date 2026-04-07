@@ -1,9 +1,10 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
 const razorpay = require('../config/razorpay');
 const { db } = require('../config/firebase');
 const { verifyToken, verifyAdmin } = require('../middleware/verifyToken');
+const validateOrderPayload = require('../middleware/validateOrderPayload');
 
 /**
  * POST /api/orders
@@ -20,131 +21,300 @@ const generateDisplayId = () => {
   return result;
 };
 
-router.post('/', verifyToken, async (req, res) => {
-  try {
-    const { items, totalPrice, paymentMethod, shippingAddress, address } = req.body;
-    const finalAddress = address || shippingAddress;
+class OrderError extends Error {
+  constructor(message, statusCode = 400, details) {
+    super(message);
+    this.statusCode = statusCode;
+    this.details = details;
+  }
+}
 
-    if (!items || !totalPrice || !paymentMethod) {
-      return res.status(400).json({ error: 'Missing order details' });
+const normalizeSku = (sku = '') => sku ? sku.toString().trim().toLowerCase() : '';
+
+const EXCLUDED_VARIANT_KEYS = new Set([
+  'sku',
+  'stock',
+  'price',
+  'mrp',
+  'cost',
+  'id',
+  '_id',
+  'image',
+  'images',
+  'qty',
+  'quantity'
+]);
+
+const buildComparableAttributes = (variant = {}) => {
+  const normalized = {};
+  const pushAttributes = (source = {}) => {
+    if (!source || typeof source !== 'object') return;
+    Object.entries(source).forEach(([key, value]) => {
+      if (value === undefined || value === null) return;
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (trimmed.length) normalized[key.toLowerCase()] = trimmed.toLowerCase();
+      } else if (typeof value === 'number' || typeof value === 'boolean') {
+        normalized[key.toLowerCase()] = String(value).toLowerCase();
+      }
+    });
+  };
+
+  pushAttributes(variant.attributes);
+  pushAttributes(variant.options);
+
+  Object.entries(variant || {}).forEach(([key, value]) => {
+    if (EXCLUDED_VARIANT_KEYS.has(key)) return;
+    if (value === undefined || value === null) return;
+    if (typeof value === 'object') return;
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (trimmed.length) normalized[key.toLowerCase()] = trimmed.toLowerCase();
+    } else if (typeof value === 'number' || typeof value === 'boolean') {
+      normalized[key.toLowerCase()] = String(value).toLowerCase();
     }
+  });
 
-    const suffix = generateDisplayId();
-    const orderId = await db.runTransaction(async (transaction) => {
+  return normalized;
+};
+
+const resolveVariantMatch = (variants = [], requestedVariant = {}, fallbackSku) => {
+  const variantList = Array.isArray(variants) ? variants : [];
+  if (!variantList.length) {
+    return null;
+  }
+
+  const requestedSku = normalizeSku((requestedVariant && requestedVariant.sku) || fallbackSku);
+  if (requestedSku) {
+    const variantIndex = variantList.findIndex(v => normalizeSku(v.sku) === requestedSku);
+    if (variantIndex !== -1) {
+      return { variant: variantList[variantIndex], index: variantIndex };
+    }
+  }
+
+  if (requestedVariant) {
+    const requestedAttrs = buildComparableAttributes(requestedVariant);
+    if (Object.keys(requestedAttrs).length) {
+      const variantIndex = variantList.findIndex(variant => {
+        const variantAttrs = buildComparableAttributes(variant);
+        const keys = Object.keys(requestedAttrs);
+        return keys.length && keys.every(key => variantAttrs[key] === requestedAttrs[key]);
+      });
+
+      if (variantIndex !== -1) {
+        return { variant: variantList[variantIndex], index: variantIndex };
+      }
+    }
+  }
+
+  return null;
+};
+
+const mapOrderItems = (items = []) => items.map((rawItem, index) => {
+  const productId = String(rawItem.productId || rawItem.id || '').trim();
+  const selectedVariant = rawItem.selectedVariant || rawItem.variants || null;
+  const fallbackSku = selectedVariant && selectedVariant.sku ? selectedVariant.sku : null;
+  const priceRaw = Number(rawItem.priceAtPurchase ?? rawItem.price ?? 0);
+  const qtyRaw = Number(rawItem.qty ?? rawItem.quantity ?? 1);
+  const priceAtPurchase = Number.isFinite(priceRaw) && priceRaw >= 0 ? priceRaw : 0;
+  const qty = Number.isFinite(qtyRaw) && qtyRaw > 0 ? qtyRaw : 1;
+
+  const resolvedSku = rawItem.sku || fallbackSku || `CHX-${productId.slice(0, 6)}`;
+
+  return {
+    productId,
+    name: String(rawItem.name || `Item ${index + 1}`),
+    image: String(rawItem.image || ''),
+    selectedVariant,
+    priceAtPurchase,
+    qty,
+    sku: String(resolvedSku),
+    variantLabel: String(rawItem.variantLabel || rawItem.variant || 'Standard Model')
+  };
+});
+
+const logOrderEvent = (message, meta = {}) => {
+  console.info(`[Order] ${message}`, meta);
+};
+
+const verifyRazorpaySignature = (details = {}) => {
+  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = details;
+  if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+    throw new OrderError('Incomplete Razorpay payment details.', 400);
+  }
+
+  const body = `${razorpay_order_id}|${razorpay_payment_id}`;
+  const expectedSignature = crypto
+    .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+    .update(body)
+    .digest('hex');
+
+  return {
+    valid: expectedSignature === razorpay_signature,
+    details: {
+      orderId: razorpay_order_id,
+      paymentId: razorpay_payment_id
+    }
+  };
+};
+
+router.post('/', verifyToken, validateOrderPayload, async (req, res) => {
+  const { items, totalAmount, paymentMethod, shippingAddress } = req.orderPayload;
+  const isCod = paymentMethod === 'cod';
+  const suffix = generateDisplayId();
+  const orderDisplayId = `ORD-${suffix}`;
+  const invoiceId = `INV-${suffix}`;
+
+  logOrderEvent('Incoming order request', {
+    userId: req.user.uid,
+    itemCount: items.length,
+    totalAmount,
+    paymentMethod,
+    addressKeys: Object.keys(shippingAddress || {})
+  });
+
+  try {
+    const { orderId } = await db.runTransaction(async (transaction) => {
       const orderRef = db.collection('orders').doc();
-      
+      const normalizedItems = mapOrderItems(items);
+      const productCache = new Map();
+
+      const ensureProductContext = async (productId) => {
+        if (!productId) {
+          throw new OrderError('Product identifier missing for one of the items.', 400);
+        }
+
+        if (!productCache.has(productId)) {
+          const productRef = db.collection('products').doc(String(productId));
+          const productDoc = await transaction.get(productRef);
+
+          if (!productDoc.exists) {
+            throw new OrderError(`Product ${productId} not found.`, 404);
+          }
+
+          productCache.set(productId, {
+            ref: productRef,
+            data: {
+              ...productDoc.data(),
+              variants: Array.isArray(productDoc.data().variants)
+                ? productDoc.data().variants.map(v => ({ ...v }))
+                : []
+            }
+          });
+        }
+
+        return productCache.get(productId);
+      };
+
+      for (const item of normalizedItems) {
+        const ctx = await ensureProductContext(item.productId);
+        const productData = ctx.data;
+        const variants = Array.isArray(productData.variants) ? productData.variants : [];
+        const variantMatch = resolveVariantMatch(variants, item.selectedVariant, item.sku);
+
+        logOrderEvent('Stock validation', {
+          productId: item.productId,
+          requestedSku: item.sku,
+          matchedSku: variantMatch && variantMatch.variant ? variantMatch.variant.sku : null,
+          qty: item.qty
+        });
+
+        if (item.selectedVariant && !variantMatch && variants.length) {
+          throw new OrderError(`Selected variant not found for ${item.name}.`, 404);
+        }
+
+        if (variantMatch) {
+          const available = Number(variantMatch.variant.stock || 0);
+          if (available < item.qty) {
+            throw new OrderError(`Insufficient stock for ${item.name}.`, 409, {
+              requested: item.qty,
+              available
+            });
+          }
+
+          variants[variantMatch.index] = {
+            ...variantMatch.variant,
+            stock: available - item.qty
+          };
+
+          logOrderEvent('Variant stock updated', {
+            productId: item.productId,
+            sku: variantMatch.variant.sku,
+            remainingStock: variants[variantMatch.index].stock
+          });
+        } else {
+          const available = Number(productData.stock || 0);
+          if (available < item.qty) {
+            throw new OrderError(`Insufficient stock for ${item.name}.`, 409, {
+              requested: item.qty,
+              available
+            });
+          }
+        }
+
+        const currentTotalStock = Number(productData.stock || 0);
+        productData.stock = currentTotalStock - item.qty >= 0 ? currentTotalStock - item.qty : 0;
+      }
+
+      const nowIso = new Date().toISOString();
       const orderData = {
         userId: req.user.uid,
         userEmail: req.user.email,
-        items: (items || []).map(i => ({
-          productId: String(i.productId || i.id || ''),
-          name: String(i.name || 'Unknown Item'),
-          image: String(i.image || ''),
-          selectedVariant: i.selectedVariant || i.variants || null,
-          priceAtPurchase: Number(i.priceAtPurchase || i.price || 0),
-          qty: Number(i.qty || 1),
-          sku: String(i.sku || `CHX-${String(i.productId || i.id || '').slice(0, 6)}`),
-          variantLabel: String(i.variantLabel || 'Standard Model')
-        })),
-        totalPrice: Number(totalPrice || 0),
-        paymentMethod: String(paymentMethod || 'cod'),
-        shippingAddress: finalAddress || {},
-        status: paymentMethod === 'cod' ? 'pending' : 'paid',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        orderDisplayId: `ORD-${suffix}`,
-        invoiceId: `INV-${suffix}`,
+        items: normalizedItems,
+        totalPrice: totalAmount,
+        totalAmount,
+        paymentMethod,
+        shippingAddress,
+        address: shippingAddress,
+        status: isCod ? 'pending' : 'pending_payment',
+        createdAt: nowIso,
+        updatedAt: nowIso,
+        orderDisplayId,
+        invoiceId
       };
 
-      // 1. Process Stock for every item
-      for (const item of (items || [])) {
-        const pId = item.productId || item.id;
-        if (!pId) continue; // Skip if no ID
-
-        const productRef = db.collection('products').doc(String(pId));
-        const productDoc = await transaction.get(productRef);
-
-        if (!productDoc.exists) {
-          throw new Error(`Product ${pId} not found in repository.`);
+      if (!isCod && req.body.razorpayDetails) {
+        const verification = verifyRazorpaySignature(req.body.razorpayDetails);
+        if (!verification.valid) {
+          throw new OrderError('Payment verification failed.', 400);
         }
+        orderData.status = 'paid';
+        orderData.razorpayDetails = verification.details;
+      }
 
-        const productData = productDoc.data();
-        let updatedVariants = productData.variants || [];
-        let stockAvailable = 0;
-
-        // 🛡️ T8.1: Strict Stock Validation
-        const vKey = item.selectedVariant || item.variants;
-        if (vKey && vKey.sku) {
-          const variant = updatedVariants.find(v => v.sku === vKey.sku);
-          if (!variant) {
-            // Fallback to base stock if variant doesn't strictly exist via sku match
-            stockAvailable = Number(productData.stock) || 0;
-            if (stockAvailable < item.qty) {
-              throw new Error(`Insufficient inventory for base model: ${item.name}. Requested: ${item.qty}, Available: ${stockAvailable}`);
-            }
-          } else {
-            stockAvailable = Number(variant.stock) || 0;
-            if (stockAvailable < item.qty) {
-              throw new Error(`Insufficient inventory: ${item.name} (${vKey.sku}). Requested: ${item.qty}, Available: ${stockAvailable}`);
-            }
-
-            // Update the specific variant
-            updatedVariants = updatedVariants.map(v => 
-              v.sku === vKey.sku 
-                ? { ...v, stock: v.stock - item.qty } 
-                : v
-            );
-          }
-        } else {
-          // Fallback to base stock if no variants
-          stockAvailable = Number(productData.stock) || 0;
-          if (stockAvailable < item.qty) {
-            throw new Error(`Insufficient inventory for base model: ${item.name}. Requested: ${item.qty}, Available: ${stockAvailable}`);
-          }
-        }
-
-        const newTotalStock = Math.max(0, (Number(productData.stock) || 0) - item.qty);
-
-        transaction.update(productRef, { 
-          stock: newTotalStock,
-          variants: updatedVariants,
-          updatedAt: new Date().toISOString()
+      productCache.forEach((ctx) => {
+        transaction.update(ctx.ref, {
+          stock: Math.max(0, Number(ctx.data.stock || 0)),
+          variants: ctx.data.variants || [],
+          updatedAt: nowIso
         });
-      }
-
-      // 2. Handle Razorpay details if present
-      if (paymentMethod === 'online' && req.body.razorpayDetails) {
-        const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body.razorpayDetails;
-        const body = `${razorpay_order_id}|${razorpay_payment_id}`;
-        const expectedSignature = crypto
-          .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-          .update(body)
-          .digest('hex');
-
-        if (expectedSignature === razorpay_signature) {
-          orderData.status = 'paid';
-          orderData.razorpayDetails = {
-            orderId: razorpay_order_id,
-            paymentId: razorpay_payment_id
-          };
-        } else {
-          throw new Error('Payment verification failed');
-        }
-      }
+      });
 
       transaction.set(orderRef, orderData);
-      return orderRef.id;
+      return { orderId: orderRef.id };
     });
 
-    res.status(201).json({ success: true, orderId, orderDisplayId: `ORD-${suffix}` });
-  } catch (err) {
-    console.error('Order creation error:', err);
-    res.status(500).json({ 
-      error: 'Failed to create order', 
-      details: err.message,
-      name: err.name,
-      trace: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    return res.status(201).json({
+      success: true,
+      orderId,
+      orderDisplayId,
+      message: 'Order placed successfully'
     });
+  } catch (err) {
+    const statusCode = err instanceof OrderError ? err.statusCode : 500;
+    logOrderEvent('Order creation error', {
+      userId: req.user.uid,
+      statusCode,
+      message: err.message
+    });
+    const errorResponse = {
+      success: false,
+      error: err.message
+    };
+    if (err.details) {
+      errorResponse.details = err.details;
+    }
+    return res.status(statusCode).json(errorResponse);
   }
 });
 
@@ -206,7 +376,7 @@ router.post('/verify-payment', verifyToken, (req, res) => {
     if (expectedSignature === razorpaySignature) {
       res.json({ success: true, message: 'Payment verified successfully' });
     } else {
-      res.status(400).json({ success: false, message: 'Payment signature mismatch — possible fraud' });
+      res.status(400).json({ success: false, message: 'Payment signature mismatch - possible fraud' });
     }
   } catch (err) {
     res.status(500).json({ success: false, message: 'Signature verification error' });
