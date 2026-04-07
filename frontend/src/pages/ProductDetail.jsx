@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -17,6 +17,7 @@ import { db } from '../lib/firebase';
 import useCartStore from '../store/cartStore';
 import useWishlistStore from '../store/wishlistStore';
 import useReviewStore from '../store/reviewStore';
+import useAuthStore from '../store/authStore';
 import toast from 'react-hot-toast';
 
 export default function ProductDetail() {
@@ -29,13 +30,20 @@ export default function ProductDetail() {
   
   const { addItem } = useCartStore();
   const { toggleWishlist, isInWishlist } = useWishlistStore();
-  const { reviews, loading: reviewsLoading, fetchReviews } = useReviewStore();
+  const { reviews, loading: reviewsLoading, error: reviewsError, fetchReviews, postReview } = useReviewStore();
+  const { isLoggedIn, profile } = useAuthStore();
 
   const [activeImg, setActiveImg] = useState(0);
   const [qty, setQty] = useState(1);
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
   const [selectedStrap, setSelectedStrap] = useState('');
+  const [ratingValue, setRatingValue] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState('');
+  const [reviewStatus, setReviewStatus] = useState(null);
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -96,6 +104,23 @@ export default function ProductDetail() {
   );
   if (!product) return null;
 
+  const productReviews = useMemo(
+    () => (product ? reviews.filter((rev) => rev.productId === product.id) : []),
+    [product, reviews]
+  );
+  const averageRating = useMemo(() => {
+    if (!productReviews.length) return 0;
+    const total = productReviews.reduce((sum, rev) => sum + Number(rev.rating || 0), 0);
+    return Number((total / productReviews.length).toFixed(1));
+  }, [productReviews]);
+  const reviewCount = productReviews.length;
+  const roundedAverage = reviewCount ? Math.round(averageRating) : 0;
+  const ratingSelectionValue = hoverRating || ratingValue;
+  const alreadyReviewed = useMemo(() => {
+    if (!isLoggedIn || !profile?.uid) return false;
+    return productReviews.some((rev) => rev.userId === profile.uid);
+  }, [isLoggedIn, profile?.uid, productReviews]);
+
   const activeVariant = product?.variants?.find(v => 
     v.dialSize === selectedSize && 
     v.colorName === selectedColor && 
@@ -121,6 +146,53 @@ export default function ProductDetail() {
     toast.success('Added to collection', {
       style: { background: '#080808', color: '#fff', border: '1px solid var(--gold)', borderRadius: '0px' }
     });
+  };
+
+  const redirectToLogin = () => {
+    navigate('/login', { state: { from: { pathname: `/product/${id}` } } });
+  };
+
+  const handleReviewSubmit = async (event) => {
+    event.preventDefault();
+    setReviewStatus(null);
+    if (!isLoggedIn) {
+      toast.error('Please sign in to write a review.');
+      redirectToLogin();
+      return;
+    }
+    if (alreadyReviewed) {
+      setReviewStatus({ type: 'info', message: 'You have already reviewed this watch.' });
+      return;
+    }
+    if (!ratingValue) {
+      setReviewStatus({ type: 'error', message: 'Select a rating before submitting.' });
+      return;
+    }
+    if (!reviewComment.trim()) {
+      setReviewStatus({ type: 'error', message: 'Share a few words about your experience.' });
+      return;
+    }
+
+    setSubmittingReview(true);
+    try {
+      await postReview({
+        productId: product.id,
+        rating: ratingValue,
+        comment: reviewComment.trim(),
+        authorName: profile?.name
+      });
+      setReviewStatus({ type: 'success', message: 'Review submitted. Thank you!' });
+      toast.success('Review submitted');
+      setRatingValue(0);
+      setHoverRating(0);
+      setReviewComment('');
+      setShowReviewForm(false);
+      fetchReviews(product.id);
+    } catch (err) {
+      setReviewStatus({ type: 'error', message: err.message || 'Unable to submit review right now.' });
+    } finally {
+      setSubmittingReview(false);
+    }
   };
 
   const sizes = Array.from(new Set(product?.variants?.map(v => v.dialSize) || ['38mm', '40mm', '42mm', '44mm']));
@@ -363,6 +435,43 @@ export default function ProductDetail() {
         .spec-box span:first-child { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; color: var(--t3); display: block; margin-bottom: 4px; }
         .spec-box span:last-child { font-weight: 600; color: var(--t1); }
 
+        .star-select {
+          display: flex;
+          gap: 10px;
+        }
+        .star-select button {
+          background: transparent;
+          border: none;
+          font-size: 1.75rem;
+          color: #d0d0d0;
+          padding: 0;
+          cursor: pointer;
+          transition: color 0.2s ease;
+        }
+        .star-select button.active {
+          color: var(--gold);
+        }
+
+        .review-form textarea {
+          width: 100%;
+          border: 1px solid var(--border);
+          padding: 16px;
+          min-height: 140px;
+          background: #fff;
+          color: var(--t1);
+        }
+        .review-form textarea:focus {
+          outline: 1px solid var(--gold);
+        }
+
+        .review-feedback {
+          font-size: 0.9rem;
+          font-weight: 600;
+        }
+        .review-feedback.success { color: #198754; }
+        .review-feedback.error { color: #b02a37; }
+        .review-feedback.info { color: var(--t2); }
+
         @media (max-width: 991px) {
           .product-info-stack { padding-left: 0; margin-top: 48px; }
           .gallery-container { position: relative; top: 0; }
@@ -410,15 +519,19 @@ export default function ProductDetail() {
               
               <div className="d-flex align-items-center gap-3 mb-4">
                 <div className="d-flex text-gold">
-                  <HiStar /><HiStar /><HiStar /><HiStar /><HiStar />
+                  {[1,2,3,4,5].map(star => (
+                    <HiStar key={star} className={star <= roundedAverage ? '' : 'opacity-20'} />
+                  ))}
                 </div>
-                <span className="small fw-bold">4.9 / 5.0</span>
-                <span className="small text-t3 border-bottom border-border ms-2">128 Verified Reviews</span>
+                <span className="small fw-bold">{reviewCount ? `${averageRating.toFixed(1)} / 5.0` : 'New arrival'}</span>
+                <span className="small text-t3 border-bottom border-border ms-2">
+                  {reviewCount ? `${reviewCount} Verified Review${reviewCount > 1 ? 's' : ''}` : 'Be the first to review'}
+                </span>
               </div>
 
               <div className="product-price">
-                ₹{currentPrice.toLocaleString()}
-                {product.isOnDeal && <span className="price-original">₹{(currentPrice + 9500).toLocaleString()}</span>}
+                â‚¹{currentPrice.toLocaleString()}
+                {product.isOnDeal && <span className="price-original">â‚¹{(currentPrice + 9500).toLocaleString()}</span>}
               </div>
 
               {/* SELECTION */}
@@ -523,39 +636,127 @@ export default function ProductDetail() {
 
         {/* BOTTOM SECTIONS */}
            <div className="mt-5 pt-5">
-              <div className="border-bottom border-border pb-4 mb-5">
-                 <span className="section-label">Customer stories</span>
-                 <h2 className="product-title m-0">Recent experiences</h2>
+              <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-end border-bottom border-border pb-4 mb-5">
+                 <div>
+                   <span className="section-label">Customer stories</span>
+                   <h2 className="product-title m-0">Recent experiences</h2>
+                 </div>
+                 <div className="mt-3 mt-md-0 text-md-end">
+                   {isLoggedIn ? (
+                     <>
+                       <button
+                         type="button"
+                         className="btn-pill-soft d-inline-flex align-items-center gap-2 text-uppercase x-small fw-bold"
+                         onClick={() => {
+                           if (alreadyReviewed) return;
+                           setShowReviewForm((prev) => !prev);
+                         }}
+                         disabled={alreadyReviewed}
+                       >
+                         {showReviewForm ? 'Close review form' : 'Write a review'}
+                       </button>
+                       {alreadyReviewed && (
+                         <p className="x-small text-success m-0 mt-2">Thanks! You have already reviewed this watch.</p>
+                       )}
+                     </>
+                   ) : (
+                     <p className="x-small text-t3 m-0">Sign in to share your experience.</p>
+                   )}
+                 </div>
               </div>
-           
+
+           <div className="row g-4 align-items-start mb-5">
+              <div className="col-lg-4">
+                <div className="chronix-card tight h-100">
+                  <span className="x-small text-t3 uppercase fw-bold tracking-widest">Average rating</span>
+                  <div className="display-4 fw-bold text-gold my-2">{reviewCount ? averageRating.toFixed(1) : '—'}</div>
+                  <div className="d-flex text-gold mb-3">
+                    {[1,2,3,4,5].map(star => (
+                      <HiStar key={star} className={star <= roundedAverage ? '' : 'opacity-20'} />
+                    ))}
+                  </div>
+                  <p className="small text-t2 m-0">
+                    {reviewCount ? `${reviewCount} collector${reviewCount > 1 ? 's' : ''} sharing insights.` : 'Be the first to review this watch.'}
+                  </p>
+                </div>
+              </div>
+              <div className="col-lg-8">
+                {showReviewForm && isLoggedIn ? (
+                  <form className="chronix-card tight review-form" onSubmit={handleReviewSubmit}>
+                    <label className="spec-label">Your rating</label>
+                    <div className="star-select mb-3">
+                      {[1,2,3,4,5].map((value) => (
+                        <button
+                          type="button"
+                          key={value}
+                          className={value <= ratingSelectionValue ? 'active' : ''}
+                          onMouseEnter={() => setHoverRating(value)}
+                          onMouseLeave={() => setHoverRating(0)}
+                          onClick={() => setRatingValue(value)}
+                          aria-label={`Rate ${value} star${value > 1 ? 's' : ''}`}
+                        >
+                          <HiStar />
+                        </button>
+                      ))}
+                    </div>
+                    <label className="spec-label">Share your thoughts</label>
+                    <textarea
+                      placeholder="Tell fellow collectors about fit, finishing, and ownership experience..."
+                      value={reviewComment}
+                      onChange={(e) => setReviewComment(e.target.value)}
+                    />
+                    {reviewStatus && (
+                      <p className={`review-feedback ${reviewStatus.type} mt-2`}>{reviewStatus.message}</p>
+                    )}
+                    <button className="btn-gold w-100 mt-3" type="submit" disabled={submittingReview}>
+                      {submittingReview ? 'Submitting...' : 'Post review'}
+                    </button>
+                  </form>
+                ) : (
+                  <div className="chronix-card tight bg-bg-1 text-t2 small">
+                    Share how the {product.name} wears in real life. Tap "Write a review" to start the conversation.
+                  </div>
+                )}
+              </div>
+           </div>
+
            <div className="row g-4">
               {reviewsLoading ? (
                 <div className="col-12 py-5 text-center opacity-50">Archiving Community Feedback...</div>
-              ) : reviews.length === 0 ? (
+              ) : reviewsError ? (
+                <div className="col-12 py-4 text-center text-danger small">{reviewsError}</div>
+              ) : productReviews.length === 0 ? (
                 <div className="col-12 py-5 text-center bg-bg-1 border border-dashed border-border">
                   <span className="x-small text-t3 uppercase fw-bold tracking-widest">No reviews yet.</span>
                 </div>
               ) : (
-                reviews.slice(0, 3).map(r => (
-                  <div key={r.id} className="col-md-4">
-                    <div className="chronix-card tight no-hover h-100">
-                      <div className="text-gold mb-3 d-flex">
-                        {[1,2,3,4,5].map(s => <HiStar key={s} className={s <= r.rating ? "opacity-100" : "opacity-20"} />)}
-                      </div>
-                      <p className="small text-t2 line-height-lg mb-4 italic">"{r.comment}"</p>
-                      <div className="d-flex align-items-center gap-3 mt-auto pt-3 border-top border-border">
-                        <div className="avatar px-2 py-1 bg-gold text-white small fw-bold">{r.authorName?.[0]}</div>
-                        <div>
-                          <span className="d-block small fw-bold">{r.authorName}</span>
-                          <span className="x-small text-t3">Verified Collector</span>
+                productReviews.map(r => {
+                  const reviewDate = r.createdAt ? new Date(r.createdAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recently';
+                  const initials = (r.authorName?.[0] || 'C').toUpperCase();
+                  return (
+                    <div key={r.id} className="col-md-4">
+                      <div className="chronix-card tight no-hover h-100 d-flex flex-column">
+                        <div className="text-gold mb-3 d-flex">
+                          {[1,2,3,4,5].map(s => <HiStar key={s} className={s <= r.rating ? 'opacity-100' : 'opacity-20'} />)}
+                        </div>
+                        <p className="small text-t2 line-height-lg mb-4 italic">"{r.comment}"</p>
+                        <div className="mt-auto pt-3 border-top border-border d-flex align-items-center justify-content-between">
+                          <div className="d-flex align-items-center gap-3">
+                            <div className="avatar px-2 py-1 bg-gold text-white small fw-bold">{initials}</div>
+                            <div>
+                              <span className="d-block small fw-bold">{r.authorName}</span>
+                              <span className="x-small text-t3">{reviewDate}</span>
+                            </div>
+                          </div>
+                          <span className="x-small text-success fw-bold">Verified</span>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
            </div>
-
+        </div>
            {/* RELATED */}
            <div className="mt-5 pt-5">
               <div className="d-flex justify-content-between align-items-end border-bottom border-border pb-4 mb-5">
@@ -576,7 +777,7 @@ export default function ProductDetail() {
                       </div>
                       <span className="x-small text-t3 uppercase tracking-widest mb-1 d-block">{p.category}</span>
                       <h4 className="h6 fw-bold text-t1 mb-1">{p.name}</h4>
-                      <span className="text-gold fw-bold small">₹{p.price.toLocaleString()}</span>
+                      <span className="text-gold fw-bold small">â‚¹{p.price.toLocaleString()}</span>
                     </Link>
                   </div>
                 ))}

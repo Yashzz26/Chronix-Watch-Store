@@ -85,6 +85,17 @@ export default function Navbar() {
     return () => clearTimeout(timer);
   }, [searchQuery, products]);
 
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
+    const trimmed = searchQuery.trim();
+    if (trimmed.length === 0) {
+      navigate('/search');
+    } else {
+      navigate(`/search?q=${encodeURIComponent(trimmed)}`);
+    }
+    setShowSearchDropdown(false);
+  };
+
   const handleLogout = () => {
     logout();
     setUserMenuOpen(false);
@@ -112,7 +123,7 @@ export default function Navbar() {
           ))}
         </nav>
 
-        <div className="site-nav__search" ref={searchRef}>
+        <form className="site-nav__search" ref={searchRef} onSubmit={handleSearchSubmit}>
           <HiOutlineMagnifyingGlass className="site-nav__search-icon" size={16} />
           <input
             type="text"
@@ -120,7 +131,15 @@ export default function Navbar() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onFocus={() => searchQuery.length > 1 && setShowSearchDropdown(true)}
+            aria-label="Search products"
           />
+          <button
+            type="submit"
+            className="site-nav__search-submit"
+            aria-label="Submit search"
+          >
+            Go
+          </button>
           <AnimatePresence>
             {showSearchDropdown && (
               <motion.div
@@ -152,7 +171,7 @@ export default function Navbar() {
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
+        </form>
 
         <div className="site-nav__actions">
           {!isLoggedIn && (

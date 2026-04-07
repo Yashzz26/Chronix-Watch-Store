@@ -448,4 +448,183 @@ router.get('/my', verifyToken, async (req, res) => {
   }
 });
 
+const isAdminUser = async (uid) => {
+  if (!uid) return false;
+  try {
+    const userDoc = await db.collection('users').doc(uid).get();
+    return userDoc.exists && userDoc.data().role === 'admin';
+  } catch (err) {
+    console.warn('Failed to resolve user role', err.message);
+    return false;
+  }
+};
+
+router.patch('/:orderId/cancel', verifyToken, async (req, res) => {
+  const { orderId } = req.params;
+  if (!orderId) {
+    return res.status(400).json({ success: false, error: 'Order ID is required' });
+  }
+
+  const adminAccess = await isAdminUser(req.user.uid);
+  try {
+    await db.runTransaction(async (transaction) => {
+      const orderRef = db.collection('orders').doc(orderId);
+      const orderDoc = await transaction.get(orderRef);
+      if (!orderDoc.exists) {
+        throw new OrderError('Order not found', 404);
+      }
+
+      const orderData = orderDoc.data();
+      const userOwnsOrder = orderData.userId === req.user.uid;
+
+      if (!userOwnsOrder && !adminAccess) {
+        throw new OrderError('You are not authorized to cancel this order', 403);
+      }
+
+      if (orderData.status === 'cancelled') {
+        throw new OrderError('Order already cancelled', 400);
+      }
+
+      if (orderData.status === 'delivered') {
+        throw new OrderError('Delivered orders cannot be cancelled', 400);
+      }
+
+      const nowIso = new Date().toISOString();
+      const productCache = new Map();
+
+      for (const item of orderData.items || []) {
+        if (!item?.productId || !item?.qty) continue;
+        const productId = String(item.productId);
+        if (!productCache.has(productId)) {
+          const productRef = db.collection('products').doc(productId);
+          const productDoc = await transaction.get(productRef);
+          if (!productDoc.exists) {
+            console.warn('[Cancel] Product missing for order item', productId);
+            continue;
+          }
+          productCache.set(productId, {
+            ref: productRef,
+            data: {
+              ...productDoc.data(),
+              variants: Array.isArray(productDoc.data().variants)
+                ? productDoc.data().variants.map(v => ({ ...v }))
+                : []
+            }
+          });
+        }
+
+        const ctx = productCache.get(productId);
+        const variants = ctx.data.variants || [];
+        const restoredQty = Number(item.qty) || 0;
+
+        const variantMatch = resolveVariantMatch(variants, item.selectedVariant, item.sku);
+        if (variantMatch) {
+          const currentVariantStock = Number(variantMatch.variant.stock || 0);
+          variants[variantMatch.index] = {
+            ...variantMatch.variant,
+            stock: currentVariantStock + restoredQty
+          };
+        }
+
+        const currentStock = Number(ctx.data.stock || 0);
+        ctx.data.stock = currentStock + restoredQty;
+      }
+
+      productCache.forEach((ctx) => {
+        transaction.update(ctx.ref, {
+          stock: Math.max(0, Number(ctx.data.stock || 0)),
+          variants: ctx.data.variants || [],
+          updatedAt: nowIso
+        });
+      });
+
+      transaction.update(orderRef, {
+        status: 'cancelled',
+        cancelledAt: nowIso,
+        updatedAt: nowIso,
+        refundStatus: orderData.paymentMethod === 'online' ? 'pending' : orderData.refundStatus || 'not_applicable'
+      });
+    });
+
+    return res.json({ success: true, message: 'Order cancelled successfully' });
+  } catch (error) {
+    const status = error instanceof OrderError ? error.statusCode : 500;
+    return res.status(status).json({
+      success: false,
+      error: error.message || 'Unable to cancel order'
+    });
+  }
+});
+
+router.post('/:orderId/return', verifyToken, async (req, res) => {
+  const { orderId } = req.params;
+  const { reason, description } = req.body || {};
+  if (!orderId) {
+    return res.status(400).json({ success: false, error: 'Order ID is required' });
+  }
+  if (!reason || typeof reason !== 'string') {
+    return res.status(400).json({ success: false, error: 'Return reason is required' });
+  }
+
+  try {
+    let updatedOrder = null;
+    await db.runTransaction(async (transaction) => {
+      const orderRef = db.collection('orders').doc(orderId);
+      const orderDoc = await transaction.get(orderRef);
+      if (!orderDoc.exists) {
+        throw new OrderError('Order not found', 404);
+      }
+
+      const orderData = orderDoc.data();
+      if (orderData.userId !== req.user.uid) {
+        throw new OrderError('You are not authorized to request a return for this order', 403);
+      }
+      if (orderData.status !== 'delivered') {
+        throw new OrderError('Return can only be requested after delivery', 400);
+      }
+      if (orderData.returnStatus && orderData.returnStatus !== 'rejected') {
+        throw new OrderError('Return request already submitted', 400);
+      }
+
+      const deliveredAt = orderData.deliveredAt ? new Date(orderData.deliveredAt) : null;
+      const fallbackDate = orderData.updatedAt || orderData.createdAt || new Date().toISOString();
+      const referenceDate = deliveredAt || new Date(fallbackDate);
+      const diffDays = (Date.now() - referenceDate.getTime()) / (1000 * 60 * 60 * 24);
+      if (Number.isNaN(diffDays) || diffDays > 7) {
+        throw new OrderError('Return window has expired', 400);
+      }
+
+      const nowIso = new Date().toISOString();
+      updatedOrder = {
+        returnRequested: true,
+        returnRequestedAt: nowIso,
+        returnStatus: 'pending',
+        returnReason: reason,
+        returnDescription: description || '',
+        refundStatus: orderData.paymentMethod === 'online' ? (orderData.refundStatus || 'pending') : orderData.refundStatus || 'not_applicable'
+      };
+
+      transaction.update(orderRef, {
+        ...updatedOrder,
+        updatedAt: nowIso
+      });
+    });
+
+    return res.json({
+      success: true,
+      message: 'Return request submitted',
+      order: {
+        id: orderId,
+        ...updatedOrder
+      }
+    });
+  } catch (error) {
+    const status = error instanceof OrderError ? error.statusCode : 500;
+    return res.status(status).json({
+      success: false,
+      error: error.message || 'Unable to submit return request'
+    });
+  }
+});
+
 module.exports = router;

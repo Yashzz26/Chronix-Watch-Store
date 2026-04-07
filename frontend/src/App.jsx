@@ -15,6 +15,7 @@ const Cart           = lazy(() => import('./pages/Cart'));
 const Checkout       = lazy(() => import('./pages/Checkout'));
 const Confirmation   = lazy(() => import('./pages/Confirmation'));
 const LoginSignup    = lazy(() => import('./pages/LoginSignup'));
+const SearchPage     = lazy(() => import('./pages/Search'));
 const Profile        = lazy(() => import('./pages/Profile'));
 const Orders         = lazy(() => import('./pages/Orders'));
 const Products       = lazy(() => import('./pages/Products'));
@@ -113,6 +114,7 @@ export default function App() {
             <Route path="/product/:id"        element={<ProductDetail />} />
             <Route path="/login"              element={<LoginSignup />} />
             <Route path="/register"           element={<LoginSignup />} />
+            <Route path="/search"             element={<SearchPage />} />
             <Route path="/verify-otp"         element={<OTPVerification />} />
             <Route path="/cart"               element={<ProtectedRoute><Cart /></ProtectedRoute>} />
             <Route path="/checkout"           element={<ProtectedRoute><Checkout /></ProtectedRoute>} />

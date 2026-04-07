@@ -10,16 +10,47 @@ const { verifyToken, verifyAdmin } = require('../middleware/verifyToken');
  */
 router.get('/', async (req, res) => {
   try {
-    const { category, limit = 12 } = req.query;
-    let query = db.collection('products').orderBy('createdAt', 'desc').limit(parseInt(limit));
+    const { category, limit = 12, keyword } = req.query;
+    const parsedLimit = Math.min(parseInt(limit, 10) || 12, 60);
+    const queryLimit = keyword ? Math.max(parsedLimit, 30) : parsedLimit;
+
+    let productsQuery = db.collection('products').orderBy('createdAt', 'desc').limit(queryLimit);
+
     if (category && category !== 'all') {
-      query = db.collection('products')
+      productsQuery = db.collection('products')
         .where('category', '==', category)
         .orderBy('createdAt', 'desc')
-        .limit(parseInt(limit));
+        .limit(queryLimit);
     }
-    const snapshot = await query.get();
-    const products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    const snapshot = await productsQuery.get();
+    let products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    if (keyword && keyword.trim()) {
+      const normalizedKeyword = keyword.trim().toLowerCase();
+      products = products
+        .filter((product) => {
+          const searchable = [
+            product.name,
+            product.title,
+            product.category,
+            product.description
+          ]
+            .filter(Boolean)
+            .map((field) => field.toString().toLowerCase());
+
+          const tagMatch = Array.isArray(product.tags)
+            ? product.tags.some((tag) => tag?.toString().toLowerCase().includes(normalizedKeyword))
+            : false;
+
+          return (
+            searchable.some((field) => field.includes(normalizedKeyword)) ||
+            tagMatch
+          );
+        })
+        .slice(0, parsedLimit);
+    }
+
     res.json({ products });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch products', details: err.message });

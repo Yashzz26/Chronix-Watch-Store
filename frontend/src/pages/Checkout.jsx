@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -41,14 +41,17 @@ const CheckoutStepper = ({ currentStep }) => {
 
 export default function Checkout() {
   const navigate = useNavigate();
-  const { items, clearCart, appliedCoupon, applyCoupon } = useCartStore();
+  const { items, clearCart, appliedCoupon, applyCoupon, removeCoupon } = useCartStore();
   const { profile } = useAuthStore();
   
+  const backendUrl = import.meta.env.VITE_BACKEND_URL;
   const [currentStep, setCurrentStep] = useState('address');
   const [method, setMethod] = useState('online');
   const [loading, setLoading] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
-  const [promoCode, setPromoCode] = useState('');
+  const [couponCode, setCouponCode] = useState('');
+  const [couponStatus, setCouponStatus] = useState(null);
+  const [couponLoading, setCouponLoading] = useState(false);
   const [autoLocationAttempted, setAutoLocationAttempted] = useState(false);
 
   const [addressData, setAddressData] = useState({
@@ -109,21 +112,68 @@ export default function Checkout() {
   if (items.length === 0) return null;
 
   const subtotal = items.reduce((s, i) => s + (i.dealPrice || i.price) * i.qty, 0);
-  const discountAmount = appliedCoupon ? (subtotal * appliedCoupon.discount) / 100 : 0;
-  const grandTotal = (subtotal - discountAmount) * 1.18; // Including GST estimate
+  const gstRate = 0.18;
+  const couponDiscountAmount = appliedCoupon
+    ? (appliedCoupon.discountAmount ??
+        (appliedCoupon.discount ? (subtotal * appliedCoupon.discount) / 100 : 0))
+    : 0;
+  const discountedSubtotal = Math.max(0, subtotal - couponDiscountAmount);
+  const estimatedTax = discountedSubtotal * gstRate;
+  const grandTotal = discountedSubtotal + estimatedTax;
+  const payableTotal = Number(grandTotal.toFixed(2));
 
-  const handleApplyPromo = async () => {
-    const trimmed = promoCode.trim().toUpperCase();
-    if (!trimmed) return toast.error('Enter a code first');
+  const handleApplyCoupon = async () => {
+    if (couponLoading) return;
+    const trimmed = couponCode.trim().toUpperCase();
+    if (!trimmed) {
+      setCouponStatus({ type: 'error', message: 'Enter a coupon code first.' });
+      return;
+    }
+    if (appliedCoupon && appliedCoupon.code === trimmed) {
+      setCouponStatus({ type: 'info', message: 'Coupon already applied.' });
+      return;
+    }
+    setCouponLoading(true);
+    setCouponStatus(null);
     try {
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/coupons`);
-      const { coupons } = await res.json();
-      const match = coupons.find(c => c.code.toUpperCase() === trimmed);
-      if (match) {
-        applyCoupon({ code: match.code, discount: Number(match.discount) });
-        toast.success(`Code applied. ${match.discount}% off`);
-      } else { toast.error('Code not valid'); }
-    } catch (err) { toast.error("Couldn't verify code"); }
+      const headers = { 'Content-Type': 'application/json' };
+      if (auth.currentUser) {
+        headers.Authorization = `Bearer ${await auth.currentUser.getIdToken()}`;
+      }
+      const response = await fetch(`${backendUrl}/api/coupons/apply`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ code: trimmed, cartTotal: subtotal })
+      });
+      const data = await response.json();
+      if (!response.ok || data.success === false) {
+        throw new Error(data.error || data.message || 'Invalid or expired coupon.');
+      }
+
+      const normalizedDiscount = Number(
+        data.discountAmount ?? data.coupon?.discountAmount ?? 0
+      );
+
+      applyCoupon({
+        code: data.coupon?.code || trimmed,
+        discount: data.coupon?.discount ?? null,
+        discountAmount: normalizedDiscount,
+        description: data.coupon?.description || '',
+        finalSubtotal: Number(data.finalAmount ?? data.finalSubtotal ?? subtotal)
+      });
+      setCouponStatus({ type: 'success', message: data.message || 'Coupon applied successfully.' });
+      setCouponCode('');
+    } catch (error) {
+      setCouponStatus({ type: 'error', message: error.message || 'Unable to apply coupon.' });
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    removeCoupon();
+    setCouponStatus({ type: 'info', message: 'Coupon removed.' });
+    setCouponCode('');
   };
 
   const handlePlaceOrder = async () => {
@@ -136,7 +186,6 @@ export default function Checkout() {
     setLoading(true);
     try {
       const token = await auth.currentUser.getIdToken();
-      const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
       const orderPayload = {
         items: items.map(item => ({
@@ -147,12 +196,14 @@ export default function Checkout() {
           priceAtPurchase: Number(item.dealPrice || item.price || 0),
           qty: item.qty,
           sku: item.sku || `CHX-${item.id.slice(0, 6)}`,
-          variantLabel: item.variants ? Object.values(item.variants).join(' • ') : 'Standard'
+          variantLabel: item.variants ? Object.values(item.variants).join(' â€¢ ') : 'Standard'
         })),
-        totalPrice: grandTotal,
+        totalPrice: payableTotal,
         paymentMethod: method,
         address: addressData,
-        couponCode: appliedCoupon?.code
+        couponCode: appliedCoupon?.code || null,
+        discountAmount: couponDiscountAmount,
+        finalAmount: payableTotal
       };
 
       if (method === 'online') {
@@ -286,6 +337,14 @@ export default function Checkout() {
           margin-bottom: 12px;
           color: var(--t3);
         }
+
+        .coupon-feedback {
+          font-size: 0.75rem;
+          font-weight: 600;
+        }
+        .coupon-feedback.success { color: #198754; }
+        .coupon-feedback.error { color: #b02a37; }
+        .coupon-feedback.info { color: var(--t2); }
       `}</style>
 
       <div className="container">
@@ -348,7 +407,7 @@ export default function Checkout() {
                              <HiOutlineCreditCard className="h3 text-gold m-0" />
                              <div>
                                 <h4 className="small fw-bold m-0 mb-1">Online payment</h4>
-                                <p className="x-small text-t3 m-0 uppercase tracking-wider">UPI • Cards • Net banking</p>
+                                <p className="x-small text-t3 m-0 uppercase tracking-wider">UPI â€¢ Cards â€¢ Net banking</p>
                              </div>
                           </div>
                        </div>
@@ -392,8 +451,8 @@ export default function Checkout() {
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden mb-4 border-bottom border-border pb-3">
                     {items.map(item => (
                        <div key={item.id + JSON.stringify(item.variants || {})} className="item-row-sm">
-                          <span className="text-truncate flex-grow-1 pe-3">{item.name} × {item.qty}</span>
-                          <span className="fw-bold">₹{((item.dealPrice || item.price) * item.qty).toLocaleString()}</span>
+                          <span className="text-truncate flex-grow-1 pe-3">{item.name} Ã— {item.qty}</span>
+                          <span className="fw-bold">â‚¹{((item.dealPrice || item.price) * item.qty).toLocaleString()}</span>
                        </div>
                     ))}
                   </motion.div>
@@ -402,33 +461,60 @@ export default function Checkout() {
 
               <div className="statement-row">
                 <span>Items</span>
-                <span className="fw-bold">₹{subtotal.toLocaleString()}</span>
+                <span className="fw-bold">?{subtotal.toLocaleString()}</span>
               </div>
               {appliedCoupon && (
-                 <div className="statement-row text-success">
-                    <span>Discount ({appliedCoupon.code})</span>
-                    <span className="fw-bold">- ₹{discountAmount.toLocaleString()}</span>
+                 <div className="statement-row text-success flex-column align-items-start">
+                    <div className="w-100 d-flex justify-content-between">
+                      <span>Discount ({appliedCoupon.code})</span>
+                      <span className="fw-bold">- ?{couponDiscountAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                    </div>
+                    {appliedCoupon.description && (
+                      <span className="x-small text-success opacity-75">{appliedCoupon.description}</span>
+                    )}
                  </div>
               )}
               <div className="statement-row">
                 <span>Shipping</span>
                 <span className="text-success fw-bold x-small uppercase tracking-widest">Free</span>
               </div>
+              <div className="statement-row">
+                <span>Tax (18% GST)</span>
+                <span className="fw-bold">?{estimatedTax.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+              </div>
 
               <div className="statement-total-row d-flex justify-content-between align-items-end mb-5">
                 <span className="section-label m-0">Estimated total</span>
-                <span className="h3 fw-bold m-0 text-gold">₹{grandTotal.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                <span className="h3 fw-bold m-0 text-gold">?{payableTotal.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
               </div>
 
-              <div className="promo-input mb-5 position-relative">
-                 <input 
-                   type="text" 
-                   className="input-refined pe-5 x-small fw-bold tracking-widest uppercase" 
-                   placeholder="Promo code" 
-                   value={promoCode}
-                   onChange={e => setPromoCode(e.target.value)}
-                 />
-                 <button className="position-absolute end-0 top-50 translate-middle-y btn p-0 text-gold fw-bold me-4 x-small" onClick={handleApplyPromo}>APPLY</button>
+              <div className="promo-input mb-5">
+                 <label className="label-refined mb-2">Apply coupon</label>
+                 <div className="d-flex gap-2">
+                   <input
+                     type="text"
+                     className="input-refined x-small fw-bold tracking-widest text-uppercase"
+                     placeholder="Enter coupon code"
+                     value={couponCode}
+                     onChange={e => setCouponCode(e.target.value)}
+                     disabled={couponLoading || Boolean(appliedCoupon)}
+                   />
+                   <button
+                     className="btn btn-outline-dark text-uppercase x-small fw-bold"
+                     disabled={couponLoading || !couponCode.trim() || Boolean(appliedCoupon)}
+                     onClick={handleApplyCoupon}
+                   >
+                     {couponLoading ? 'Applying...' : 'Apply'}
+                   </button>
+                   {appliedCoupon && (
+                     <button className="btn btn-link x-small fw-bold text-danger text-uppercase" onClick={handleRemoveCoupon}>
+                       Remove
+                     </button>
+                   )}
+                 </div>
+                 {couponStatus && (
+                   <p className={`coupon-feedback ${couponStatus.type} mt-2`}>{couponStatus.message}</p>
+                 )}
               </div>
 
               <div className="d-flex align-items-center gap-2 justify-content-center opacity-40">

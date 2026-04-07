@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   HiOutlineShoppingBag, 
@@ -41,26 +41,128 @@ export default function Orders() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const { user } = useAuthStore();
+  const [cancelLoadingId, setCancelLoadingId] = useState(null);
+  const [returnLoadingId, setReturnLoadingId] = useState(null);
+  const [returnModalOrder, setReturnModalOrder] = useState(null);
+  const [returnForm, setReturnForm] = useState({ reason: '', description: '' });
+  const [returnFormError, setReturnFormError] = useState(null);
+  const backendUrl = import.meta.env.VITE_BACKEND_URL;
+
+  const updateOrderState = useCallback((orderId, updates) => {
+    setOrders(prev =>
+      prev.map(order => (order.id === orderId ? { ...order, ...updates } : order))
+    );
+  }, []);
+
+  const fetchOrders = useCallback(async () => {
+    if (!auth.currentUser) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    try {
+      const token = await auth.currentUser.getIdToken();
+      const response = await fetch(`${backendUrl}/api/orders/my`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch orders');
+      }
+      setOrders(data.orders || []);
+    } catch (error) {
+      console.error('Fetch orders error:', error);
+      toast.error(error.message || 'Unable to load orders');
+    } finally {
+      setLoading(false);
+    }
+  }, [backendUrl]);
 
   useEffect(() => {
-    const fetchOrders = async () => {
-      if (!auth.currentUser) return;
-      try {
-        const token = await auth.currentUser.getIdToken();
-        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/orders/my`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const data = await response.json();
-        if (response.ok) setOrders(data.orders || []);
-      } catch (error) {
-        console.error('Fetch orders error:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     if (user) fetchOrders();
-  }, [user]);
+  }, [user, fetchOrders]);
+
+  const returnReasons = [
+    'Damaged product',
+    'Wrong item received',
+    'Not as described',
+    'Quality issues',
+    'Other'
+  ];
+
+  const handleCancelOrder = async (order) => {
+    if (!auth.currentUser) return;
+    setCancelLoadingId(order.id);
+    try {
+      const token = await auth.currentUser.getIdToken();
+      const response = await fetch(`${backendUrl}/api/orders/${order.id}/cancel`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Unable to cancel order');
+      }
+      toast.success(data.message || 'Order cancelled');
+      updateOrderState(order.id, {
+        status: 'cancelled',
+        cancelledAt: new Date().toISOString()
+      });
+    } catch (error) {
+      toast.error(error.message || 'Unable to cancel order');
+    } finally {
+      setCancelLoadingId(null);
+    }
+  };
+
+  const openReturnModal = (order) => {
+    setReturnForm({ reason: '', description: '' });
+    setReturnFormError(null);
+    setReturnModalOrder(order);
+  };
+
+  const handleReturnSubmit = async (event) => {
+    event.preventDefault();
+    if (!returnModalOrder) return;
+    if (!returnForm.reason) {
+      setReturnFormError('Select a reason for the return.');
+      return;
+    }
+    if (!auth.currentUser) return;
+    setReturnFormError(null);
+    setReturnLoadingId(returnModalOrder.id);
+    try {
+      const token = await auth.currentUser.getIdToken();
+      const response = await fetch(`${backendUrl}/api/orders/${returnModalOrder.id}/return`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(returnForm)
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Unable to submit return request');
+      }
+      toast.success('Return request submitted');
+      updateOrderState(returnModalOrder.id, {
+        returnRequested: true,
+        returnStatus: 'pending',
+        returnReason: returnForm.reason,
+        returnDescription: returnForm.description,
+        returnRequestedAt: new Date().toISOString()
+      });
+      setReturnModalOrder(null);
+    } catch (error) {
+      toast.error(error.message || 'Unable to submit return request');
+    } finally {
+      setReturnLoadingId(null);
+    }
+  };
 
   const filteredOrders = orders.filter(order => {
     const matchesSearch = order.id.toLowerCase().includes(searchQuery.toLowerCase());
@@ -89,6 +191,7 @@ export default function Orders() {
   }
 
   return (
+    <>
     <div className="orders-standalone-page py-5">
       <style>{`
         .orders-standalone-page { background: var(--bg); min-height: 100vh; padding-top: 100px; color: var(--t1); font-family: var(--font-body); }
@@ -126,6 +229,12 @@ export default function Orders() {
         
         .input-refined { width: 100%; border: 1px solid var(--border); border-radius: 14px; padding: 14px 20px; font-size: 0.95rem; background: #fff; outline: none; transition: var(--transition); color: var(--t1); }
         .input-refined:focus { border-color: var(--gold); box-shadow: 0 0 15px rgba(212,175,55,0.05); }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(8,8,8,0.6); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 999; }
+        .modal-card { background: #fff; width: min(480px, 92%); border-radius: 20px; padding: 32px; box-shadow: 0 40px 70px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto; }
+        .modal-card select,
+        .modal-card textarea { width: 100%; border: 1px solid var(--border); border-radius: 12px; padding: 12px; font-size: 0.9rem; }
+        .modal-card textarea { min-height: 120px; resize: vertical; }
+        .modal-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 12px; }
 
         @media (max-width: 768px) {
           .order-card-header { padding: 24px; }
@@ -201,7 +310,7 @@ export default function Orders() {
                     <div className="col-lg-4">
                       <div className="d-flex align-items-center gap-4">
                         <div className="bg-bg-2 rounded-4 p-2 border border-border" style={{ width: 80, height: 80 }}>
-                          <img src={order.items[0]?.imageGallery?.[0]} alt="" className="w-100 h-100 object-fit-contain" />
+                          <img src={order.items[0]?.image || order.items[0]?.imageGallery?.[0]} alt="" className="w-100 h-100 object-fit-contain" />
                         </div>
                         <div>
                           <h4 className="h5 m-0 fw-bold">{order.items[0]?.name}</h4>
@@ -213,6 +322,11 @@ export default function Orders() {
                     <div className="col-lg-4 text-lg-center">
                        <div className="d-inline-flex flex-column align-items-center gap-2">
                           <StatusBadge status={order.status} />
+                          {order.returnStatus && (
+                            <span className="x-small text-uppercase fw-bold" style={{ color: '#6D28D9' }}>
+                              Return {order.returnStatus}
+                            </span>
+                          )}
                           <span className="small text-t3 mt-1 fw-medium">Ordered on {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
                        </div>
                     </div>
@@ -220,12 +334,33 @@ export default function Orders() {
                     <div className="col-lg-4 text-lg-end">
                        <div>
                           <p className="h4 m-0 fw-bold mb-3 font-mono">₹{order.totalPrice.toLocaleString('en-IN')}</p>
-                          <div className="d-flex justify-content-lg-end gap-2">
+                          <div className="d-flex justify-content-lg-end gap-2 flex-wrap">
                              <button className="action-btn action-btn-primary" onClick={() => navigate(`/invoice/${order.id}`)}>
                                View Invoice
                              </button>
-                             {order.status === 'delivered' && <button className="action-btn action-btn-outline">Reorder</button>}
-                             {order.status === 'pending' && <button className="action-btn action-btn-outline text-danger border-danger border-opacity-25" onClick={() => toast.success('Cancellation request sent')}>Cancel Order</button>}
+                             {order.status === 'delivered' && (
+                               <button className="action-btn action-btn-outline">
+                                 Reorder
+                               </button>
+                             )}
+                             {['pending', 'paid', 'shipped'].includes(order.status) && order.status !== 'cancelled' && (
+                               <button
+                                 className="action-btn action-btn-outline text-danger border-danger border-opacity-25"
+                                 onClick={() => handleCancelOrder(order)}
+                                 disabled={cancelLoadingId === order.id}
+                               >
+                                 {cancelLoadingId === order.id ? 'Cancelling...' : 'Cancel Order'}
+                               </button>
+                             )}
+                             {order.status === 'delivered' && !order.returnRequested && (
+                               <button
+                                 className="action-btn action-btn-outline"
+                                 onClick={() => openReturnModal(order)}
+                                 disabled={returnLoadingId === order.id}
+                               >
+                                 Request Return
+                               </button>
+                             )}
                           </div>
                        </div>
                     </div>
@@ -243,7 +378,7 @@ export default function Orders() {
                                 {order.items.map((item, idx) => (
                                   <div key={idx} className="d-flex align-items-center justify-content-between p-3 bg-white rounded-3 border border-border border-opacity-50 transition-all hover:border-gold">
                                      <div className="d-flex align-items-center gap-4">
-                                        <img src={item.imageGallery?.[0]} style={{ width: 50 }} alt="" />
+                                        <img src={item.image || item.imageGallery?.[0]} style={{ width: 50 }} alt="" />
                                         <div>
                                            <p className="m-0 fw-bold">{item.name}</p>
                                            <span className="small text-t3 opacity-50">Quantity: {item.qty} | Model Ref: CH-{idx+102}</span>
@@ -286,6 +421,61 @@ export default function Orders() {
         )}
       </div>
     </div>
+
+    {returnModalOrder && (
+      <div className="modal-overlay" role="dialog" aria-modal="true">
+        <div className="modal-card">
+          <h3 className="h4 mb-2">Request a return</h3>
+          <p className="text-t3 small mb-4">
+            Order ID: <strong>{returnModalOrder.id.toUpperCase()}</strong>
+          </p>
+          <form onSubmit={handleReturnSubmit}>
+            <label className="small fw-bold text-uppercase">Reason</label>
+            <select
+              value={returnForm.reason}
+              onChange={(e) => setReturnForm((prev) => ({ ...prev, reason: e.target.value }))}
+              required
+            >
+              <option value="">Select reason</option>
+              {returnReasons.map((reason) => (
+                <option key={reason} value={reason}>
+                  {reason}
+                </option>
+              ))}
+            </select>
+
+            <label className="small fw-bold text-uppercase mt-3">Description (optional)</label>
+            <textarea
+              placeholder="Tell us more about the issue..."
+              value={returnForm.description}
+              onChange={(e) => setReturnForm((prev) => ({ ...prev, description: e.target.value }))}
+            />
+            {returnFormError && (
+              <p className="text-danger small mb-0">{returnFormError}</p>
+            )}
+
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="action-btn action-btn-outline"
+                onClick={() => setReturnModalOrder(null)}
+                disabled={returnLoadingId === returnModalOrder.id}
+              >
+                Close
+              </button>
+              <button
+                type="submit"
+                className="action-btn action-btn-primary"
+                disabled={returnLoadingId === returnModalOrder.id}
+              >
+                {returnLoadingId === returnModalOrder.id ? 'Submitting...' : 'Submit request'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
 

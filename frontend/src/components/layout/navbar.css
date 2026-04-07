@@ -62,7 +62,7 @@
   border: 1px solid var(--border);
   border-radius: 999px;
   background: var(--bg-2);
-  padding: 10px 16px 10px 36px;
+  padding: 10px 76px 10px 36px;
   font-size: 0.9rem;
   color: var(--t1);
 }
@@ -79,6 +79,27 @@
   top: 50%;
   transform: translateY(-50%);
   color: var(--t3);
+}
+
+.site-nav__search-submit {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: var(--t1);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  padding: 6px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.site-nav__search-submit:disabled {
+  opacity: 0.5;
 }
 
 .site-nav__results {
