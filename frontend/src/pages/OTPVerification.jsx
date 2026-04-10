@@ -34,7 +34,7 @@ const otpError = (error) => {
 
 export default function OTPVerification() {
   const navigate = useNavigate();
-  const { isLoggedIn, profile, fetchProfile } = useAuthStore();
+  const { isLoggedIn, profile, fetchProfile, markPhoneAsVerified } = useAuthStore();
 
   const [phone, setPhone] = useState(() => {
     if (profile?.phone?.startsWith('+91')) return profile.phone.replace('+91', '');
@@ -209,6 +209,7 @@ export default function OTPVerification() {
       
       // 2. Sync to Backend (Firestore Update)
       await markPhoneVerified(formattedPhone());
+      markPhoneAsVerified(formattedPhone());
       
       // 3. Refresh Profile
       if (auth.currentUser?.uid) {
@@ -221,7 +222,10 @@ export default function OTPVerification() {
       navigate(stored === '/verify-otp' ? '/' : stored, { replace: true });
     } catch (error) {
       console.error('Verify OTP error:', error);
-      toast.error(otpError(error));
+      const message = error?.message?.includes('timeout')
+        ? 'Sync timed out. We will retry automatically in a moment.'
+        : otpError(error);
+      toast.error(message);
     } finally {
       setSending(false);
     }

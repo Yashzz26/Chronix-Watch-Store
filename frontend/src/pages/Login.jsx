@@ -1,8 +1,6 @@
-import { Navigate, useLocation } from 'react-router-dom';
+import LoginSignup from './LoginSignup';
 
-export default function LoginRedirect() {
-  const location = useLocation();
-  const search = location.search || '';
-  return <Navigate to={`/login${search}`} replace />;
+export default function Login() {
+  return <LoginSignup />;
 }
 

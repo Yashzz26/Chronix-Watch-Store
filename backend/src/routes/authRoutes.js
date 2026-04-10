@@ -8,6 +8,21 @@ const { normalizePhone } = require('../utils/phone');
 const serverTimestamp = () =>
   admin.firestore ? admin.firestore.FieldValue.serverTimestamp() : new Date();
 
+const wait = (ms = 300) => new Promise(resolve => setTimeout(resolve, ms));
+
+const fetchUserRecord = async (uid, attempts = 3) => {
+  let lastError;
+  for (let i = 0; i < attempts; i += 1) {
+    try {
+      return await admin.auth().getUser(uid);
+    } catch (error) {
+      lastError = error;
+      await wait(200 * (i + 1));
+    }
+  }
+  throw lastError;
+};
+
 /**
  * POST /api/auth/phone/mark-verified
  * Body: { phone: "+91XXXXXXXXXX" }
@@ -20,21 +35,18 @@ router.post('/phone/mark-verified', verifyToken, async (req, res) => {
   }
 
   try {
-    const mobile = normalizePhone(phone);
+    const payloadPhone = normalizePhone(phone);
     const userRef = db.collection('users').doc(req.user.uid);
-    
-    // Extract the verified phone number from the Firebase Auth token
-    const userRecord = await admin.auth().getUser(req.user.uid);
-    
-    // Security check: Match payload with token claim
-    if (userRecord.phoneNumber !== mobile) {
-      console.warn(`[Auth] Sync mismatch: Token phone ${userRecord.phoneNumber} vs Payload ${mobile}`);
-      if (!userRecord.phoneNumber) {
-        return res.status(400).json({ error: 'Phone number not verified in Firebase' });
-      }
+    const userRecord = await fetchUserRecord(req.user.uid, 4);
+
+    if (!userRecord?.phoneNumber) {
+      return res.status(409).json({ error: 'Firebase Auth has not stored a verified phone number yet. Retry in a moment.' });
     }
 
-    const verifiedPhone = userRecord.phoneNumber || mobile;
+    const verifiedPhone = normalizePhone(userRecord.phoneNumber);
+    if (verifiedPhone !== payloadPhone) {
+      console.warn(`[Auth] Sync mismatch: Auth=${verifiedPhone} Payload=${payloadPhone}`);
+    }
 
     await userRef.set(
       {
@@ -47,6 +59,8 @@ router.post('/phone/mark-verified', verifyToken, async (req, res) => {
 
     const profileSnap = await userRef.get();
     const profile = profileSnap.data() || {};
+    profile.isPhoneVerified = true;
+    profile.phone = verifiedPhone;
 
     if (profile?.email) {
       sendEmailConfirmation({ to: profile.email, name: profile.name }).catch((err) =>
@@ -82,5 +96,4 @@ router.post('/otp/bypass', verifyToken, async (req, res) => {
 });
 
 module.exports = router;
-
 

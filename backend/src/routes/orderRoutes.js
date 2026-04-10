@@ -406,6 +406,132 @@ router.get('/admin/all', verifyToken, verifyAdmin, async (req, res) => {
 });
 
 /**
+ * POST /api/orders/admin/migrate-enterprise-ids
+ * Admin: Normalize legacy order & invoice identifiers to ORD-/INV- format
+ * Body: { dryRun?: boolean, batchSize?: number }
+ */
+router.post('/admin/migrate-enterprise-ids', verifyToken, verifyAdmin, async (req, res) => {
+  const { dryRun = false, batchSize = 200 } = req.body || {};
+
+  try {
+    const snapshot = await db.collection('orders').get();
+    if (snapshot.empty) {
+      return res.json({
+        success: true,
+        migratedCount: 0,
+        message: 'No orders found to migrate.',
+        instructions: [
+          'Create a Firestore export before running migrations.',
+          'Re-run this endpoint after new legacy data is imported.'
+        ],
+      });
+    }
+
+    const existingIds = new Set(snapshot.docs.map(doc => doc.id));
+    const legacyOrders = snapshot.docs
+      .map(doc => ({
+        id: doc.id,
+        ref: doc.ref,
+        data: doc.data() || {},
+      }))
+      .filter(entry => !String(entry.id).startsWith('ORD-'));
+
+    if (!legacyOrders.length) {
+      return res.json({
+        success: true,
+        migratedCount: 0,
+        message: 'All orders already use enterprise IDs for document IDs.',
+      });
+    }
+
+    const normalizedBatchSize = Math.min(
+      Math.max(parseInt(batchSize, 10) || 200, 1),
+      200
+    ); // 200 => 400 writes (set+delete) per batch
+
+    const allocateEnterpriseIds = () => {
+      let suffix = '';
+      let candidateDocId = '';
+      do {
+        suffix = generateDisplayId();
+        candidateDocId = `ORD-${suffix}`;
+      } while (existingIds.has(candidateDocId));
+      existingIds.add(candidateDocId);
+      return {
+        orderDocId: candidateDocId,
+        invoiceId: `INV-${suffix}`,
+      };
+    };
+
+    if (dryRun) {
+      return res.json({
+        success: true,
+        dryRun: true,
+        legacyCount: legacyOrders.length,
+        sample: legacyOrders.slice(0, 5).map(entry => ({
+          legacyDocId: entry.id,
+          orderDisplayId: entry.data.orderDisplayId || null,
+          invoiceId: entry.data.invoiceId || null,
+        })),
+        instructions: [
+          'Review the sample payload above.',
+          'Take a Firestore backup (Console export or gcloud firestore export).',
+          'Re-run with { dryRun: false } during a low-traffic window.',
+        ],
+      });
+    }
+
+    let migratedCount = 0;
+    let batchesCommitted = 0;
+    const nowIso = new Date().toISOString();
+
+    for (let i = 0; i < legacyOrders.length; i += normalizedBatchSize) {
+      const chunk = legacyOrders.slice(i, i + normalizedBatchSize);
+      const batch = db.batch();
+
+      chunk.forEach(entry => {
+        const { orderDocId, invoiceId } = allocateEnterpriseIds();
+        const newRef = db.collection('orders').doc(orderDocId);
+        const payload = {
+          ...entry.data,
+          orderDisplayId: entry.data.orderDisplayId?.startsWith('ORD-')
+            ? entry.data.orderDisplayId
+            : orderDocId,
+          invoiceId: entry.data.invoiceId?.startsWith('INV-')
+            ? entry.data.invoiceId
+            : invoiceId,
+          id: orderDocId,
+          legacyOrderDocId: entry.id,
+          enterpriseIdMigratedAt: nowIso,
+        };
+
+        batch.set(newRef, payload, { merge: false });
+        batch.delete(entry.ref);
+      });
+
+      await batch.commit();
+      batchesCommitted += 1;
+      migratedCount += chunk.length;
+      console.info(`[OrderMigration] Batch ${batchesCommitted} committed (${chunk.length * 2} writes)`);
+    }
+
+    return res.json({
+      success: true,
+      migratedCount,
+      totalLegacyOrders: legacyOrders.length,
+      batchesCommitted,
+      instructions: [
+        'Confirm automated reports reference the new document IDs.',
+        'Communicate the migration completion to the ops team before resuming promotions.',
+      ],
+    });
+  } catch (err) {
+    console.error('Order ID migration failed:', err);
+    res.status(500).json({ error: 'Failed to normalize order identifiers' });
+  }
+});
+
+/**
  * PATCH /api/orders/admin/:orderId/status
  * Admin: Update order status
  * Body: { status: 'paid' | 'shipped' | 'delivered' | 'cancelled' }

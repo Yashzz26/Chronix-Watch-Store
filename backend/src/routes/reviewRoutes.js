@@ -1,7 +1,19 @@
 const express = require('express');
 const router = express.Router();
-const { db } = require('../config/firebase');
+const { db, admin } = require('../config/firebase');
 const { verifyToken } = require('../middleware/verifyToken');
+
+const formatTimestamp = (value) => {
+  if (!value) return null;
+  if (typeof value.toDate === 'function') {
+    return value.toDate().toISOString();
+  }
+  if (typeof value === 'string') return value;
+  if (value.seconds) {
+    return new Date(value.seconds * 1000).toISOString();
+  }
+  return null;
+};
 
 /**
  * GET /api/reviews/:productId
@@ -10,15 +22,32 @@ const { verifyToken } = require('../middleware/verifyToken');
 router.get('/:productId', async (req, res) => {
   try {
     const { productId } = req.params;
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 50, 1), 200);
+
     const snapshot = await db.collection('reviews')
       .where('productId', '==', productId)
+      .orderBy('createdAt', 'desc')
+      .limit(limit)
       .get();
-      
-    let reviews = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    // Sort manually to avoid index requirement for field filters + orderBy
-    reviews.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    const reviews = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: formatTimestamp(data.createdAt) || data.createdAtIso || null,
+        updatedAt: formatTimestamp(data.updatedAt) || data.updatedAtIso || null,
+      };
+    });
     res.json({ reviews });
   } catch (err) {
+    if (err.code === 9 || /index|composite/i.test(err.message || '')) {
+      const urlMatch = err.message?.match(/https:\/\/[^\s)]+/i);
+      return res.status(500).json({
+        error: 'Missing Firestore index for productId+createdAt. Please deploy firestore.indexes.json or follow the Firebase console link.',
+        consoleLink: urlMatch ? urlMatch[0] : null,
+      });
+    }
     console.error('Fetch reviews error:', err);
     res.status(500).json({ error: 'Failed to fetch reviews', details: err.message });
   }
@@ -36,14 +65,17 @@ router.post('/', verifyToken, async (req, res) => {
       return res.status(400).json({ error: 'Missing review details: productId, rating, or comment' });
     }
 
+    const nowIso = new Date().toISOString();
     const reviewData = {
       productId,
       userId: req.user.uid,
       authorName: authorName || req.user.email.split('@')[0], // Fallback to email prefix
       rating: Number(rating),
       comment,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAtIso: nowIso,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAtIso: nowIso
     };
 
     const docRef = await db.collection('reviews').add(reviewData);
@@ -75,10 +107,12 @@ router.put('/:reviewId', verifyToken, async (req, res) => {
       return res.status(403).json({ error: 'Unauthorized: Can only edit your own reviews' });
     }
 
+    const nowIso = new Date().toISOString();
     await reviewRef.update({
       rating: Number(rating) || doc.data().rating,
       comment: comment || doc.data().comment,
-      updatedAt: new Date().toISOString()
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAtIso: nowIso
     });
 
     res.json({ success: true, message: 'Review updated successfully' });

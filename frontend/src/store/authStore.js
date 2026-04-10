@@ -259,6 +259,16 @@ const useAuthStore = create(
           setDoc(doc(db, 'users', get().user.uid), patched, { merge: true });
         }
       },
+
+      markPhoneAsVerified(phone) {
+        set((state) => ({
+          profile: {
+            ...state.profile,
+            phone: phone || state.profile.phone,
+            isPhoneVerified: true,
+          },
+        }));
+      },
     }),
     {
       name: 'chronix-auth',
