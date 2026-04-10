@@ -34,11 +34,10 @@ module.exports = function validateOrderPayload(req, res, next) {
       errors.push('At least one cart item is required.');
     }
 
-    const parsedTotal = Number(body.totalAmount ?? body.totalPrice);
-    const totalAmount = Number.isFinite(parsedTotal) ? parsedTotal : 0;
-    if (totalAmount <= 0) {
-      errors.push('totalAmount must be a positive number.');
-    }
+    // totalAmount is now OPTIONAL — server recalculates from Firestore prices.
+    // We still accept it for logging/mismatch detection purposes.
+    const parsedTotal = Number(body.totalAmount ?? body.totalPrice ?? body.finalAmount);
+    const totalAmount = Number.isFinite(parsedTotal) && parsedTotal > 0 ? parsedTotal : 0;
 
     const rawPaymentMethod = (body.paymentMethod || '').toString().trim().toLowerCase();
     const paymentMethod = allowedPaymentAliases[rawPaymentMethod] || null;
@@ -67,12 +66,16 @@ module.exports = function validateOrderPayload(req, res, next) {
       return res.status(400).json({ success: false, error: 'Invalid order payload', details: errors });
     }
 
+    // Extract couponCode so the route handler can re-validate it server-side
+    const couponCode = typeof body.couponCode === 'string' ? body.couponCode.trim() : null;
+
     req.orderPayload = {
       items,
       totalAmount,
       paymentMethod,
       shippingAddress: unifiedAddress,
-      rawPaymentMethod
+      rawPaymentMethod,
+      couponCode
     };
 
     return next();

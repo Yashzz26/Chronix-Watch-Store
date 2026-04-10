@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -210,7 +210,10 @@ export default function Checkout() {
         const rezResponse = await fetch(`${backendUrl}/api/orders/create-razorpay-order`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ amount: grandTotal })
+          body: JSON.stringify({
+            items: orderPayload.items,
+            couponCode: appliedCoupon?.code || null
+          })
         });
         const orderData = await rezResponse.json();
         if (!rezResponse.ok) throw new Error(orderData.error);

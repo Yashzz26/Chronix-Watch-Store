@@ -1,10 +1,14 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
 const razorpay = require('../config/razorpay');
-const { db } = require('../config/firebase');
+const { db, admin } = require('../config/firebase');
 const { verifyToken, verifyAdmin } = require('../middleware/verifyToken');
 const validateOrderPayload = require('../middleware/validateOrderPayload');
+
+// ─── Constants ──────────────────────────────────────────────────────────────────
+const GST_RATE = 0.18; // 18% GST — must stay in sync with frontend
+const PRICE_MISMATCH_TOLERANCE = 1; // ₹1 tolerance for floating-point rounding
 
 /**
  * POST /api/orders
@@ -158,8 +162,100 @@ const verifyRazorpaySignature = (details = {}) => {
   };
 };
 
+// ─── Helper: resolve the REAL server-side price for a single order item ─────
+const resolveServerPrice = (productData, variantMatch) => {
+  // Variant price takes priority when a variant was matched
+  if (variantMatch && variantMatch.variant) {
+    const variantPrice = Number(variantMatch.variant.price);
+    if (Number.isFinite(variantPrice) && variantPrice > 0) return variantPrice;
+  }
+  // Fallback to the product-level price
+  const basePrice = Number(productData.price);
+  if (Number.isFinite(basePrice) && basePrice > 0) return basePrice;
+  return null; // signals "no valid price in DB"
+};
+
+// ─── Helper: re-validate a coupon code server-side inside a transaction ──────
+const resolveServerCoupon = async (transaction, couponCode, subtotal) => {
+  if (!couponCode || typeof couponCode !== 'string') return null;
+  const normalizedCode = couponCode.trim().toUpperCase();
+  if (!normalizedCode) return null;
+
+  const couponSnap = await db
+    .collection('coupons')
+    .where('code', '==', normalizedCode)
+    .limit(1)
+    .get();
+
+  if (couponSnap.empty) {
+    logOrderEvent('Coupon not found during order', { couponCode: normalizedCode });
+    return null; // silently ignore — order proceeds without discount
+  }
+
+  const couponDoc = couponSnap.docs[0];
+  const coupon = couponDoc.data();
+
+  if (!coupon.isActive) return null;
+
+  // Check expiry
+  const expirySource = coupon.expiresAt || coupon.expiryDate || coupon.validTill || coupon.validUntil;
+  if (expirySource) {
+    const expiry = typeof expirySource.toDate === 'function' ? expirySource.toDate() : new Date(expirySource);
+    if (!Number.isNaN(expiry.getTime()) && expiry.getTime() < Date.now()) return null;
+  }
+
+  // Check minimum spend
+  const minimumSpend = Number(coupon.minimumSpend || 0);
+  if (subtotal < minimumSpend) return null;
+
+  // Compute discount
+  const discountValue = Number(coupon.discountValue ?? coupon.discount ?? coupon.value ?? 0);
+  if (discountValue <= 0) return null;
+
+  const discountTypeRaw = (coupon.discountType || coupon.type || 'percentage').toLowerCase();
+  const isFlat = discountTypeRaw === 'flat' || discountTypeRaw === 'amount' || discountTypeRaw === 'flat_rate';
+
+  let discountAmount = isFlat ? discountValue : (subtotal * discountValue) / 100;
+  discountAmount = Math.min(discountAmount, subtotal);
+
+  // Check usage limit
+  const usageLimit = Number(coupon.maxRedemptions ?? coupon.usageLimit ?? coupon.maxUses ?? coupon.limit ?? 0) || null;
+  const used = Number(coupon.redemptionCount ?? coupon.timesUsed ?? coupon.usageCount ?? 0);
+  if (usageLimit !== null && used >= usageLimit) return null;
+
+  // Increment usage counter inside the same transaction
+  if (usageLimit !== null) {
+    const usageField = coupon.redemptionCount !== undefined
+      ? 'redemptionCount'
+      : coupon.timesUsed !== undefined
+        ? 'timesUsed'
+        : 'usageCount';
+    transaction.update(couponDoc.ref, {
+      [usageField]: admin.firestore.FieldValue.increment(1),
+      lastRedemptionAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  }
+
+  return {
+    code: coupon.code,
+    discountAmount: Number(discountAmount.toFixed(2)),
+    discountType: isFlat ? 'flat' : 'percentage',
+    discountValue,
+  };
+};
+
+// ─── Helper: compute server-side totals from items array ────────────────────
+const computeServerTotals = (verifiedItems, couponResult) => {
+  const subtotal = verifiedItems.reduce((sum, item) => sum + item.serverPrice * item.qty, 0);
+  const discountAmount = couponResult ? couponResult.discountAmount : 0;
+  const discountedSubtotal = Math.max(0, subtotal - discountAmount);
+  const tax = discountedSubtotal * GST_RATE;
+  const grandTotal = Number((discountedSubtotal + tax).toFixed(2));
+  return { subtotal, discountAmount, discountedSubtotal, tax, grandTotal };
+};
+
 router.post('/', verifyToken, validateOrderPayload, async (req, res) => {
-  const { items, totalAmount, paymentMethod, shippingAddress } = req.orderPayload;
+  const { items, totalAmount: clientTotal, paymentMethod, shippingAddress, couponCode } = req.orderPayload;
   const isCod = paymentMethod === 'cod';
   const suffix = generateDisplayId();
   const orderDisplayId = `ORD-${suffix}`;
@@ -168,17 +264,19 @@ router.post('/', verifyToken, validateOrderPayload, async (req, res) => {
   logOrderEvent('Incoming order request', {
     userId: req.user.uid,
     itemCount: items.length,
-    totalAmount,
+    clientTotal,
     paymentMethod,
+    couponCode: couponCode || 'none',
     addressKeys: Object.keys(shippingAddress || {})
   });
 
   try {
-    const { orderId } = await db.runTransaction(async (transaction) => {
+    const { orderId, serverTotal } = await db.runTransaction(async (transaction) => {
       const orderRef = db.collection('orders').doc();
       const normalizedItems = mapOrderItems(items);
       const productCache = new Map();
 
+      // ── Step 1: fetch all product docs inside the transaction ─────────────
       const ensureProductContext = async (productId) => {
         if (!productId) {
           throw new OrderError('Product identifier missing for one of the items.', 400);
@@ -206,14 +304,27 @@ router.post('/', verifyToken, validateOrderPayload, async (req, res) => {
         return productCache.get(productId);
       };
 
+      // ── Step 2: validate stock + resolve SERVER price for every item ──────
       for (const item of normalizedItems) {
         const ctx = await ensureProductContext(item.productId);
         const productData = ctx.data;
         const variants = Array.isArray(productData.variants) ? productData.variants : [];
         const variantMatch = resolveVariantMatch(variants, item.selectedVariant, item.sku);
 
-        logOrderEvent('Stock validation', {
+        // Resolve the REAL price from Firestore (not from the client)
+        const serverPrice = resolveServerPrice(productData, variantMatch);
+        if (serverPrice === null) {
+          throw new OrderError(`Price not configured for product "${item.name}".`, 400);
+        }
+
+        // Attach the server-verified price to the item
+        item.serverPrice = serverPrice;
+        item.priceAtPurchase = serverPrice; // override any client-sent priceAtPurchase
+
+        logOrderEvent('Price + stock validation', {
           productId: item.productId,
+          clientPrice: item.priceAtPurchase,
+          serverPrice,
           requestedSku: item.sku,
           matchedSku: variantMatch && variantMatch.variant ? variantMatch.variant.sku : null,
           qty: item.qty
@@ -256,13 +367,46 @@ router.post('/', verifyToken, validateOrderPayload, async (req, res) => {
         productData.stock = currentTotalStock - item.qty >= 0 ? currentTotalStock - item.qty : 0;
       }
 
+      // ── Step 3: re-validate coupon server-side ────────────────────────────
+      const rawSubtotal = normalizedItems.reduce((sum, i) => sum + i.serverPrice * i.qty, 0);
+      const couponResult = await resolveServerCoupon(transaction, couponCode, rawSubtotal);
+
+      // ── Step 4: compute the AUTHORITATIVE server total ────────────────────
+      const totals = computeServerTotals(normalizedItems, couponResult);
+
+      // ── Step 5: log and compare against client-sent total ─────────────────
+      logOrderEvent('Server price verification', {
+        clientTotal,
+        serverTotal: totals.grandTotal,
+        subtotal: totals.subtotal,
+        discount: totals.discountAmount,
+        tax: Number(totals.tax.toFixed(2)),
+        match: Math.abs(clientTotal - totals.grandTotal) <= PRICE_MISMATCH_TOLERANCE
+      });
+
+      if (Math.abs(clientTotal - totals.grandTotal) > PRICE_MISMATCH_TOLERANCE) {
+        console.warn(
+          `[Order] ⚠️  PRICE MISMATCH DETECTED — userId=${req.user.uid} ` +
+          `clientTotal=₹${clientTotal} serverTotal=₹${totals.grandTotal} ` +
+          `delta=₹${Math.abs(clientTotal - totals.grandTotal).toFixed(2)}`
+        );
+      }
+
+      // ── Step 6: build the order document with SERVER-VERIFIED data ────────
       const nowIso = new Date().toISOString();
+
+      // Remove the temporary serverPrice field before persisting
+      const persistedItems = normalizedItems.map(({ serverPrice, ...rest }) => rest);
+
       const orderData = {
         userId: req.user.uid,
         userEmail: req.user.email,
-        items: normalizedItems,
-        totalPrice: totalAmount,
-        totalAmount,
+        items: persistedItems,
+        // Use ONLY the server-calculated total — never the client value
+        totalPrice: totals.grandTotal,
+        totalAmount: totals.grandTotal,
+        subtotal: totals.subtotal,
+        taxAmount: Number(totals.tax.toFixed(2)),
         paymentMethod,
         shippingAddress,
         address: shippingAddress,
@@ -270,8 +414,21 @@ router.post('/', verifyToken, validateOrderPayload, async (req, res) => {
         createdAt: nowIso,
         updatedAt: nowIso,
         orderDisplayId,
-        invoiceId
+        invoiceId,
+        // Price audit trail
+        priceVerification: {
+          clientSentTotal: clientTotal,
+          serverCalculatedTotal: totals.grandTotal,
+          mismatch: Math.abs(clientTotal - totals.grandTotal) > PRICE_MISMATCH_TOLERANCE,
+          verifiedAt: nowIso
+        }
       };
+
+      // Persist coupon details if one was applied
+      if (couponResult) {
+        orderData.coupon = couponResult;
+        orderData.discountAmount = couponResult.discountAmount;
+      }
 
       if (!isCod && req.body.razorpayDetails) {
         const verification = verifyRazorpaySignature(req.body.razorpayDetails);
@@ -282,6 +439,7 @@ router.post('/', verifyToken, validateOrderPayload, async (req, res) => {
         orderData.razorpayDetails = verification.details;
       }
 
+      // ── Step 7: commit stock changes ──────────────────────────────────────
       productCache.forEach((ctx) => {
         transaction.update(ctx.ref, {
           stock: Math.max(0, Number(ctx.data.stock || 0)),
@@ -291,13 +449,14 @@ router.post('/', verifyToken, validateOrderPayload, async (req, res) => {
       });
 
       transaction.set(orderRef, orderData);
-      return { orderId: orderRef.id };
+      return { orderId: orderRef.id, serverTotal: totals.grandTotal };
     });
 
     return res.status(201).json({
       success: true,
       orderId,
       orderDisplayId,
+      serverTotal,
       message: 'Order placed successfully'
     });
   } catch (err) {
@@ -320,25 +479,100 @@ router.post('/', verifyToken, validateOrderPayload, async (req, res) => {
 
 /**
  * POST /api/orders/create-razorpay-order
- * Creates a Razorpay order. Called from frontend checkout.
- * Body: { amount: number (in INR, NOT paise) }
- * Returns: { razorpayOrderId, amount, currency }
+ * Creates a Razorpay order with SERVER-VERIFIED pricing.
+ * Body: { items: [...], couponCode?: string }
+ * Returns: { razorpayOrderId, amount, currency, serverTotal }
+ *
+ * 🔐 Security: amount is calculated server-side from Firestore product prices.
+ *    The frontend-sent amount is intentionally IGNORED.
  */
 router.post('/create-razorpay-order', verifyToken, async (req, res) => {
   try {
-    const { amount } = req.body;
+    const { items, couponCode } = req.body;
 
-    if (!amount || typeof amount !== 'number' || amount <= 0) {
-      return res.status(400).json({ error: 'Invalid amount' });
+    // Also accept legacy { amount } calls for backward-compat during rollout,
+    // but ONLY if items are not provided (will be removed in a future release)
+    if (!Array.isArray(items) || !items.length) {
+      const { amount } = req.body;
+      if (!amount || typeof amount !== 'number' || amount <= 0) {
+        return res.status(400).json({ error: 'Items array is required for secure pricing' });
+      }
+      console.warn(`[Razorpay] ⚠️  Legacy amount-only call from userId=${req.user.uid} — amount=₹${amount}`);
+      // Fall through with the legacy amount (will be removed)
+      const order = await razorpay.orders.create({
+        amount: Math.round(amount * 100),
+        currency: 'INR',
+        receipt: `rcpt_${Date.now().toString(36)}`,
+        notes: { userId: req.user.uid, email: req.user.email, legacy: true },
+      });
+      return res.json({
+        razorpayOrderId: order.id,
+        amount: order.amount,
+        currency: order.currency,
+      });
     }
 
+    // ── Server-side price calculation ────────────────────────────────────
+    const normalizedItems = mapOrderItems(items);
+    let subtotal = 0;
+
+    for (const item of normalizedItems) {
+      if (!item.productId) {
+        return res.status(400).json({ error: 'Every item must include a productId' });
+      }
+      const productDoc = await db.collection('products').doc(String(item.productId)).get();
+      if (!productDoc.exists) {
+        return res.status(404).json({ error: `Product ${item.productId} not found` });
+      }
+
+      const productData = productDoc.data();
+      const variants = Array.isArray(productData.variants) ? productData.variants : [];
+      const variantMatch = resolveVariantMatch(variants, item.selectedVariant, item.sku);
+      const serverPrice = resolveServerPrice(productData, variantMatch);
+
+      if (serverPrice === null) {
+        return res.status(400).json({ error: `Price missing for product "${item.name}"` });
+      }
+      subtotal += serverPrice * item.qty;
+    }
+
+    // Re-validate coupon if provided
+    let discountAmount = 0;
+    if (couponCode) {
+      const normalizedCode = couponCode.trim().toUpperCase();
+      const couponSnap = await db.collection('coupons').where('code', '==', normalizedCode).limit(1).get();
+      if (!couponSnap.empty) {
+        const coupon = couponSnap.docs[0].data();
+        if (coupon.isActive) {
+          const discountValue = Number(coupon.discountValue ?? coupon.discount ?? coupon.value ?? 0);
+          const discountTypeRaw = (coupon.discountType || coupon.type || 'percentage').toLowerCase();
+          const isFlat = discountTypeRaw === 'flat' || discountTypeRaw === 'amount' || discountTypeRaw === 'flat_rate';
+          discountAmount = isFlat ? discountValue : (subtotal * discountValue) / 100;
+          discountAmount = Math.min(discountAmount, subtotal);
+        }
+      }
+    }
+
+    const discountedSubtotal = Math.max(0, subtotal - discountAmount);
+    const tax = discountedSubtotal * GST_RATE;
+    const serverTotal = Number((discountedSubtotal + tax).toFixed(2));
+
+    logOrderEvent('Razorpay order — server-priced', {
+      userId: req.user.uid,
+      subtotal,
+      discount: discountAmount,
+      tax: Number(tax.toFixed(2)),
+      serverTotal
+    });
+
     const order = await razorpay.orders.create({
-      amount: Math.round(amount * 100), // Convert INR to paise
+      amount: Math.round(serverTotal * 100), // Convert INR to paise
       currency: 'INR',
       receipt: `rcpt_${Date.now().toString(36)}`,
       notes: {
         userId: req.user.uid,
         email: req.user.email,
+        serverVerified: true,
       },
     });
 
@@ -346,6 +580,7 @@ router.post('/create-razorpay-order', verifyToken, async (req, res) => {
       razorpayOrderId: order.id,
       amount: order.amount,
       currency: order.currency,
+      serverTotal,
     });
   } catch (err) {
     console.error('Razorpay order creation error:', err);
