@@ -136,18 +136,9 @@ router.post('/apply', async (req, res) => {
         throw new CouponError('Coupon usage limit reached');
       }
 
-      if (limit !== null) {
-        const usageField = coupon.redemptionCount !== undefined
-          ? 'redemptionCount'
-          : coupon.timesUsed !== undefined
-            ? 'timesUsed'
-            : 'usageCount';
-
-        transaction.update(couponRef, {
-          [usageField]: admin.firestore.FieldValue.increment(1),
-          lastRedemptionAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
-      }
+      // 🔐 FIX: coupon usage is now incremented ONLY inside the order creation
+      // transaction (orderRoutes.js), NOT here. This prevents "ghost" increments
+      // when users apply coupons but never complete the purchase.
 
       return {
         success: true,

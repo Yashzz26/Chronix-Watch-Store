@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -94,16 +94,7 @@ export default function ProductDetail() {
     }
   }, [product]);
 
-  if (loading) return (
-    <div className="vh-100 d-flex align-items-center justify-content-center bg-bg">
-      <div className="text-center">
-        <div className="spinner-border text-gold mb-3" role="status"></div>
-        <div className="text-gold tracking-widest uppercase small fw-bold">Synchronizing Movement...</div>
-      </div>
-    </div>
-  );
-  if (!product) return null;
-
+  // ── All hooks MUST be called before any conditional return (React Rules of Hooks) ──
   const productReviews = useMemo(
     () => (product ? reviews.filter((rev) => rev.productId === product.id) : []),
     [product, reviews]
@@ -120,6 +111,16 @@ export default function ProductDetail() {
     if (!isLoggedIn || !profile?.uid) return false;
     return productReviews.some((rev) => rev.userId === profile.uid);
   }, [isLoggedIn, profile?.uid, productReviews]);
+
+  if (loading) return (
+    <div className="vh-100 d-flex align-items-center justify-content-center bg-bg">
+      <div className="text-center">
+        <div className="spinner-border text-gold mb-3" role="status"></div>
+        <div className="text-gold tracking-widest uppercase small fw-bold">Synchronizing Movement...</div>
+      </div>
+    </div>
+  );
+  if (!product) return null;
 
   const activeVariant = product?.variants?.find(v => 
     v.dialSize === selectedSize && 
@@ -178,8 +179,7 @@ export default function ProductDetail() {
       await postReview({
         productId: product.id,
         rating: ratingValue,
-        comment: reviewComment.trim(),
-        authorName: profile?.name
+        comment: reviewComment.trim()
       });
       setReviewStatus({ type: 'success', message: 'Review submitted. Thank you!' });
       toast.success('Review submitted');

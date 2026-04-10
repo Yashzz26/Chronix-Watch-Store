@@ -12,6 +12,7 @@ import {
 } from 'react-icons/hi2';
 import { auth } from '../lib/firebase';
 import useAuthStore from '../store/authStore';
+import useCartStore from '../store/cartStore';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 
@@ -47,6 +48,7 @@ export default function Orders() {
   const [returnForm, setReturnForm] = useState({ reason: '', description: '' });
   const [returnFormError, setReturnFormError] = useState(null);
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
+  const { addItem } = useCartStore();
 
   const updateOrderState = useCallback((orderId, updates) => {
     setOrders(prev =>
@@ -69,7 +71,13 @@ export default function Orders() {
       if (!response.ok) {
         throw new Error(data.error || 'Failed to fetch orders');
       }
-      setOrders(data.orders || []);
+      // Bug #5 fix: sort orders by date, newest first
+      const sorted = (data.orders || []).sort((a, b) => {
+        const dateA = new Date(a.createdAt || 0).getTime();
+        const dateB = new Date(b.createdAt || 0).getTime();
+        return dateB - dateA;
+      });
+      setOrders(sorted);
     } catch (error) {
       console.error('Fetch orders error:', error);
       toast.error(error.message || 'Unable to load orders');
@@ -81,6 +89,28 @@ export default function Orders() {
   useEffect(() => {
     if (user) fetchOrders();
   }, [user, fetchOrders]);
+
+  // Bug #3 fix: Reorder handler — adds items back to cart
+  const handleReorder = (order) => {
+    if (!order?.items?.length) {
+      toast.error('No items to reorder');
+      return;
+    }
+    order.items.forEach(item => {
+      addItem({
+        id: item.productId || item.id,
+        name: item.name,
+        price: item.priceAtPurchase || item.dealPrice || item.price || 0,
+        dealPrice: item.dealPrice || null,
+        imageGallery: item.image ? [item.image] : (item.imageGallery || []),
+        category: item.category || '',
+        qty: item.qty || 1,
+        variants: item.selectedVariant || null,
+      });
+    });
+    toast.success(`${order.items.length} item(s) added to cart`);
+    navigate('/cart');
+  };
 
   const returnReasons = [
     'Damaged product',
@@ -304,8 +334,8 @@ export default function Orders() {
                 animate={{ opacity: 1, y: 0 }}
                 className={`order-card overflow-hidden ${expandedOrderId === order.id ? 'expanded' : ''}`}
               >
-                {/* Header View */}
-                <div className="order-card-header">
+                {/* Header View — Bug #4 fix: click to expand/collapse */}
+                <div className="order-card-header" onClick={() => toggleExpand(order.id)} style={{ cursor: 'pointer' }}>
                   <div className="row align-items-center g-4">
                     <div className="col-lg-4">
                       <div className="d-flex align-items-center gap-4">
@@ -333,17 +363,17 @@ export default function Orders() {
 
                     <div className="col-lg-4 text-lg-end">
                        <div>
-                          <p className="h4 m-0 fw-bold mb-3 font-mono">₹{order.totalPrice.toLocaleString('en-IN')}</p>
-                          <div className="d-flex justify-content-lg-end gap-2 flex-wrap">
+                          <p className="h4 m-0 fw-bold mb-3 font-mono">₹{(order.totalAmount ?? order.totalPrice ?? 0).toLocaleString('en-IN')}</p>
+                          <div className="d-flex justify-content-lg-end gap-2 flex-wrap" onClick={e => e.stopPropagation()}>
                              <button className="action-btn action-btn-primary" onClick={() => navigate(`/invoice/${order.id}`)}>
                                View Invoice
                              </button>
                              {order.status === 'delivered' && (
-                               <button className="action-btn action-btn-outline">
+                               <button className="action-btn action-btn-outline" onClick={() => handleReorder(order)}>
                                  Reorder
                                </button>
                              )}
-                             {['pending', 'paid', 'shipped'].includes(order.status) && order.status !== 'cancelled' && (
+                             {['pending', 'paid'].includes(order.status) && (
                                <button
                                  className="action-btn action-btn-outline text-danger border-danger border-opacity-25"
                                  onClick={() => handleCancelOrder(order)}

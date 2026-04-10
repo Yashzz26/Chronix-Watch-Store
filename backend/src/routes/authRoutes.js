@@ -77,23 +77,31 @@ router.post('/phone/mark-verified', verifyToken, async (req, res) => {
 
 /**
  * POST /api/auth/otp/bypass
- * TEMPORARY: Allows bypassing phone verification for testing.
+ * DEV ONLY: Allows bypassing phone verification for local testing.
+ * 🔐 Completely disabled in production.
  */
-router.post('/otp/bypass', verifyToken, async (req, res) => {
-  try {
-    await db.collection('users').doc(req.user.uid).set(
-      {
-        isPhoneVerified: true,
-        phoneBypassedAt: serverTimestamp(),
-      },
-      { merge: true }
-    );
-    res.json({ success: true, message: 'OTP verification bypassed' });
-  } catch (error) {
-    console.error('Bypass failed:', error.message);
-    res.status(500).json({ error: 'Bypass failed' });
-  }
-});
+if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
+  router.post('/otp/bypass', verifyToken, async (req, res) => {
+    try {
+      await db.collection('users').doc(req.user.uid).set(
+        {
+          isPhoneVerified: true,
+          phoneBypassedAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
+      res.json({ success: true, message: 'OTP verification bypassed (dev only)' });
+    } catch (error) {
+      console.error('Bypass failed:', error.message);
+      res.status(500).json({ error: 'Bypass failed' });
+    }
+  });
+} else {
+  // Block the route entirely in production
+  router.post('/otp/bypass', (_req, res) => {
+    res.status(403).json({ error: 'OTP bypass is disabled in production.' });
+  });
+}
 
 module.exports = router;
 

@@ -295,6 +295,14 @@ export const initAuthListener = () => {
           profile: profileDoc.exists() ? profileDoc.data() : {},
           loading: false,
         });
+
+        // Sync wishlist from backend on login
+        try {
+          const { default: useWishlistStore } = await import('./wishlistStore');
+          useWishlistStore.getState().fetchWishlist();
+        } catch (err) {
+          console.warn('[Auth] Wishlist sync failed:', err.message);
+        }
       } else {
         useAuthStore.setState({ isLoggedIn: false, user: null, profile: {}, loading: false });
       }

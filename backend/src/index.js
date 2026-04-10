@@ -6,15 +6,30 @@ const morgan = require('morgan');
 
 const app = express();
 
-// Security & middleware
+// Build allowed origins from environment + localhost defaults
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://localhost:5174',
+];
+// Support single URL or comma-separated list: FRONTEND_URL=https://chronix.vercel.app,https://www.chronix.com
+if (process.env.FRONTEND_URL) {
+  process.env.FRONTEND_URL.split(',').forEach(url => {
+    const trimmed = url.trim();
+    if (trimmed) allowedOrigins.push(trimmed);
+  });
+}
+
 app.use(helmet());
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || origin.startsWith('http://localhost:')) {
-      callback(null, true);
-    } else {
-      callback(new Error(`CORS blocked: ${origin} not in whitelist`));
-    }
+    // Allow requests with no origin (mobile apps, curl, server-to-server)
+    if (!origin) return callback(null, true);
+    // Allow any localhost port in development
+    if (origin.startsWith('http://localhost:')) return callback(null, true);
+    // Check against the allowed origins list
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error(`CORS blocked: ${origin} not in whitelist`));
   },
   credentials: true,
 }));
@@ -28,6 +43,7 @@ app.use('/api/coupons', require('./routes/couponRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/reviews', require('./routes/reviewRoutes'));
 app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/wishlist', require('./routes/wishlistRoutes'));
 
 // Health check
 app.get('/health', (req, res) => {

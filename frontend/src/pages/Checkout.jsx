@@ -143,7 +143,7 @@ export default function Checkout() {
       const response = await fetch(`${backendUrl}/api/coupons/apply`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ code: trimmed, cartTotal: subtotal })
+        body: JSON.stringify({ couponCode: trimmed, cartTotal: subtotal })
       });
       const data = await response.json();
       if (!response.ok || data.success === false) {
