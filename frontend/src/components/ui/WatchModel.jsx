@@ -14,7 +14,7 @@
  */
 
 import { Suspense, useLayoutEffect } from 'react';
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useThree } from '@react-three/fiber';
 import { useGLTF, Html, Environment, OrbitControls } from '@react-three/drei';
 import { Box3, Vector3 } from 'three';
 
@@ -119,10 +119,40 @@ export default function WatchModel() {
 
           <Model />
 
+          {/* WebGL Context Cleanup Guard */}
+          <Cleanup />
+
         </Suspense>
       </Canvas>
     </div>
   );
+}
+
+// ─────────────────────────────────────────────────────────────
+// CLEANUP — Disposes WebGL context on unmount to prevent GPU crash
+// ─────────────────────────────────────────────────────────────
+function Cleanup() {
+  const { gl } = useThree();
+  useLayoutEffect(() => {
+    return () => {
+      // Add a small delay to prevent race conditions during rapid component swaps
+      setTimeout(() => {
+        try {
+           console.info('[WebGL] Clearing context with delay guard...');
+           if (gl) {
+             gl.dispose();
+             gl.forceContextLoss();
+             if (gl.domElement && gl.domElement.parentNode) {
+               gl.domElement.remove();
+             }
+           }
+        } catch (e) {
+           console.warn('[WebGL] Cleanup non-fatal error:', e.message);
+        }
+      }, 100);
+    };
+  }, [gl]);
+  return null;
 }
 
 useGLTF.preload('/homewatch.glb');

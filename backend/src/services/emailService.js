@@ -144,12 +144,48 @@ const buildOrderTemplate = (order = {}) => {
   return buildShell({ title: 'Your Chronix order is confirmed', bodyHtml, ctaUrl: order.portalUrl || DEFAULT_APP_URL, ctaLabel: 'Track order' });
 };
 
+const buildShippingTemplate = (order = {}, status = 'shipped') => {
+  const isOutForDelivery = status === 'out_for_delivery';
+  const title = isOutForDelivery ? 'Out for Delivery 🚚' : 'Your order has been shipped';
+  const ctaLabel = isOutForDelivery ? 'See where it is' : 'Follow your shipment';
+
+  const bodyHtml = `
+    <p style="font-size:16px;color:#333;">Great news! Your Chronix order <strong>${order.orderDisplayId || order.orderId}</strong> is moving.</p>
+    <div style="margin:24px 0;padding:16px;background:#f9f9f9;border-radius:12px;text-align:center;">
+      <div style="font-size:14px;color:#777;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Status</div>
+      <div style="font-size:24px;font-weight:700;color:#111;">${isOutForDelivery ? 'Out for Delivery' : 'Shipped & Tracking'}</div>
+    </div>
+    <div style="font-size:15px;color:#555;margin-bottom:24px;">
+      ${isOutForDelivery 
+        ? 'Our delivery partner is in your area today. Keep your phone handy for the delivery PIN or call.' 
+        : 'Your package is on its way. You can track the progress using the link below.'}
+    </div>
+    <div style="font-size:14px;color:#777;border-top:1px solid #eee;padding-top:16px;">
+      Delivering to: <br/>
+      <strong>${order.shippingAddress?.fullName || 'Valued Customer'}</strong><br/>
+      ${order.shippingAddress?.address || ''}, ${order.shippingAddress?.city || ''}
+    </div>
+  `;
+
+  return buildShell({ title, bodyHtml, ctaUrl: order.portalUrl || DEFAULT_APP_URL, ctaLabel });
+};
+
 async function sendOrderConfirmation(userEmail, orderDetails = {}) {
   if (!userEmail) throw new Error('userEmail is required for order confirmation.');
   const html = buildOrderTemplate(orderDetails);
   const orderLabel = orderDetails.orderDisplayId || orderDetails.orderId || '';
   const subject = orderLabel ? `Order ${orderLabel} confirmed` : 'Your Chronix order is confirmed';
   const text = `Your Chronix order ${orderLabel} is confirmed. Total ${formatINR(orderDetails.totalAmount || orderDetails.totalPrice)}.`;
+  return sendGenericEmail({ to: userEmail, subject, html, text });
+}
+
+async function sendShippingUpdate(userEmail, orderDetails = {}, status = 'shipped') {
+  if (!userEmail) throw new Error('userEmail is required for shipping update.');
+  const html = buildShippingTemplate(orderDetails, status);
+  const orderLabel = orderDetails.orderDisplayId || orderDetails.orderId || '';
+  const isOut = status === 'out_for_delivery';
+  const subject = isOut ? `Order ${orderLabel} is Out for Delivery 🚚` : `Order ${orderLabel} has been shipped`;
+  const text = isOut ? `Your order ${orderLabel} is out for delivery.` : `Your order ${orderLabel} has been shipped and is on its way.`;
   return sendGenericEmail({ to: userEmail, subject, html, text });
 }
 
@@ -197,6 +233,7 @@ module.exports = {
   sendGenericEmail,
   sendWelcomeEmail,
   sendOrderConfirmation,
+  sendShippingUpdate,
   sendOTPEmail,
   sendEmailConfirmation,
   isEmailServiceEnabled: smtpReady,

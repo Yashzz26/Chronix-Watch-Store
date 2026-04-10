@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { HiOutlineShoppingCart, HiArrowLongRight } from 'react-icons/hi2';
 import toast from 'react-hot-toast';
 import SkeletonCard from './ui/SkeletonCard';
+import StarDisplay from './ui/StarDisplay';
 
 const containerVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -83,6 +84,9 @@ export default function NewArrivals({ products, loading, addItem }) {
 
                     <p className="home-arrival-card__meta">{product.category || 'Chronix Original'}</p>
                     <h3 className="home-arrival-card__name">{product.name}</h3>
+                    <div style={{ marginBottom: 6 }}>
+                      <StarDisplay rating={product.avgRating} count={product.reviewCount} size="0.7rem" />
+                    </div>
                     <div className="home-arrival-card__price">
                       ?{product.price?.toLocaleString('en-IN')}
                     </div>

@@ -228,19 +228,35 @@ function generateKeywords(name = '', category = '', tags = []) {
   // Tokenize name: "Rolex Submariner Date" → ["rolex", "submariner", "date"]
   String(name).toLowerCase().split(/\s+/).forEach(word => {
     const clean = word.replace(/[^a-z0-9]/g, '');
-    if (clean.length >= 2) tokens.add(clean);
+    if (clean.length >= 2) {
+      // Generate all prefixes for each word (Edge n-grams)
+      // "rolex" → ["ro", "rol", "role", "rolex"]
+      for (let i = 2; i <= clean.length; i++) {
+        tokens.add(clean.slice(0, i));
+      }
+    }
   });
 
-  // Add category as a keyword
+  // Add category as a keyword + its prefixes
   const catClean = String(category).toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
-  if (catClean) tokens.add(catClean);
+  if (catClean) {
+    catClean.split(/\s+/).forEach(word => {
+      for (let i = 2; i <= word.length; i++) {
+        tokens.add(word.slice(0, i));
+      }
+    });
+  }
 
-  // Add tags
+  // Add tags + their prefixes
   if (Array.isArray(tags)) {
     tags.forEach(tag => {
       if (typeof tag === 'string') {
-        const clean = tag.toLowerCase().trim();
-        if (clean.length >= 2) tokens.add(clean);
+        const clean = tag.toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+        if (clean.length >= 2) {
+          for (let i = 2; i <= clean.length; i++) {
+            tokens.add(clean.slice(0, i));
+          }
+        }
       }
     });
   }

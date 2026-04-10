@@ -18,6 +18,7 @@ import useCartStore from '../store/cartStore';
 import useWishlistStore from '../store/wishlistStore';
 import useReviewStore from '../store/reviewStore';
 import useAuthStore from '../store/authStore';
+import RecentlyViewed, { addToRecentlyViewed } from '../components/RecentlyViewed';
 import toast from 'react-hot-toast';
 
 export default function ProductDetail() {
@@ -81,6 +82,11 @@ export default function ProductDetail() {
     fetchProduct();
   }, [id, navigate, fetchReviews]);
 
+  // Track recently viewed products
+  useEffect(() => {
+    if (product?.id) addToRecentlyViewed(product.id);
+  }, [product?.id]);
+
   useEffect(() => {
     if (product?.variants?.length > 0) {
       const v = product.variants[0];
@@ -99,27 +105,37 @@ export default function ProductDetail() {
     () => (product ? reviews.filter((rev) => rev.productId === product.id) : []),
     [product, reviews]
   );
+  
   const averageRating = useMemo(() => {
-    if (!productReviews.length) return 0;
+    if (!productReviews || !productReviews.length) return 0;
     const total = productReviews.reduce((sum, rev) => sum + Number(rev.rating || 0), 0);
     return Number((total / productReviews.length).toFixed(1));
   }, [productReviews]);
-  const reviewCount = productReviews.length;
+
+  const reviewCount = productReviews?.length || 0;
   const roundedAverage = reviewCount ? Math.round(averageRating) : 0;
   const ratingSelectionValue = hoverRating || ratingValue;
+  
   const alreadyReviewed = useMemo(() => {
-    if (!isLoggedIn || !profile?.uid) return false;
+    if (!isLoggedIn || !profile?.uid || !productReviews) return false;
     return productReviews.some((rev) => rev.userId === profile.uid);
   }, [isLoggedIn, profile?.uid, productReviews]);
 
-  if (loading) return (
-    <div className="vh-100 d-flex align-items-center justify-content-center bg-bg">
-      <div className="text-center">
-        <div className="spinner-border text-gold mb-3" role="status"></div>
-        <div className="text-gold tracking-widest uppercase small fw-bold">Synchronizing Movement...</div>
-      </div>
-    </div>
-  );
+  const isWishlisted = isInWishlist(product?.id);
+
+  // ── Preload Gallery Images ─────────────────────────
+  useEffect(() => {
+    if (product?.imageGallery?.length > 0) {
+      product.imageGallery.forEach(src => {
+        const img = new Image();
+        img.src = src;
+      });
+    }
+  }, [product?.imageGallery]);
+
+  // ── HOOKS COMPLETE: Start of conditional returns ───────────────────
+  if (loading) return <DetailedSkeleton />;
+
   if (!product) return null;
 
   const activeVariant = product?.variants?.find(v => 
@@ -520,18 +536,18 @@ export default function ProductDetail() {
               <div className="d-flex align-items-center gap-3 mb-4">
                 <div className="d-flex text-gold">
                   {[1,2,3,4,5].map(star => (
-                    <HiStar key={star} className={star <= roundedAverage ? '' : 'opacity-20'} />
+                    <HiStar key={star} className={star <= (roundedAverage || 0) ? '' : 'opacity-20'} />
                   ))}
                 </div>
-                <span className="small fw-bold">{reviewCount ? `${averageRating.toFixed(1)} / 5.0` : 'New arrival'}</span>
+                <span className="small fw-bold">{reviewCount ? `${(averageRating || 0).toFixed(1)} / 5.0` : 'New arrival'}</span>
                 <span className="small text-t3 border-bottom border-border ms-2">
-                  {reviewCount ? `${reviewCount} Verified Review${reviewCount > 1 ? 's' : ''}` : 'Be the first to review'}
+                  {reviewCount > 0 ? `${reviewCount} Verified Review${reviewCount > 1 ? 's' : ''}` : 'Be the first to review'}
                 </span>
               </div>
 
               <div className="product-price">
-                â‚¹{currentPrice.toLocaleString()}
-                {product.isOnDeal && <span className="price-original">â‚¹{(currentPrice + 9500).toLocaleString()}</span>}
+                ₹{currentPrice.toLocaleString()}
+                {product.isOnDeal && <span className="price-original">₹{(currentPrice + 9500).toLocaleString()}</span>}
               </div>
 
               {/* SELECTION */}
@@ -593,8 +609,18 @@ export default function ProductDetail() {
                 >
                   {isAvailable ? 'Add to bag' : 'Out of stock'}
                 </button>
-                <button className="btn-wishlist" onClick={() => toggleWishlist(product)}>
-                  {isInWishlist(product.id) ? <HiHeart size={24} className="text-gold" /> : <HiOutlineHeart size={24} />}
+                <button className="btn-wishlist" onClick={() => toggleWishlist(product.id)}>
+                   <AnimatePresence mode="wait">
+                      {isInWishlist(product.id) ? (
+                         <motion.div key="heart-filled" initial={{ scale: 0.5 }} animate={{ scale: [0.5, 1.2, 1] }} transition={{ duration: 0.3 }}>
+                            <HiHeart size={24} className="text-danger" />
+                         </motion.div>
+                      ) : (
+                         <motion.div key="heart-outline" initial={{ scale: 0.8 }} animate={{ scale: 1 }}>
+                            <HiOutlineHeart size={24} />
+                         </motion.div>
+                      )}
+                   </AnimatePresence>
                 </button>
               </div>
 
@@ -669,14 +695,14 @@ export default function ProductDetail() {
               <div className="col-lg-4">
                 <div className="chronix-card tight h-100">
                   <span className="x-small text-t3 uppercase fw-bold tracking-widest">Average rating</span>
-                  <div className="display-4 fw-bold text-gold my-2">{reviewCount ? averageRating.toFixed(1) : '—'}</div>
+                  <div className="display-4 fw-bold text-gold my-2">{reviewCount ? (averageRating || 0).toFixed(1) : '—'}</div>
                   <div className="d-flex text-gold mb-3">
                     {[1,2,3,4,5].map(star => (
-                      <HiStar key={star} className={star <= roundedAverage ? '' : 'opacity-20'} />
+                      <HiStar key={star} className={star <= (roundedAverage || 0) ? '' : 'opacity-20'} />
                     ))}
                   </div>
                   <p className="small text-t2 m-0">
-                    {reviewCount ? `${reviewCount} collector${reviewCount > 1 ? 's' : ''} sharing insights.` : 'Be the first to review this watch.'}
+                    {reviewCount > 0 ? `${reviewCount} collector${reviewCount > 1 ? 's' : ''} sharing insights.` : 'Be the first to review this watch.'}
                   </p>
                 </div>
               </div>
@@ -777,14 +803,45 @@ export default function ProductDetail() {
                       </div>
                       <span className="x-small text-t3 uppercase tracking-widest mb-1 d-block">{p.category}</span>
                       <h4 className="h6 fw-bold text-t1 mb-1">{p.name}</h4>
-                      <span className="text-gold fw-bold small">â‚¹{p.price.toLocaleString()}</span>
+                      <span className="text-gold fw-bold small">₹{p.price.toLocaleString()}</span>
                     </Link>
                   </div>
                 ))}
               </div>
            </div>
         </div>
+
+        {/* Recently Viewed Products */}
+        <RecentlyViewed excludeId={id} />
       </div>
   );
 }
-
+// ─── Sub-Component: DetailedSkeleton ──────────────────────────────────────────
+function DetailedSkeleton() {
+  return (
+    <div className="container" style={{ paddingTop: '120px' }}>
+      <style>{`
+        .skeleton { background: linear-gradient(90deg, #f0f0f0 25%, #f8f8f8 50%, #f0f0f0 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+      `}</style>
+      <div className="row g-5">
+        <div className="col-lg-7">
+          <div className="skeleton" style={{ width: '100%', aspectRatio: '1', borderRadius: '4px' }}></div>
+          <div className="d-flex gap-3 mt-4 justify-content-center">
+            {[1,2,3,4].map(i => <div key={i} className="skeleton" style={{ width: '80px', height: '80px' }}></div>)}
+          </div>
+        </div>
+        <div className="col-lg-5">
+          <div className="skeleton mb-3" style={{ height: '14px', width: '120px' }}></div>
+          <div className="skeleton mb-4" style={{ height: '48px', width: '80%' }}></div>
+          <div className="skeleton mb-4" style={{ height: '20px', width: '40%' }}></div>
+          <div className="skeleton mb-5" style={{ height: '32px', width: '30%' }}></div>
+          <div className="skeleton mb-3" style={{ height: '20px', width: '100%' }}></div>
+          <div className="skeleton mb-3" style={{ height: '20px', width: '100%' }}></div>
+          <div className="skeleton mb-5" style={{ height: '100px', width: '100%' }}></div>
+          <div className="skeleton" style={{ height: '64px', width: '100%' }}></div>
+        </div>
+      </div>
+    </div>
+  );
+}

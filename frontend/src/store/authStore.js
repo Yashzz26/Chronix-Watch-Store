@@ -299,7 +299,8 @@ export const initAuthListener = () => {
         // Sync wishlist from backend on login
         try {
           const { default: useWishlistStore } = await import('./wishlistStore');
-          useWishlistStore.getState().fetchWishlist();
+          await useWishlistStore.getState().fetchWishlist();
+          console.info('[Auth] Wishlist synchronized for user:', user.uid);
         } catch (err) {
           console.warn('[Auth] Wishlist sync failed:', err.message);
         }

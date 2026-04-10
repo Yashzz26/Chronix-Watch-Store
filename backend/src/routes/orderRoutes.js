@@ -8,7 +8,7 @@ const validateOrderPayload = require('../middleware/validateOrderPayload');
 
 // ─── Constants ──────────────────────────────────────────────────────────────────
 const GST_RATE = 0.18; // 18% GST — must stay in sync with frontend
-const PRICE_MISMATCH_TOLERANCE = 1; // ₹1 tolerance for floating-point rounding
+const PRICE_MISMATCH_TOLERANCE = 0; // Strict matching required
 
 /**
  * POST /api/orders
@@ -201,6 +201,8 @@ const resolveServerCoupon = async (transaction, couponCode, subtotal) => {
   const expirySource = coupon.expiresAt || coupon.expiryDate || coupon.validTill || coupon.validUntil;
   if (expirySource) {
     const expiry = typeof expirySource.toDate === 'function' ? expirySource.toDate() : new Date(expirySource);
+    // Standardize to end of day UTC to prevent timezone issues
+    expiry.setUTCHours(23, 59, 59, 999);
     if (!Number.isNaN(expiry.getTime()) && expiry.getTime() < Date.now()) return null;
   }
 
@@ -304,6 +306,12 @@ router.post('/', verifyToken, validateOrderPayload, async (req, res) => {
         return productCache.get(productId);
       };
 
+      // ── Step 1.5: Aggregate quantities by productId BEFORE transaction loop ───
+      const productAggr = {};
+      normalizedItems.forEach(item => {
+        productAggr[item.productId] = (productAggr[item.productId] || 0) + item.qty;
+      });
+
       // ── Step 2: validate stock + resolve SERVER price for every item ──────
       for (const item of normalizedItems) {
         const ctx = await ensureProductContext(item.productId);
@@ -355,9 +363,10 @@ router.post('/', verifyToken, validateOrderPayload, async (req, res) => {
           });
         } else {
           const available = Number(productData.stock || 0);
-          if (available < item.qty) {
+          const totalRequested = productAggr[item.productId];
+          if (available < totalRequested) {
             throw new OrderError(`Insufficient stock for ${item.name}.`, 409, {
-              requested: item.qty,
+              requested: totalRequested,
               available
             });
           }
@@ -381,15 +390,16 @@ router.post('/', verifyToken, validateOrderPayload, async (req, res) => {
         subtotal: totals.subtotal,
         discount: totals.discountAmount,
         tax: Number(totals.tax.toFixed(2)),
-        match: Math.abs(clientTotal - totals.grandTotal) <= PRICE_MISMATCH_TOLERANCE
+        match: clientTotal === totals.grandTotal
       });
 
-      if (Math.abs(clientTotal - totals.grandTotal) > PRICE_MISMATCH_TOLERANCE) {
+      if (clientTotal !== totals.grandTotal) {
         console.warn(
-          `[Order] ⚠️  PRICE MISMATCH DETECTED — userId=${req.user.uid} ` +
-          `clientTotal=₹${clientTotal} serverTotal=₹${totals.grandTotal} ` +
-          `delta=₹${Math.abs(clientTotal - totals.grandTotal).toFixed(2)}`
+          `[Order] 🚨 PRICE MISMATCH DETECTED — userId=${req.user.uid} ` +
+          `clientTotal=₹${clientTotal} serverTotal=₹${totals.grandTotal}`
         );
+        // THROW specifically to trigger the mismatch return
+        throw new OrderError("PRICE_UPDATED", 409, { serverTotal: totals.grandTotal });
       }
 
       // ── Step 6: build the order document with SERVER-VERIFIED data ────────

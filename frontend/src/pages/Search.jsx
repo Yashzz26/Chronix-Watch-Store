@@ -1,5 +1,9 @@
-﻿import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import SkeletonCard from '../components/ui/SkeletonCard';
+import StarDisplay from '../components/ui/StarDisplay';
+import useWishlistStore from '../store/wishlistStore';
+import { HiOutlineHeart, HiHeart } from 'react-icons/hi2';
 
 const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
@@ -10,6 +14,7 @@ export default function Search() {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const { toggleWishlist, isInWishlist } = useWishlistStore();
 
   useEffect(() => {
     setInputValue(keyword);
@@ -151,19 +156,56 @@ export default function Search() {
         {error && <div className="search-error">{error}</div>}
 
         {loading ? (
-          <div className="py-5 text-center text-t3">Looking up watches…</div>
+          <div className="row g-4 search-results-grid">
+            {Array.from({ length: 8 }, (_, i) => (
+              <div className="col-6 col-md-4 col-lg-3" key={i}><SkeletonCard /></div>
+            ))}
+          </div>
         ) : results.length === 0 ? (
           <div className="search-empty mt-4">{emptyMessage}</div>
         ) : (
           <div className="row g-4 search-results-grid">
             {results.map((product) => (
               <div className="col-6 col-md-4 col-lg-3" key={product.id}>
-                <Link to={`/product/${product.id}`} className="search-card">
-                  <img src={product.imageGallery?.[0]} alt={product.name} />
-                  <span className="x-small text-t3 text-uppercase tracking-widest">{product.category || 'Chronix'}</span>
-                  <h3 className="fw-bold">{product.name}</h3>
-                  <span className="text-gold fw-bold">₹{Number(product.price || 0).toLocaleString('en-IN')}</span>
-                </Link>
+                <div className="position-relative h-100" style={{ transform: 'scale(1)', transition: 'transform 0.2s ease' }}>
+                  <Link 
+                    to={`/product/${product.id}`} 
+                    className="search-card h-100 d-flex flex-column"
+                    style={{ borderRadius: '20px', overflow: 'hidden' }}
+                  >
+                    <div className="p-3 bg-white" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                       <img src={product.imageGallery?.[0]} alt={product.name} style={{ maxHeight: '160px', objectFit: 'contain' }} />
+                    </div>
+                    <div className="p-3 bg-white border-top border-border">
+                       <span className="x-small text-gold text-uppercase tracking-widest fw-bold mb-1 d-block">{product.category || 'Chronix'}</span>
+                       <h3 className="fw-bold h6 mb-2" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.name}</h3>
+                       <div className="mb-2">
+                         <StarDisplay rating={product.avgRating} count={product.reviewCount} size="0.6rem" />
+                       </div>
+                       <div className="d-flex justify-content-between align-items-center">
+                          <span className="text-t1 fw-bold">₹{Number(product.price || 0).toLocaleString('en-IN')}</span>
+                          <span className="x-small fw-bold text-t3 opacity-50">VIEW PIECE</span>
+                       </div>
+                    </div>
+                  </Link>
+
+                  <button 
+                    className="position-absolute top-0 end-0 m-2 btn p-0 z-2"
+                    onClick={(e) => { e.preventDefault(); toggleWishlist(product.id); }}
+                  >
+                    <AnimatePresence mode="wait">
+                       {isInWishlist(product.id) ? (
+                          <motion.div key="in" initial={{ scale: 0.5 }} animate={{ scale: [0.5, 1.3, 1] }}>
+                             <HiHeart size={18} className="text-danger m-0" />
+                          </motion.div>
+                       ) : (
+                          <motion.div key="out" whileHover={{ scale: 1.1 }}>
+                             <HiOutlineHeart size={18} className="text-t3 m-0" />
+                          </motion.div>
+                       )}
+                    </AnimatePresence>
+                  </button>
+                </div>
               </div>
             ))}
           </div>

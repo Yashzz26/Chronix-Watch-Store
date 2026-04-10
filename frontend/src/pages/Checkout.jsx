@@ -58,31 +58,69 @@ export default function Checkout() {
     fullName: '',
     phone: '',
     address: '',
-    city: 'Pune',
+    city: '',
+    state: '',
+    country: '',
     zip: ''
   });
 
   const handleDetectLocation = () => {
     if (!navigator.geolocation) return toast.error('Location not available on this device');
-    const locToast = toast.loading('Locating you...');
+    const locToast = toast.loading('Detecting your location...');
     
     navigator.geolocation.getCurrentPosition(async (pos) => {
       try {
         const { latitude, longitude } = pos.coords;
-        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
-        const data = await res.json();
-        if (data && data.address) {
-          const { road, suburb, city, town, village, postcode } = data.address;
+        const apiKey = import.meta.env.VITE_OPENCAGE_API_KEY;
+        
+        // Primary: OpenCage API (Detailed)
+        let url = `https://api.opencagedata.com/geocode/v1/json?q=${latitude}+${longitude}&key=${apiKey}`;
+        let res = await fetch(url);
+        let data = await res.json();
+
+        if (data && data.results && data.results.length > 0) {
+          const comp = data.results[0].components;
+          const formatted = data.results[0].formatted;
+
+          const street = comp.road || comp.neighbourhood || comp.suburb || comp.building || comp.attraction || "";
+          const city = comp.city || comp.town || comp.village || comp.municipality || "";
+          
           setAddressData(prev => ({
             ...prev,
-            address: prev.address || road || suburb || '',
-            city: city || town || village || prev.city,
-            zip: postcode || prev.zip
+            address: street || formatted.split(',')[0],
+            city: city,
+            state: comp.state || "",
+            country: comp.country || "",
+            zip: comp.postcode || ""
           }));
-          toast.success('Address found', { id: locToast });
+          toast.success('Address auto-filled', { id: locToast });
+        } else {
+          // Fallback: Nominatim (Basic)
+          res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+          data = await res.json();
+          if (data && data.address) {
+            const { road, suburb, city, town, village, state, country, postcode } = data.address;
+            setAddressData(prev => ({
+              ...prev,
+              address: road || suburb || '',
+              city: city || town || village || '',
+              state: state || '',
+              country: country || '',
+              zip: postcode || ''
+            }));
+            toast.success('Address auto-filled', { id: locToast });
+          } else {
+            throw new Error('Could not resolve address');
+          }
         }
-      } catch (err) { toast.error("Couldn't fetch location", { id: locToast }); }
-    }, () => toast.error('Location permission blocked', { id: locToast }));
+      } catch (err) { 
+        console.error('Location error:', err);
+        toast.error("Couldn't fetch location details", { id: locToast }); 
+      }
+    }, (error) => {
+      const msg = error.code === 1 ? 'Location permission denied' : 'Unable to retrieve location';
+      toast.error(msg, { id: locToast });
+    });
   };
 
   useEffect(() => {
@@ -97,7 +135,10 @@ export default function Checkout() {
         fullName: profile.name || '',
         phone: profile.phone || '',
         address: profile.address || '',
-        city: 'Pune',
+        city: profile.city || '',
+        state: profile.state || '',
+        country: profile.country || '',
+        zip: profile.zip || ''
       }));
     }
   }, [items, navigate, profile]);
@@ -237,6 +278,11 @@ export default function Checkout() {
               clearCart();
               navigate('/confirmation', { state: { orderId: data.orderId, displayId: data.orderDisplayId } });
             } catch (verificationError) {
+              if (verificationError.message === 'PRICE_UPDATED') {
+                toast.dismiss(verifyingToast);
+                // The main handlePlaceOrder catch will handle the UI update
+                return;
+              }
               toast.error(verificationError.message || 'Unable to confirm payment. Please contact support.', { id: verifyingToast });
             }
           },
@@ -255,11 +301,24 @@ export default function Checkout() {
           navigate('/confirmation', { state: { orderId: data.orderId, displayId: data.orderDisplayId } });
         } else {
           const data = await response.json().catch(() => ({}));
+          if (response.status === 409 && data.message === 'Price updated') {
+            const newTotal = data.updatedTotal;
+            toast.error(`Price updated to ₹${newTotal.toLocaleString()}. Please confirm one last time.`, { duration: 5000 });
+            setLoading(false);
+            return;
+          }
           throw new Error(data.error || 'Unable to place order. Please try again.');
         }
       }
-    } catch (error) { toast.error(error.message); }
-    finally { setLoading(false); }
+    } catch (error) {
+      if (error.message === 'PRICE_UPDATED' || error.message?.includes('409')) {
+        toast.error('Price has changed. Please review the total and try again.');
+      } else {
+        toast.error(error.message || 'Unable to place order.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -382,7 +441,15 @@ export default function Checkout() {
                        </div>
                        <div className="col-md-6 mb-4">
                           <label className="label-refined mb-2">City</label>
-                          <input type="text" className="input-refined" value={addressData.city} onChange={e => setAddressData({...addressData, city: e.target.value})} />
+                          <input type="text" className="input-refined" placeholder="Pune" value={addressData.city} onChange={e => setAddressData({...addressData, city: e.target.value})} />
+                       </div>
+                       <div className="col-md-6 mb-4">
+                          <label className="label-refined mb-2">State / Province</label>
+                          <input type="text" className="input-refined" placeholder="Maharashtra" value={addressData.state} onChange={e => setAddressData({...addressData, state: e.target.value})} />
+                       </div>
+                       <div className="col-md-6 mb-4">
+                          <label className="label-refined mb-2">Country</label>
+                          <input type="text" className="input-refined" placeholder="India" value={addressData.country} onChange={e => setAddressData({...addressData, country: e.target.value})} />
                        </div>
                        <div className="col-md-6 mb-4">
                           <label className="label-refined mb-2">PIN / ZIP</label>

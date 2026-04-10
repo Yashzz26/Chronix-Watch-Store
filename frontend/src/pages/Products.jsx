@@ -6,19 +6,26 @@ import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { categories } from '../data/products';
 import useCartStore from '../store/cartStore';
+import useWishlistStore from '../store/wishlistStore';
+import StarDisplay from '../components/ui/StarDisplay';
+import { HiOutlineHeart, HiHeart } from 'react-icons/hi2';
 import toast from 'react-hot-toast';
 
 const SkeletonCard = () => (
-  <div className="bg-white border border-border p-4 h-100 animate-pulse">
-    <div className="bg-bg-1 w-100 aspect-square mb-4" />
-    <div className="h-6 bg-bg-1 w-3/4 mb-2" />
-    <div className="h-4 bg-bg-1 w-1/2" />
+  <div className="bg-white border border-border p-4 h-100 position-relative overflow-hidden">
+    <style>{`
+      .skeleton-shimmer { background: linear-gradient(90deg, #f0f0f0 25%, #f8f8f8 50%, #f0f0f0 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
+    `}</style>
+    <div className="skeleton-shimmer w-100 aspect-square mb-4" style={{ borderRadius: '12px' }} />
+    <div className="skeleton-shimmer h-6 w-75 mb-2" />
+    <div className="skeleton-shimmer h-4 w-50" />
   </div>
 );
 
 export default function Products({ filterCategory }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const addItem = useCartStore((s) => s.addItem);
+  const { toggleWishlist, isInWishlist } = useWishlistStore();
 
   const [dbProducts, setDbProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -52,6 +59,8 @@ export default function Products({ filterCategory }) {
       result.sort((a, b) => (a.dealPrice || a.price) - (b.dealPrice || b.price));
     } else if (sort === 'price-high') {
       result.sort((a, b) => (b.dealPrice || b.price) - (a.dealPrice || a.price));
+    } else if (sort === 'rating') {
+      result.sort((a, b) => (b.avgRating || 0) - (a.avgRating || 0));
     }
     return result;
   }, [dbProducts, activeCategory, sort]);
@@ -181,6 +190,9 @@ export default function Products({ filterCategory }) {
           transform: translateY(-4px);
           box-shadow: var(--shadow-md);
         }
+        .product-card-institutional {
+           position: relative;
+        }
         .p-card-img {
           aspect-ratio: 1/1;
           background: var(--bg-1);
@@ -248,6 +260,7 @@ export default function Products({ filterCategory }) {
                 <option value="default">Latest</option>
                 <option value="price-low">Price: Low to High</option>
                 <option value="price-high">Price: High to Low</option>
+                <option value="rating">Top Rated</option>
               </select>
             </aside>
           </div>
@@ -289,12 +302,33 @@ export default function Products({ filterCategory }) {
                       transition={{ delay: (idx % 3) * 0.1, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                     >
                        <div className="product-card-institutional">
-                          <Link to={`/product/${p.id}`} className="p-card-img">
-                             <img src={p.imageGallery[0]} alt={p.name} />
-                          </Link>
+                          <div className="position-relative">
+                             <Link to={`/product/${p.id}`} className="p-card-img">
+                                <img src={p.imageGallery[0]} alt={p.name} />
+                             </Link>
+                             <button 
+                                className="position-absolute top-0 end-0 m-3 btn p-0 z-2"
+                                onClick={(e) => { e.preventDefault(); toggleWishlist(p.id); }}
+                             >
+                                <AnimatePresence mode="wait">
+                                   {isInWishlist(p.id) ? (
+                                      <motion.div key="in" initial={{ scale: 0.5 }} animate={{ scale: [0.5, 1.3, 1] }}>
+                                         <HiHeart size={20} className="text-danger m-0" />
+                                      </motion.div>
+                                   ) : (
+                                      <motion.div key="out" whileHover={{ scale: 1.1 }}>
+                                         <HiOutlineHeart size={20} className="text-t3 m-0" />
+                                      </motion.div>
+                                   )}
+                                </AnimatePresence>
+                             </button>
+                          </div>
                           <div className="p-4 bg-white flex-grow-1 d-flex flex-column">
                              <span className="section-label-gold x-small mb-2" style={{ fontSize: '0.55rem' }}>{p.category}</span>
-                             <h3 className="h6 font-display fw-bold mb-3 flex-grow-1">{p.name}</h3>
+                             <h3 className="h6 font-display fw-bold mb-2 flex-grow-1">{p.name}</h3>
+                             <div className="mb-2">
+                               <StarDisplay rating={p.avgRating} count={p.reviewCount} size="0.65rem" />
+                             </div>
                              <div className="d-flex justify-content-between align-items-end">
                                 <span className="small fw-bold font-mono">₹{p.price.toLocaleString()}</span>
                                 <button className="btn-chronix-outline py-1 px-3 x-small fw-bold" onClick={(e) => {
