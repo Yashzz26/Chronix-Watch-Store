@@ -100,7 +100,7 @@ export default function Profile() {
       toast.error('Location unavailable on this device');
       return;
     }
-    const toastId = toast.loading('Detecting location…');
+    const toastId = toast.loading('Detecting locationÂ…');
     setLocating(true);
     navigator.geolocation.getCurrentPosition(async ({ coords }) => {
       try {
@@ -186,7 +186,7 @@ export default function Profile() {
                 ))}
               </div>
               <button type="button" className="btn-chronix-outline x-small mt-3 w-100" onClick={fillAddressFromGeo} disabled={locating}>
-                {locating ? 'Locating…' : 'Use current location'}
+                {locating ? 'LocatingÂ…' : 'Use current location'}
               </button>
             </aside>
 
@@ -242,7 +242,7 @@ export default function Profile() {
             </div>
             <div style={{ gridColumn: '1 / -1' }}>
               <button type="submit" disabled={saving} className="btn-chronix btn-gold">
-                {saving ? 'Saving…' : 'Save changes'}
+                {saving ? 'SavingÂ…' : 'Save changes'}
               </button>
             </div>
           </form>
@@ -427,5 +427,5 @@ export default function Profile() {
       </div>
     </div>
   );
-}
-
+}
+
