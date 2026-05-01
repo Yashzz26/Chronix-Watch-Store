@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { collection, getDocs, query, orderBy, deleteDoc, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { apiCall } from '../lib/apiHelper';
 import { HiOutlineTrash, HiStar } from 'react-icons/hi';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
@@ -28,7 +29,7 @@ const Reviews = () => {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => deleteDoc(doc(db, 'reviews', id)),
+    mutationFn: (id) => apiCall('delete', `/api/reviews/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries(['admin-reviews']);
       toast.success('Review removed');

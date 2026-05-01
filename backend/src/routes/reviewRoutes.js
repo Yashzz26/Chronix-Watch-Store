@@ -298,7 +298,10 @@ router.delete('/:reviewId', verifyToken, async (req, res) => {
       return res.status(404).json({ error: 'Review not found' });
     }
 
-    if (doc.data().userId !== req.user.uid && req.user.role !== 'admin') {
+    const userDoc = await db.collection('users').doc(req.user.uid).get();
+    const isAdmin = userDoc.exists && userDoc.data().role === 'admin';
+
+    if (doc.data().userId !== req.user.uid && !isAdmin) {
       return res.status(403).json({ error: 'Unauthorized: Can only delete your own reviews unless you are an administrator' });
     }
 

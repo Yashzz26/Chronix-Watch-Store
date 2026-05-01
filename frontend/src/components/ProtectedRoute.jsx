@@ -12,8 +12,6 @@ const Spinner = () => (
 export default function ProtectedRoute({ children }) {
   const location = useLocation();
   const { isLoggedIn, loading, profile } = useAuthStore();
-  const phoneBypass =
-    typeof window !== 'undefined' && window.localStorage.getItem('chronix_phone_bypass') === 'true';
 
   if (loading) {
     return <Spinner />;
@@ -23,7 +21,7 @@ export default function ProtectedRoute({ children }) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
-  if (!profile?.isPhoneVerified && !phoneBypass) {
+  if (!profile?.isPhoneVerified) {
     return <Navigate to="/verify-otp" replace state={{ from: location }} />;
   }
 

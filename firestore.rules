@@ -33,7 +33,9 @@ service cloud.firestore {
     // Only admin can update (status changes).
     match /orders/{orderId} {
       allow read: if isOwner(resource.data.userId) || isAdmin();
-      allow create: if isLoggedIn() && request.resource.data.userId == request.auth.uid;
+      // Orders must be created by the backend Admin SDK so pricing, stock,
+      // payment, coupon, and status checks cannot be bypassed by clients.
+      allow create: if false;
       allow update: if isAdmin();
       allow delete: if false;
     }
@@ -43,9 +45,10 @@ service cloud.firestore {
     // Users can delete their own. Admins can delete any.
     match /reviews/{reviewId} {
       allow read: if true;
-      allow create: if isLoggedIn();
-      allow delete: if isOwner(resource.data.userId) || isAdmin();
-      allow update: if isOwner(resource.data.userId);
+      // Reviews must be created by the backend Admin SDK so verified-purchase
+      // and duplicate-review checks cannot be bypassed by clients.
+      allow create: if false;
+      allow update, delete: if false;
     }
 
     // ─── USERS ─────────────────────────────────────────

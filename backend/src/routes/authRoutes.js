@@ -80,7 +80,10 @@ router.post('/phone/mark-verified', verifyToken, async (req, res) => {
  * DEV ONLY: Allows bypassing phone verification for local testing.
  * 🔐 Completely disabled in production.
  */
-if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
+if (
+  (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') &&
+  process.env.ENABLE_OTP_BYPASS === 'true'
+) {
   router.post('/otp/bypass', verifyToken, async (req, res) => {
     try {
       await db.collection('users').doc(req.user.uid).set(
@@ -104,4 +107,3 @@ if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
 }
 
 module.exports = router;
-

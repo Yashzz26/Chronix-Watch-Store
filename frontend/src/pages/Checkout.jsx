@@ -237,7 +237,7 @@ export default function Checkout() {
           priceAtPurchase: Number(item.dealPrice || item.price || 0),
           qty: item.qty,
           sku: item.sku || `CHX-${item.id.slice(0, 6)}`,
-          variantLabel: item.variants ? Object.values(item.variants).join(' â€¢ ') : 'Standard'
+          variantLabel: item.variants ? Object.values(item.variants).join(' • ') : 'Standard'
         })),
         totalPrice: payableTotal,
         paymentMethod: method,
@@ -477,7 +477,7 @@ export default function Checkout() {
                              <HiOutlineCreditCard className="h3 text-gold m-0" />
                              <div>
                                 <h4 className="small fw-bold m-0 mb-1">Online payment</h4>
-                                <p className="x-small text-t3 m-0 uppercase tracking-wider">UPI â€¢ Cards â€¢ Net banking</p>
+                                <p className="x-small text-t3 m-0 uppercase tracking-wider">UPI • Cards • Net banking</p>
                              </div>
                           </div>
                        </div>
@@ -521,8 +521,8 @@ export default function Checkout() {
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden mb-4 border-bottom border-border pb-3">
                     {items.map(item => (
                        <div key={item.id + JSON.stringify(item.variants || {})} className="item-row-sm">
-                          <span className="text-truncate flex-grow-1 pe-3">{item.name} Ã— {item.qty}</span>
-                          <span className="fw-bold">â‚¹{((item.dealPrice || item.price) * item.qty).toLocaleString()}</span>
+                          <span className="text-truncate flex-grow-1 pe-3">{item.name} × {item.qty}</span>
+                          <span className="fw-bold">₹{((item.dealPrice || item.price) * item.qty).toLocaleString()}</span>
                        </div>
                     ))}
                   </motion.div>
@@ -531,13 +531,13 @@ export default function Checkout() {
 
               <div className="statement-row">
                 <span>Items</span>
-                <span className="fw-bold">?{subtotal.toLocaleString()}</span>
+                <span className="fw-bold">₹{subtotal.toLocaleString()}</span>
               </div>
               {appliedCoupon && (
                  <div className="statement-row text-success flex-column align-items-start">
                     <div className="w-100 d-flex justify-content-between">
                       <span>Discount ({appliedCoupon.code})</span>
-                      <span className="fw-bold">- ?{couponDiscountAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                      <span className="fw-bold">- ₹{couponDiscountAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
                     </div>
                     {appliedCoupon.description && (
                       <span className="x-small text-success opacity-75">{appliedCoupon.description}</span>
@@ -550,12 +550,12 @@ export default function Checkout() {
               </div>
               <div className="statement-row">
                 <span>Tax (18% GST)</span>
-                <span className="fw-bold">?{estimatedTax.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                <span className="fw-bold">₹{estimatedTax.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
               </div>
 
               <div className="statement-total-row d-flex justify-content-between align-items-end mb-5">
                 <span className="section-label m-0">Estimated total</span>
-                <span className="h3 fw-bold m-0 text-gold">?{payableTotal.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                <span className="h3 fw-bold m-0 text-gold">₹{payableTotal.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
               </div>
 
               <div className="promo-input mb-5">

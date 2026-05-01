@@ -3,7 +3,7 @@ const router = express.Router();
 const crypto = require('crypto');
 const razorpay = require('../config/razorpay');
 const { db, admin } = require('../config/firebase');
-const { verifyToken, verifyAdmin } = require('../middleware/verifyToken');
+const { verifyToken, verifyAdmin, requirePhoneVerified } = require('../middleware/verifyToken');
 const validateOrderPayload = require('../middleware/validateOrderPayload');
 
 // ─── Constants ──────────────────────────────────────────────────────────────────
@@ -141,7 +141,7 @@ const logOrderEvent = (message, meta = {}) => {
   console.info(`[Order] ${message}`, meta);
 };
 
-const verifyRazorpaySignature = (details = {}) => {
+const verifyRazorpayPayment = async (details = {}, expectedTotal, userId) => {
   const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = details;
   if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
     throw new OrderError('Incomplete Razorpay payment details.', 400);
@@ -153,12 +153,38 @@ const verifyRazorpaySignature = (details = {}) => {
     .update(body)
     .digest('hex');
 
+  const expectedBuffer = Buffer.from(expectedSignature, 'hex');
+  const receivedBuffer = Buffer.from(String(razorpay_signature), 'hex');
+  if (
+    expectedBuffer.length !== receivedBuffer.length ||
+    !crypto.timingSafeEqual(expectedBuffer, receivedBuffer)
+  ) {
+    throw new OrderError('Payment verification failed.', 400);
+  }
+
+  const razorpayOrder = await razorpay.orders.fetch(razorpay_order_id);
+  const expectedAmount = Math.round(Number(expectedTotal) * 100);
+  const actualAmount = Number(razorpayOrder.amount);
+  const notes = razorpayOrder.notes || {};
+  const serverVerified = notes.serverVerified === true || notes.serverVerified === 'true';
+
+  if (actualAmount !== expectedAmount) {
+    throw new OrderError('Payment amount does not match order total.', 400, {
+      expectedAmount,
+      actualAmount
+    });
+  }
+
+  if (String(notes.userId || '') !== String(userId) || !serverVerified || notes.legacy) {
+    throw new OrderError('Payment order was not created by the secure checkout flow.', 400);
+  }
+
   return {
-    valid: expectedSignature === razorpay_signature,
-    details: {
-      orderId: razorpay_order_id,
-      paymentId: razorpay_payment_id
-    }
+    orderId: razorpay_order_id,
+    paymentId: razorpay_payment_id,
+    amount: actualAmount,
+    currency: razorpayOrder.currency,
+    status: razorpayOrder.status
   };
 };
 
@@ -256,7 +282,7 @@ const computeServerTotals = (verifiedItems, couponResult) => {
   return { subtotal, discountAmount, discountedSubtotal, tax, grandTotal };
 };
 
-router.post('/', verifyToken, validateOrderPayload, async (req, res) => {
+router.post('/', verifyToken, requirePhoneVerified, validateOrderPayload, async (req, res) => {
   const { items, totalAmount: clientTotal, paymentMethod, shippingAddress, couponCode } = req.orderPayload;
   const isCod = paymentMethod === 'cod';
   const suffix = generateDisplayId();
@@ -440,13 +466,17 @@ router.post('/', verifyToken, validateOrderPayload, async (req, res) => {
         orderData.discountAmount = couponResult.discountAmount;
       }
 
-      if (!isCod && req.body.razorpayDetails) {
-        const verification = verifyRazorpaySignature(req.body.razorpayDetails);
-        if (!verification.valid) {
-          throw new OrderError('Payment verification failed.', 400);
+      if (!isCod) {
+        if (!req.body.razorpayDetails) {
+          throw new OrderError('Razorpay payment details are required for online orders.', 400);
         }
+        const verification = await verifyRazorpayPayment(
+          req.body.razorpayDetails,
+          totals.grandTotal,
+          req.user.uid
+        );
         orderData.status = 'paid';
-        orderData.razorpayDetails = verification.details;
+        orderData.razorpayDetails = verification;
       }
 
       // ── Step 7: commit stock changes ──────────────────────────────────────
@@ -496,30 +526,12 @@ router.post('/', verifyToken, validateOrderPayload, async (req, res) => {
  * 🔐 Security: amount is calculated server-side from Firestore product prices.
  *    The frontend-sent amount is intentionally IGNORED.
  */
-router.post('/create-razorpay-order', verifyToken, async (req, res) => {
+router.post('/create-razorpay-order', verifyToken, requirePhoneVerified, async (req, res) => {
   try {
     const { items, couponCode } = req.body;
 
-    // Also accept legacy { amount } calls for backward-compat during rollout,
-    // but ONLY if items are not provided (will be removed in a future release)
     if (!Array.isArray(items) || !items.length) {
-      const { amount } = req.body;
-      if (!amount || typeof amount !== 'number' || amount <= 0) {
-        return res.status(400).json({ error: 'Items array is required for secure pricing' });
-      }
-      console.warn(`[Razorpay] ⚠️  Legacy amount-only call from userId=${req.user.uid} — amount=₹${amount}`);
-      // Fall through with the legacy amount (will be removed)
-      const order = await razorpay.orders.create({
-        amount: Math.round(amount * 100),
-        currency: 'INR',
-        receipt: `rcpt_${Date.now().toString(36)}`,
-        notes: { userId: req.user.uid, email: req.user.email, legacy: true },
-      });
-      return res.json({
-        razorpayOrderId: order.id,
-        amount: order.amount,
-        currency: order.currency,
-      });
+      return res.status(400).json({ error: 'Items array is required for secure pricing' });
     }
 
     // ── Server-side price calculation ────────────────────────────────────

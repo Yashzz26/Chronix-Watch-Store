@@ -263,18 +263,6 @@ export default function OTPVerification() {
     setTimeout(() => handleVerify(), 80);
   };
 
-  const handleSkip = () => {
-    toast('You can finish phone verification later.', { icon: 'ℹ️' });
-    try {
-      localStorage.setItem('chronix_phone_bypass', 'true');
-    } catch (error) {
-      console.warn('Unable to persist phone bypass flag', error);
-    }
-    const stored = sessionStorage.getItem('chronix_post_verify_path') || '/';
-    sessionStorage.removeItem('chronix_post_verify_path');
-    navigate(stored === '/verify-otp' ? '/' : stored, { replace: true });
-  };
-
   return (
     <div className="otp-shell d-flex align-items-center justify-content-center p-4">
       <style>{`
@@ -370,23 +358,6 @@ export default function OTPVerification() {
           color: var(--gold);
           font-weight: 600;
         }
-        .otp-skip {
-          width: 100%;
-          background: none;
-          border: 1px solid var(--border);
-          border-radius: 14px;
-          padding: 12px;
-          margin-top: 16px;
-          color: var(--t3);
-          font-size: 0.85rem;
-          font-weight: 500;
-          transition: all 0.2s;
-        }
-        .otp-skip:hover:not(:disabled) {
-          background: #fdfdfd;
-          border-color: var(--t3);
-          color: var(--t1);
-        }
       `}</style>
       <div className="otp-card">
         <p className="section-label-gold mb-2">Two-step login</p>
@@ -462,15 +433,6 @@ export default function OTPVerification() {
             </button>
           </form>
         )}
-
-        <button
-          type="button"
-          className="otp-skip"
-          onClick={handleSkip}
-          disabled={sending}
-        >
-          Do it later
-        </button>
       </div>
     </div>
   );

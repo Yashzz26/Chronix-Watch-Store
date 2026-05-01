@@ -88,7 +88,7 @@ export default function NewArrivals({ products, loading, addItem }) {
                       <StarDisplay rating={product.avgRating} count={product.reviewCount} size="0.7rem" />
                     </div>
                     <div className="home-arrival-card__price">
-                      ?{product.price?.toLocaleString('en-IN')}
+                      ₹{product.price?.toLocaleString('en-IN')}
                     </div>
                   </motion.article>
                 ))}
