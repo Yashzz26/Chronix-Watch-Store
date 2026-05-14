@@ -274,7 +274,6 @@ const useAuthStore = create(
       name: 'chronix-auth',
       partialize: (state) => ({
         isLoggedIn: state.isLoggedIn,
-        user: state.user,
         profile: state.profile,
         lastAuthMethod: state.lastAuthMethod,
       }),

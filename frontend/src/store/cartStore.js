@@ -20,7 +20,6 @@ const useCartStore = create(
     (set, get) => ({
       items: [],
       savedItems: [],
-      reviews: JSON.parse(localStorage.getItem('chronix-reviews') || '[]'),
       appliedCoupon: null,
 
       // ── Cart ──────────────────────────────────
@@ -131,15 +130,6 @@ const useCartStore = create(
         set({ appliedCoupon: null });
       },
 
-      // ── Reviews (localStorage, matching original script.js) ──
-      addReview(review) {
-        const updated = [...get().reviews, review];
-        set({ reviews: updated });
-        localStorage.setItem('chronix-reviews', JSON.stringify(updated));
-      },
-      getProductReviews(productId) {
-        return get().reviews.filter(r => r.productId === productId);
-      },
     }),
     { 
       name: 'chronix-cart', 
