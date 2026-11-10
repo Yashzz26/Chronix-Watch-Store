@@ -1,6 +1,7 @@
 /**
  * createAdmin.js — Run once to create an admin user in Firebase
- * Usage: node createAdmin.js
+ * Usage:
+ *   ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD="use-a-long-unique-password" node createAdmin.js
  */
 
 require('dotenv').config();
@@ -25,9 +26,14 @@ if (!admin.apps.length) {
 const auth = admin.auth();
 const db   = admin.firestore();
 
-const ADMIN_EMAIL    = 'admin@gmail.com';
-const ADMIN_PASSWORD = '123456';
-const ADMIN_NAME     = 'Chronix Admin';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+const ADMIN_NAME = process.env.ADMIN_NAME || 'Chronix Admin';
+
+if (!ADMIN_EMAIL || !ADMIN_PASSWORD || ADMIN_PASSWORD.length < 12) {
+  console.error('❌ Set ADMIN_EMAIL and a unique ADMIN_PASSWORD of at least 12 characters.');
+  process.exit(1);
+}
 
 async function createAdmin() {
   try {
@@ -66,7 +72,6 @@ async function createAdmin() {
     console.log('✅ Firestore users document set with role: admin');
     console.log('─────────────────────────────────────────');
     console.log('  Email    :', ADMIN_EMAIL);
-    console.log('  Password :', ADMIN_PASSWORD);
     console.log('  UID      :', userRecord.uid);
     console.log('─────────────────────────────────────────');
     console.log('🎉 Done! You can now log into the admin panel.');

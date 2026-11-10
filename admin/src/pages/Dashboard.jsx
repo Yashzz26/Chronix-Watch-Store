@@ -9,7 +9,7 @@ import { motion } from 'framer-motion';
 
 const getStatusBadgeClass = (status) => {
   const s = (status || '').toLowerCase();
-  return `status-badge status-badge-${s}` || 'status-badge status-badge-pending';
+  return `status-badge status-badge-${s || 'pending'}`;
 };
 
 const Dashboard = () => {
@@ -34,7 +34,7 @@ const Dashboard = () => {
 
   const totalRevenue = useMemo(() =>
     orders.filter(o => ['paid', 'shipped', 'delivered'].includes(o.status))
-      .reduce((sum, o) => sum + (o.totalPrice || 0), 0),
+      .reduce((sum, o) => sum + (o.totalAmount || 0), 0),
     [orders]
   );
 
@@ -46,7 +46,7 @@ const Dashboard = () => {
       if (!map.has(d)) map.set(d, { date: d, revenue: 0, orders: 0 });
       const day = map.get(d);
       day.orders += 1;
-      if (['paid', 'shipped', 'delivered'].includes(o.status)) day.revenue += (o.totalPrice || 0);
+      if (['paid', 'shipped', 'delivered'].includes(o.status)) day.revenue += (o.totalAmount || 0);
     });
     return Array.from(map.values()).reverse().slice(0, 14);
   }, [orders]);

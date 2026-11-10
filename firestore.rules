@@ -56,9 +56,35 @@ service cloud.firestore {
     // Admins can read all users.
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
-      allow create: if isOwner(userId) && request.resource.data.role == 'customer';
-      allow update: if (isOwner(userId) && !('role' in request.resource.data.diff(resource.data).changedKeys())) || isAdmin();
+      // Profiles are created only after Firebase Auth confirms the email.
+      allow create: if isOwner(userId) &&
+        request.resource.data.keys().hasOnly([
+          'uid', 'name', 'email', 'photo', 'loginProvider',
+          'providers', 'emailVerified', 'lastLogin', 'createdAt', 'role'
+        ]) &&
+        request.resource.data.role == 'customer' &&
+        request.resource.data.emailVerified == true &&
+        request.auth.token.email_verified == true;
+      allow update: if (
+        isOwner(userId) &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly([
+            'uid', 'name', 'email', 'photo', 'loginProvider',
+            'providers', 'emailVerified', 'lastLogin', 'address', 'city', 'postal'
+          ]) &&
+        request.resource.data.role == resource.data.role &&
+        request.resource.data.emailVerified == resource.data.emailVerified
+      ) || isAdmin();
       allow delete: if isAdmin();
+    }
+
+    // ─── NEWSLETTER ───────────────────────────────────
+    // Public signup only accepts the email and server timestamp.
+    match /newsletter/{subscriberId} {
+      allow create: if request.resource.data.keys().hasOnly(['email', 'createdAt']) &&
+        request.resource.data.email is string &&
+        request.resource.data.email.matches('^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$');
+      allow read, update, delete: if isAdmin();
     }
   }
 }

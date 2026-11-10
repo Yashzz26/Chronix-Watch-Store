@@ -11,7 +11,7 @@ const Spinner = () => (
 
 export default function ProtectedRoute({ children }) {
   const location = useLocation();
-  const { isLoggedIn, loading, profile } = useAuthStore();
+  const { isLoggedIn, loading } = useAuthStore();
 
   if (loading) {
     return <Spinner />;
@@ -21,10 +21,5 @@ export default function ProtectedRoute({ children }) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
-  if (!profile?.isPhoneVerified) {
-    return <Navigate to="/verify-otp" replace state={{ from: location }} />;
-  }
-
   return children;
 }
-

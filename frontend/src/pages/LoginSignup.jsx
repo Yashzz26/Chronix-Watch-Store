@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { HiOutlineEnvelope, HiOutlineLockClosed, HiOutlineUser } from 'react-icons/hi2';
 import { FcGoogle } from 'react-icons/fc';
-import { FaFacebookF } from 'react-icons/fa6';
 import useAuthStore from '../store/authStore';
 
 const initialLogin = { email: '', password: '' };
@@ -12,7 +11,7 @@ const initialSignup = { name: '', email: '', password: '', confirm: '' };
 export default function LoginSignup() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isLoggedIn, profile, login, signup, googleSignIn, facebookSignIn, loading } = useAuthStore();
+  const { isLoggedIn, login, signup, googleSignIn, loading } = useAuthStore();
 
   const [loginForm, setLoginForm] = useState(initialLogin);
   const [signupForm, setSignupForm] = useState(initialSignup);
@@ -26,24 +25,11 @@ export default function LoginSignup() {
   }, [location.state]);
 
   useEffect(() => {
-    if (!isLoggedIn) return;
-    if (profile?.isPhoneVerified) {
-      const target = redirectTarget === '/verify-otp' ? '/' : redirectTarget;
-      navigate(target, { replace: true });
-    } else {
-      navigate('/verify-otp', { replace: true });
-    }
-  }, [isLoggedIn, profile?.isPhoneVerified, navigate, redirectTarget]);
+    if (isLoggedIn) navigate(redirectTarget, { replace: true });
+  }, [isLoggedIn, navigate, redirectTarget]);
 
-  const handlePostAuth = (requiresOtp) => {
-    const needsOtp = Boolean(requiresOtp);
-    if (needsOtp) {
-      sessionStorage.setItem('chronix_post_verify_path', redirectTarget);
-      navigate('/verify-otp', { replace: true, state: { from: location.state?.from } });
-    } else {
-      const target = redirectTarget === '/verify-otp' ? '/' : redirectTarget;
-      navigate(target, { replace: true });
-    }
+  const handlePostAuth = () => {
+    navigate(redirectTarget, { replace: true });
   };
 
   const handleLogin = async (e) => {
@@ -53,7 +39,7 @@ export default function LoginSignup() {
     setBusy((curr) => ({ ...curr, login: false }));
     if (result?.success) {
       toast.success('Signed in');
-      handlePostAuth(result.requiresOtp);
+      handlePostAuth();
     } else {
       toast.error(result?.message || 'Could not sign in');
     }
@@ -73,8 +59,8 @@ export default function LoginSignup() {
     const result = await signup(signupForm.email.trim(), signupForm.password, { name: signupForm.name.trim() });
     setBusy((curr) => ({ ...curr, signup: false }));
     if (result?.success) {
-      toast.success('Account created');
-      handlePostAuth(result.requiresOtp);
+      toast.success('Verification email sent. Verify your email, then sign in.');
+      navigate('/login', { replace: true });
     } else {
       toast.error(result?.message || 'Could not create account');
     }
@@ -86,21 +72,9 @@ export default function LoginSignup() {
     setBusy((curr) => ({ ...curr, google: false }));
     if (result?.success) {
       toast.success('Signed in with Google');
-      handlePostAuth(result.requiresOtp);
+      handlePostAuth();
     } else {
       toast.error(result?.message || 'Google sign-in failed');
-    }
-  };
-
-  const handleFacebook = async () => {
-    setBusy((curr) => ({ ...curr, facebook: true }));
-    const result = await facebookSignIn();
-    setBusy((curr) => ({ ...curr, facebook: false }));
-    if (result?.success) {
-      toast.success('Signed in with Facebook');
-      handlePostAuth(result.requiresOtp);
-    } else {
-      toast.error(result?.message || 'Facebook sign-in failed');
     }
   };
 
@@ -116,7 +90,7 @@ export default function LoginSignup() {
   const loginView = (
     <>
       <h2>Welcome back</h2>
-      <p>Sign in with email and finish the OTP check on the next step.</p>
+      <p>Sign in with your verified email and password.</p>
       <form onSubmit={handleLogin}>
         <div className="auth-field">
           <label className="auth-label">Email</label>
@@ -152,14 +126,11 @@ export default function LoginSignup() {
           {busy.login ? 'Signing in…' : 'Login'}
         </button>
       </form>
-      <p className="auth-note">Every login routes through mobile OTP before we unlock the dashboard.</p>
+      <p className="auth-note">New accounts must verify their email before the first sign-in.</p>
       <div className="auth-divider">OR</div>
       <div className="social-stack">
         <button type="button" className="social-btn" onClick={handleGoogle} disabled={busy.google || loading}>
           <FcGoogle size={20} /> Google
-        </button>
-        <button type="button" className="social-btn" onClick={handleFacebook} disabled={busy.facebook || loading}>
-          <FaFacebookF size={16} color="#1877F2" /> Facebook
         </button>
       </div>
     </>
@@ -168,7 +139,7 @@ export default function LoginSignup() {
   const signupView = (
     <>
       <h2>Create account</h2>
-      <p>Set up your login and complete mobile verification right after.</p>
+      <p>Set up your account. We will email you a verification link before saving your profile.</p>
       <form onSubmit={handleSignup}>
         <div className="auth-field">
           <label className="auth-label">Full name</label>
@@ -389,4 +360,3 @@ export default function LoginSignup() {
     </div>
   );
 }
-

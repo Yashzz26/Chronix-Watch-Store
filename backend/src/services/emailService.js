@@ -192,7 +192,7 @@ async function sendShippingUpdate(userEmail, orderDetails = {}, status = 'shippe
 const buildWelcomeTemplate = (name = 'Chronix Explorer', ctaUrl = DEFAULT_APP_URL) => {
   const bodyHtml = `
     <p style="font-size:16px;color:#333;">Hi ${name || 'there'},</p>
-    <p style="font-size:16px;color:#333;">Welcome to Chronix! Your phone has been verified and your account is ready.</p>
+    <p style="font-size:16px;color:#333;">Welcome to Chronix! Your email has been verified and your account is ready.</p>
     <ul style="font-size:15px;color:#333;line-height:1.6;">
       <li>Track premium watch drops in real time</li>
       <li>Access exclusive COD-friendly checkouts</li>
@@ -210,21 +210,6 @@ async function sendWelcomeEmail(userEmail, { name, ctaUrl } = {}) {
   return sendGenericEmail({ to: userEmail, subject: 'Welcome to Chronix', html, text });
 }
 
-async function sendOTPEmail({ to, name, otp, expiresInMinutes } = {}) {
-  if (!to) throw new Error('Recipient email address is required for OTP email.');
-  if (!otp) throw new Error('OTP value is required.');
-  const expiry = expiresInMinutes || process.env.MSG91_OTP_EXPIRY || 10;
-  const bodyHtml = `
-    <p style="font-size:16px;color:#333;">Hi ${name || 'there'},</p>
-    <p style="font-size:16px;color:#333;">Use the one-time passcode below to continue:</p>
-    <div style="font-size:32px;font-weight:bold;letter-spacing:6px;text-align:center;margin:24px 0;color:#111;">${otp}</div>
-    <p style="font-size:14px;color:#555;">This code expires in ${expiry} minutes.</p>
-  `;
-  const html = buildShell({ title: 'Your Chronix verification code', bodyHtml, ctaUrl: null });
-  const text = `Your Chronix verification code is ${otp}. It expires in ${expiry} minutes.`;
-  return sendGenericEmail({ to, subject: 'Your Chronix verification code', html, text });
-}
-
 async function sendEmailConfirmation({ to, name, ctaUrl } = {}) {
   return sendWelcomeEmail(to, { name, ctaUrl });
 }
@@ -234,7 +219,6 @@ module.exports = {
   sendWelcomeEmail,
   sendOrderConfirmation,
   sendShippingUpdate,
-  sendOTPEmail,
   sendEmailConfirmation,
   isEmailServiceEnabled: smtpReady,
 };

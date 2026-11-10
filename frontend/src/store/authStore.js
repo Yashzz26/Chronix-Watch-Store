@@ -4,10 +4,11 @@ import { auth, db } from '../lib/firebase';
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  sendEmailVerification,
+  reload,
   signOut,
   onAuthStateChanged,
   GoogleAuthProvider,
-  FacebookAuthProvider,
   signInWithPopup,
   linkWithCredential,
   fetchSignInMethodsForEmail,
@@ -25,10 +26,9 @@ const createOrUpdateUser = async (user, provider, extra = {}) => {
     uid: user.uid,
     name: user.displayName ?? existing.name ?? '',
     email: user.email ?? existing.email ?? '',
-    phone: user.phoneNumber ?? existing.phone ?? '',
     photo: user.photoURL ?? existing.photo ?? '',
     loginProvider: provider || existing.loginProvider || 'password',
-    isPhoneVerified: user.phoneNumber ? true : (extra.isPhoneVerified ?? existing.isPhoneVerified ?? false),
+    emailVerified: user.emailVerified === true,
     lastLogin: serverTimestamp(),
     ...extra,
   };
@@ -59,8 +59,8 @@ const getReadableError = (code) => {
       return 'Email is already registered.';
     case 'auth/account-exists-with-different-credential':
       return 'This email is linked to another provider. Sign in with that method to continue.';
-    case 'auth/invalid-verification-code':
-      return 'Invalid OTP. Please re-enter the code.';
+    case 'auth/requires-recent-login':
+      return 'Please sign in again to continue.';
     case 'auth/too-many-requests':
       return 'Too many attempts. Please wait a moment and try again.';
     case 'auth/popup-closed-by-user':
@@ -113,10 +113,24 @@ const useAuthStore = create(
             }
           }
 
+          await reload(credential.user);
+          if (!credential.user.emailVerified) {
+            await sendEmailVerification(credential.user, {
+              url: `${window.location.origin}/verify-email`,
+              handleCodeInApp: true,
+            });
+            await signOut(auth);
+            set({ loading: false });
+            return {
+              success: false,
+              error: 'auth/email-not-verified',
+              message: 'Please verify your email from the link we sent before signing in.',
+            };
+          }
           const profileData = await createOrUpdateUser(credential.user, 'password');
           get().setLastAuthMethod('email');
           set({ isLoggedIn: true, user: credential.user, profile: profileData, loading: false });
-          return { success: true, user: credential.user, requiresOtp: !(profileData?.isPhoneVerified) };
+          return { success: true, user: credential.user, profile: profileData };
         } catch (error) {
           console.error('Login error:', error.code);
           set({ loading: false });
@@ -136,12 +150,13 @@ const useAuthStore = create(
               console.warn('Display name update failed', err);
             }
           }
-          const profileData = await createOrUpdateUser(credential.user, 'password', {
-            name: userData?.name ?? credential.user.displayName ?? '',
-          });
           get().setLastAuthMethod('email');
-          set({ isLoggedIn: true, user: credential.user, profile: profileData, loading: false });
-          return { success: true, user: credential.user, requiresOtp: !(profileData?.isPhoneVerified) };
+          await sendEmailVerification(credential.user, {
+            url: `${window.location.origin}/verify-email`,
+            handleCodeInApp: true,
+          });
+          set({ isLoggedIn: false, user: null, profile: {}, loading: false });
+          return { success: true, emailVerificationSent: true };
         } catch (error) {
           console.error('Signup error:', error.code);
           set({ loading: false });
@@ -159,7 +174,7 @@ const useAuthStore = create(
           const profileData = await createOrUpdateUser(result.user, 'google.com');
           get().setLastAuthMethod('google.com');
           set({ isLoggedIn: true, user: result.user, profile: profileData, loading: false });
-          return { success: true, user: result.user, requiresOtp: !(profileData?.isPhoneVerified) };
+          return { success: true, user: result.user, profile: profileData };
         } catch (error) {
           console.error('Google sign-in error', error.code);
           set({ loading: false });
@@ -178,27 +193,6 @@ const useAuthStore = create(
             } catch (linkError) {
               return { success: false, error: linkError.code, message: 'Unable to complete link. Please try email login.' };
             }
-          }
-          return { success: false, error: error.code, message: getReadableError(error.code) };
-        }
-      },
-
-      async facebookSignIn() {
-        if (get().loading) return;
-        set({ loading: true });
-        try {
-          const provider = new FacebookAuthProvider();
-          provider.setCustomParameters({ display: 'popup' });
-          const result = await signInWithPopup(auth, provider);
-          const profileData = await createOrUpdateUser(result.user, 'facebook.com');
-          get().setLastAuthMethod('facebook.com');
-          set({ isLoggedIn: true, user: result.user, profile: profileData, loading: false });
-          return { success: true, user: result.user, requiresOtp: !(profileData?.isPhoneVerified) };
-        } catch (error) {
-          console.error('Facebook sign-in error', error.code);
-          set({ loading: false });
-          if (error.code === 'auth/account-exists-with-different-credential') {
-            return { success: false, error: error.code, message: getReadableError(error.code) };
           }
           return { success: false, error: error.code, message: getReadableError(error.code) };
         }
@@ -248,11 +242,12 @@ const useAuthStore = create(
       },
 
       updateProfile(data) {
-        const { photo, role, createdAt, isPhoneVerified, ...rest } = data;
-        const patched = { ...get().profile, ...rest };
-        if (photo) {
-          patched.photo = photo;
-        }
+        const { name, address, city, postal, photo } = data;
+        const patched = { ...get().profile };
+        [ ['name', name], ['address', address], ['city', city], ['postal', postal], ['photo', photo] ]
+          .forEach(([key, value]) => {
+            if (value !== undefined) patched[key] = value;
+          });
         set({ profile: patched });
 
         if (get().user) {
@@ -260,14 +255,14 @@ const useAuthStore = create(
         }
       },
 
-      markPhoneAsVerified(phone) {
-        set((state) => ({
-          profile: {
-            ...state.profile,
-            phone: phone || state.profile.phone,
-            isPhoneVerified: true,
-          },
-        }));
+      async completeEmailVerification() {
+        const user = auth.currentUser;
+        if (!user) return null;
+        await reload(user);
+        if (!user.emailVerified) return null;
+        const profileData = await createOrUpdateUser(user, 'password');
+        set({ isLoggedIn: true, user, profile: profileData });
+        return profileData;
       },
     }),
     {
@@ -287,11 +282,14 @@ export const initAuthListener = () => {
     auth,
     async (user) => {
       if (user) {
-        const profileDoc = await getDoc(doc(db, 'users', user.uid));
+        await reload(user);
+        const profileDoc = user.emailVerified
+          ? await getDoc(doc(db, 'users', user.uid))
+          : null;
         useAuthStore.setState({
-          isLoggedIn: true,
+          isLoggedIn: Boolean(user.emailVerified),
           user,
-          profile: profileDoc.exists() ? profileDoc.data() : {},
+          profile: profileDoc?.exists() ? profileDoc.data() : {},
           loading: false,
         });
 

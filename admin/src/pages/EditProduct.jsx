@@ -1,9 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { doc, getDoc, serverTimestamp } from 'firebase/firestore';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '../lib/firebase';
+import { db } from '../lib/firebase';
 import { apiCall } from '../lib/apiHelper';
 import { 
   HiOutlineArrowLeft, HiOutlineSave, HiOutlinePlus, 
@@ -21,13 +20,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 const Categories = ['Analog', 'Smart Watch', 'Luxury', 'Gifts for Him', 'Gifts for Her', 'Limited Edition'];
 const StatusOptions = ['Draft', 'Published', 'Scheduled'];
 const AvailabilityOptions = ['In Stock', 'Out of Stock', 'Pre-Order'];
+const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
 
 const EditProduct = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isEdit = Boolean(id);
-  const fileInputRef = useRef(null);
 
   const [loading, setLoading] = useState(isEdit);
   const [formData, setFormData] = useState({
@@ -55,6 +55,7 @@ const EditProduct = () => {
   });
 
   const [tagInput, setTagInput] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
   const [uploading, setUploading] = useState(false);
 
   // Fetch Product Data if Editing
@@ -145,32 +146,70 @@ const EditProduct = () => {
 
   // ── MEDIA LOGIC ──────────────────────────────────────────────
 
-  const handleImageUpload = async (e) => {
-    const files = Array.from(e.target.files);
-    if (files.length === 0) return;
-    
-    setUploading(true);
-    const uploadedUrls = [];
-
-    for (const file of files) {
-      const storageRef = ref(storage, `products/${Date.now()}_${file.name}`);
-      const uploadTask = uploadBytesResumable(storageRef, file);
-      
-      await new Promise((resolve, reject) => {
-        uploadTask.on('state_changed', null, reject, async () => {
-          const url = await getDownloadURL(uploadTask.snapshot.ref);
-          uploadedUrls.push(url);
-          resolve();
-        });
-      });
+  const handleAddImageUrl = () => {
+    const url = imageUrl.trim();
+    if (!url || !/^https?:\/\/\S+$/i.test(url)) {
+      toast.error('Enter a valid public image URL.');
+      return;
     }
-
+    if (formData.imageGallery.includes(url)) {
+      toast.error('This image URL is already added.');
+      return;
+    }
     setFormData(prev => ({
       ...prev,
-      imageGallery: [...prev.imageGallery, ...uploadedUrls]
+      imageGallery: [...prev.imageGallery, url].slice(0, 8)
     }));
-    setUploading(false);
-    toast.success(`${uploadedUrls.length} assets deployed`);
+    setImageUrl('');
+    toast.success('Image URL added');
+  };
+
+  const handleCloudinaryUpload = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
+      toast.error('Cloudinary upload is not configured for this admin app.');
+      return;
+    }
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type)) {
+      toast.error('Use a JPG, PNG, or WebP image.');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Images must be smaller than 10 MB.');
+      return;
+    }
+    if (formData.imageGallery.length >= 8) {
+      toast.error('Maximum 8 images per product.');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const body = new FormData();
+      body.append('file', file);
+      body.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+      body.append('folder', 'chronix/products');
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+        { method: 'POST', body }
+      );
+      const data = await response.json();
+      if (!response.ok || !data.secure_url) {
+        throw new Error(data.error?.message || 'Cloudinary upload failed');
+      }
+      setFormData(prev => ({
+        ...prev,
+        imageGallery: [...prev.imageGallery, data.secure_url].slice(0, 8)
+      }));
+      toast.success('Image uploaded to Cloudinary');
+    } catch (error) {
+      console.error('Cloudinary upload failed:', error);
+      toast.error(error.message || 'Image upload failed');
+    } finally {
+      setUploading(false);
+    }
   };
 
   const removeImage = (index) => {
@@ -490,23 +529,34 @@ const EditProduct = () => {
                     </motion.div>
                   ))}
                 </AnimatePresence>
-                <div className="img-slot" onClick={() => fileInputRef.current.click()}>
-                   {uploading ? (
-                     <div className="spinner-border spinner-border-sm text-amber" />
-                   ) : (
-                     <HiOutlinePlus size={24} className="text-t3" />
-                   )}
-                </div>
               </div>
-              <input 
-                type="file" 
-                multiple 
-                hidden 
-                ref={fileInputRef} 
-                onChange={handleImageUpload} 
-                accept="image/*"
-              />
-              <p className="x-small text-t3 m-0 opacity-75">Maximum 8 assets. First image will be the primary editorial cover.</p>
+              <div className="d-flex gap-2 mb-2">
+                <label className="btn btn-outline-secondary mb-0">
+                  {uploading ? 'Uploading…' : 'Upload image'}
+                  <input
+                    type="file"
+                    hidden
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleCloudinaryUpload}
+                    disabled={uploading}
+                  />
+                </label>
+                <span className="x-small text-t3 align-self-center">Cloudinary CDN</span>
+              </div>
+              <div className="input-group">
+                <input
+                  type="url"
+                  className="form-control"
+                  value={imageUrl}
+                  onChange={e => setImageUrl(e.target.value)}
+                  placeholder="https://example.com/watch.jpg"
+                  aria-label="Public product image URL"
+                />
+                <button type="button" className="btn btn-outline-secondary" onClick={handleAddImageUrl}>
+                  <HiOutlinePlus size={18} />
+                </button>
+              </div>
+              <p className="x-small text-t3 m-0 mt-2 opacity-75">Upload JPG, PNG, or WebP files through Cloudinary, or add public HTTPS image URLs.</p>
             </div>
 
             {/* 3. Status & Publishing */}

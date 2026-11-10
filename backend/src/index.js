@@ -42,7 +42,6 @@ app.use('/api/products', require('./routes/productRoutes'));
 app.use('/api/coupons', require('./routes/couponRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/reviews', require('./routes/reviewRoutes'));
-app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/wishlist', require('./routes/wishlistRoutes'));
 
 // Health check
@@ -76,4 +75,3 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 module.exports = app;
-

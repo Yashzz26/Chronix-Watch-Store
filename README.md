@@ -89,14 +89,31 @@ FRONTEND_URL=http://localhost:5173
 
 ## Setting Up Admin Access
 
-After running the app, create your admin account:
+After configuring the backend service account, create your admin account with a unique password:
 
 ```bash
 cd backend
+ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD="use-a-long-unique-password" node createAdmin.js
+```
+
+On PowerShell, set the variables for the current session first:
+
+```powershell
+$env:ADMIN_EMAIL = "admin@example.com"
+$env:ADMIN_PASSWORD = "use-a-long-unique-password"
 node createAdmin.js
 ```
 
-Then log in at `http://localhost:5174` with the credentials in `createAdmin.js`.
+Then log in at `http://localhost:5174` with the credentials you supplied. The password is never stored in the repository or printed by the script.
+
+To restore the catalog without deleting existing products:
+
+```bash
+cd backend
+npm run seed:catalog
+```
+
+The catalog seeder uses stable product IDs and preserves existing stock values.
 
 ---
 

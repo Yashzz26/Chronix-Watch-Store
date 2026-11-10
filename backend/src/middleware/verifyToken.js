@@ -39,16 +39,11 @@ const verifyAdmin = async (req, res, next) => {
   }
 };
 
-const requirePhoneVerified = async (req, res, next) => {
-  try {
-    const userDoc = await db.collection('users').doc(req.user.uid).get();
-    if (!userDoc.exists || userDoc.data().isPhoneVerified !== true) {
-      return res.status(403).json({ error: 'Phone verification required' });
-    }
-    next();
-  } catch (err) {
-    return res.status(500).json({ error: 'Failed to verify phone status' });
+const requireEmailVerified = (req, res, next) => {
+  if (req.user.email_verified !== true) {
+    return res.status(403).json({ error: 'Email verification required' });
   }
+  next();
 };
 
-module.exports = { verifyToken, verifyAdmin, requirePhoneVerified };
+module.exports = { verifyToken, verifyAdmin, requireEmailVerified };

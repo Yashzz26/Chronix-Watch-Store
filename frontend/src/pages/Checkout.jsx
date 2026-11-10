@@ -219,11 +219,6 @@ export default function Checkout() {
 
   const handlePlaceOrder = async () => {
     if (loading || !auth.currentUser) return;
-    if (!profile?.isPhoneVerified) {
-      toast.error('Please verify your phone number before placing an order.');
-      navigate('/verify-otp', { replace: true });
-      return;
-    }
     setLoading(true);
     try {
       const token = await auth.currentUser.getIdToken();
@@ -598,6 +593,4 @@ export default function Checkout() {
     </div>
   );
 }
-
-
 

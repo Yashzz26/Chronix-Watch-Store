@@ -1,6 +1,6 @@
 // Last updated: 2026-03-22T22:00:00Z (To force Vite rebuild)
-import { lazy, Suspense, useEffect, useMemo } from 'react';
-import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
+import { lazy, Suspense, useEffect } from 'react';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useShallow } from 'zustand/react/shallow';
 import Navbar from './components/layout/Navbar';
@@ -21,7 +21,7 @@ const Orders         = lazy(() => import('./pages/Orders'));
 const Products       = lazy(() => import('./pages/Products'));
 const About          = lazy(() => import('./pages/About'));
 const Invoice        = lazy(() => import('./pages/Invoice'));
-const OTPVerification = lazy(() => import('./pages/OTPVerification'));
+const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
 const NotFound       = lazy(() => import('./pages/NotFound'));
 
 const Loader = () => (
@@ -33,29 +33,10 @@ const Loader = () => (
 );
 
 export default function App() {
-  const navigate = useNavigate();
   const location = useLocation();
-  const { loading, isLoggedIn, profile } = useAuthStore(useShallow((state) => ({
+  const { loading } = useAuthStore(useShallow((state) => ({
     loading: state.loading,
-    isLoggedIn: state.isLoggedIn,
-    profile: state.profile,
   })));
-  const phoneBypass = useMemo(() => {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem('chronix_phone_bypass') === 'true';
-  }, [isLoggedIn, profile?.isPhoneVerified]);
-
-  const requiresOtp = isLoggedIn && !profile?.isPhoneVerified && !phoneBypass;
-
-  useEffect(() => {
-    if (profile?.isPhoneVerified) {
-      try {
-        localStorage.removeItem('chronix_phone_bypass');
-      } catch (error) {
-        console.warn('Could not clear phone bypass flag', error);
-      }
-    }
-  }, [profile?.isPhoneVerified]);
 
   useEffect(() => {
     const unsubscribe = initAuthListener();
@@ -80,24 +61,6 @@ export default function App() {
     };
   }, []);
 
-  useEffect(() => {
-    if (!isLoggedIn) return;
-    if (requiresOtp && location.pathname !== '/verify-otp') {
-      if (!['/login', '/register'].includes(location.pathname)) {
-        sessionStorage.setItem('chronix_post_verify_path', `${location.pathname}${location.search}`);
-      }
-      navigate('/verify-otp', { replace: true, state: { from: location } });
-      return;
-    }
-
-    if (!requiresOtp && location.pathname === '/verify-otp') {
-      const stored = sessionStorage.getItem('chronix_post_verify_path') || '/';
-      sessionStorage.removeItem('chronix_post_verify_path');
-      const destination = stored === '/verify-otp' ? '/' : stored;
-      navigate(destination, { replace: true });
-    }
-  }, [requiresOtp, isLoggedIn, location, navigate]);
-
   const isInvoicePage = location.pathname.startsWith('/invoice/');
 
   if (loading) return <Loader />;
@@ -115,7 +78,7 @@ export default function App() {
             <Route path="/login"              element={<LoginSignup />} />
             <Route path="/register"           element={<LoginSignup />} />
             <Route path="/search"             element={<SearchPage />} />
-            <Route path="/verify-otp"         element={<OTPVerification />} />
+            <Route path="/verify-email"       element={<VerifyEmail />} />
             <Route path="/cart"               element={<ProtectedRoute><Cart /></ProtectedRoute>} />
             <Route path="/checkout"           element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
             <Route path="/confirmation"       element={<ProtectedRoute><Confirmation /></ProtectedRoute>} />
@@ -149,4 +112,3 @@ export default function App() {
     </div>
   );
 }
-

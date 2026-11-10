@@ -3,7 +3,7 @@ const router = express.Router();
 const crypto = require('crypto');
 const razorpay = require('../config/razorpay');
 const { db, admin } = require('../config/firebase');
-const { verifyToken, verifyAdmin, requirePhoneVerified } = require('../middleware/verifyToken');
+const { verifyToken, verifyAdmin, requireEmailVerified } = require('../middleware/verifyToken');
 const validateOrderPayload = require('../middleware/validateOrderPayload');
 
 // ─── Constants ──────────────────────────────────────────────────────────────────
@@ -282,7 +282,7 @@ const computeServerTotals = (verifiedItems, couponResult) => {
   return { subtotal, discountAmount, discountedSubtotal, tax, grandTotal };
 };
 
-router.post('/', verifyToken, requirePhoneVerified, validateOrderPayload, async (req, res) => {
+router.post('/', verifyToken, requireEmailVerified, validateOrderPayload, async (req, res) => {
   const { items, totalAmount: clientTotal, paymentMethod, shippingAddress, couponCode } = req.orderPayload;
   const isCod = paymentMethod === 'cod';
   const suffix = generateDisplayId();
@@ -526,7 +526,7 @@ router.post('/', verifyToken, requirePhoneVerified, validateOrderPayload, async 
  * 🔐 Security: amount is calculated server-side from Firestore product prices.
  *    The frontend-sent amount is intentionally IGNORED.
  */
-router.post('/create-razorpay-order', verifyToken, requirePhoneVerified, async (req, res) => {
+router.post('/create-razorpay-order', verifyToken, requireEmailVerified, async (req, res) => {
   try {
     const { items, couponCode } = req.body;
 
@@ -617,27 +617,13 @@ router.post('/create-razorpay-order', verifyToken, requirePhoneVerified, async (
  * Returns: { success: boolean, message: string }
  */
 router.post('/verify-payment', verifyToken, (req, res) => {
-  const { razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
-
-  if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
-    return res.status(400).json({ success: false, message: 'Missing payment details' });
-  }
-
-  try {
-    const body = `${razorpayOrderId}|${razorpayPaymentId}`;
-    const expectedSignature = crypto
-      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-      .update(body)
-      .digest('hex');
-
-    if (expectedSignature === razorpaySignature) {
-      res.json({ success: true, message: 'Payment verified successfully' });
-    } else {
-      res.status(400).json({ success: false, message: 'Payment signature mismatch - possible fraud' });
-    }
-  } catch (err) {
-    res.status(500).json({ success: false, message: 'Signature verification error' });
-  }
+  // This legacy endpoint cannot safely verify a payment without the server
+  // calculated total and the Razorpay order metadata. Use the checkout flow,
+  // which calls verifyRazorpayPayment with both values, instead.
+  return res.status(410).json({
+    success: false,
+    message: 'This payment verification endpoint is retired. Restart checkout to verify payment securely.'
+  });
 });
 
 /**
