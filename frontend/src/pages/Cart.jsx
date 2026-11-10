@@ -280,8 +280,8 @@ export default function Cart() {
                 <span className="h3 fw-bold m-0">₹{(totalPrice * 1.18).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
               </div>
 
-              <button className="btn-gold w-100 py-3 mb-4" onClick={() => navigate('/checkout')}>
-                Go to checkout
+              <button className="btn-gold w-100 py-3 mb-4" onClick={() => navigate('/checkout?direct=1')}>
+                Checkout & pay
               </button>
               
               <div className="d-flex align-items-center gap-2 justify-content-center opacity-40">
@@ -295,4 +295,3 @@ export default function Cart() {
     </div>
   );
 }
-

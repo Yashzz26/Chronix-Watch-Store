@@ -186,6 +186,42 @@ const verifyRazorpayPayment = async (details = {}, expectedTotal, userId) => {
     currency: razorpayOrder.currency,
     status: razorpayOrder.status
   };
+
+  const verifyRazorpaySignatureOnly = async (details = {}, userId) => {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = details;
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      throw new OrderError('Missing Razorpay payment fields.', 400);
+    }
+
+    const body = `${razorpay_order_id}|${razorpay_payment_id}`;
+    const expectedSignature = crypto
+      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+      .update(body)
+      .digest('hex');
+    const expectedBuffer = Buffer.from(expectedSignature, 'hex');
+    const receivedBuffer = Buffer.from(String(razorpay_signature), 'hex');
+
+    if (
+      expectedBuffer.length !== receivedBuffer.length ||
+      !crypto.timingSafeEqual(expectedBuffer, receivedBuffer)
+    ) {
+      throw new OrderError('Payment signature verification failed.', 400);
+    }
+
+    const razorpayOrder = await razorpay.orders.fetch(razorpay_order_id);
+    const notes = razorpayOrder.notes || {};
+    if (String(notes.userId || '') !== String(userId) || notes.serverVerified !== true && notes.serverVerified !== 'true') {
+      throw new OrderError('Payment order does not belong to this checkout session.', 400);
+    }
+
+    return {
+      orderId: razorpay_order_id,
+      paymentId: razorpay_payment_id,
+      amount: Number(razorpayOrder.amount),
+      currency: razorpayOrder.currency,
+      status: razorpayOrder.status,
+    };
+  };
 };
 
 // ─── Helper: resolve the REAL server-side price for a single order item ─────
@@ -587,16 +623,29 @@ router.post('/create-razorpay-order', verifyToken, requireEmailVerified, async (
       serverTotal
     });
 
-    const order = await razorpay.orders.create({
-      amount: Math.round(serverTotal * 100), // Convert INR to paise
-      currency: 'INR',
-      receipt: `rcpt_${Date.now().toString(36)}`,
-      notes: {
-        userId: req.user.uid,
-        email: req.user.email,
-        serverVerified: true,
-      },
-    });
+    let order;
+    try {
+      order = await razorpay.orders.create({
+        amount: Math.round(serverTotal * 100), // Convert INR to paise
+        currency: 'INR',
+        receipt: `rcpt_${Date.now().toString(36)}`,
+        notes: {
+          userId: req.user.uid,
+          email: req.user.email,
+          serverVerified: true,
+        },
+      });
+    } catch (razorpayError) {
+      const statusCode = Number(razorpayError?.statusCode);
+      if (statusCode === 401) {
+        console.error('Razorpay authentication failed. Check that RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET are a matching pair in the same mode.');
+        return res.status(502).json({
+          error: 'Payment provider authentication failed. Check the Razorpay key configuration.',
+          code: 'RAZORPAY_AUTH_FAILED'
+        });
+      }
+      throw razorpayError;
+    }
 
     res.json({
       razorpayOrderId: order.id,
@@ -612,18 +661,28 @@ router.post('/create-razorpay-order', verifyToken, requireEmailVerified, async (
 
 /**
  * POST /api/orders/verify-payment
- * Verifies Razorpay payment signature after frontend payment success.
- * Body: { razorpayOrderId, razorpayPaymentId, razorpaySignature }
- * Returns: { success: boolean, message: string }
+ * Verifies the Standard Checkout response without marking an order paid.
+ * The final /api/orders request repeats verification before creating the order.
  */
-router.post('/verify-payment', verifyToken, (req, res) => {
-  // This legacy endpoint cannot safely verify a payment without the server
-  // calculated total and the Razorpay order metadata. Use the checkout flow,
-  // which calls verifyRazorpayPayment with both values, instead.
-  return res.status(410).json({
-    success: false,
-    message: 'This payment verification endpoint is retired. Restart checkout to verify payment securely.'
-  });
+router.post('/verify-payment', verifyToken, requireEmailVerified, async (req, res) => {
+  try {
+    const verification = await verifyRazorpaySignatureOnly(
+      {
+        razorpay_order_id: req.body?.razorpay_order_id || req.body?.razorpayOrderId,
+        razorpay_payment_id: req.body?.razorpay_payment_id || req.body?.razorpayPaymentId,
+        razorpay_signature: req.body?.razorpay_signature || req.body?.razorpaySignature,
+      },
+      req.user.uid
+    );
+    return res.json({ success: true, payment: verification });
+  } catch (error) {
+    const statusCode = error instanceof OrderError ? error.statusCode : 500;
+    console.error('[Razorpay] Payment verification failed:', error.message);
+    return res.status(statusCode).json({
+      success: false,
+      error: error instanceof OrderError ? error.message : 'Payment verification failed',
+    });
+  }
 });
 
 /**
