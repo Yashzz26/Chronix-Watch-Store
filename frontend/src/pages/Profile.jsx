@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+﻿import { useState, useRef, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -100,7 +100,7 @@ export default function Profile() {
       toast.error('Location unavailable on this device');
       return;
     }
-    const toastId = toast.loading('Detecting location');
+    const toastId = toast.loading('Detecting locationÂ…');
     setLocating(true);
     navigator.geolocation.getCurrentPosition(async ({ coords }) => {
       try {
@@ -186,7 +186,7 @@ export default function Profile() {
                 ))}
               </div>
               <button type="button" className="btn-chronix-outline x-small mt-3 w-100" onClick={fillAddressFromGeo} disabled={locating}>
-                {locating ? 'Locating' : 'Use current location'}
+                {locating ? 'LocatingÂ…' : 'Use current location'}
               </button>
             </aside>
 
@@ -242,7 +242,7 @@ export default function Profile() {
             </div>
             <div style={{ gridColumn: '1 / -1' }}>
               <button type="submit" disabled={saving} className="btn-chronix btn-gold">
-                {saving ? 'Saving' : 'Save changes'}
+                {saving ? 'SavingÂ…' : 'Save changes'}
               </button>
             </div>
           </form>
@@ -320,7 +320,7 @@ export default function Profile() {
                   <p className="text-t3 small m-0 mt-1">{new Date(order.createdAt).toLocaleDateString()}</p>
                 </div>
                 <div className="ms-auto text-end">
-                  <p className="fw-bold m-0">₹{order.totalPrice.toLocaleString('en-IN')}</p>
+                  <p className="fw-bold m-0">â‚¹{order.totalPrice.toLocaleString('en-IN')}</p>
                   <button className="btn-chronix-outline x-small mt-2" onClick={() => navigate(`/invoice/${order.id}`)}>
                     Download invoice
                   </button>
@@ -352,7 +352,7 @@ export default function Profile() {
               <img src={item.imageGallery?.[0]} alt={item.name} />
               <div className="flex-grow-1">
                 <h4 className="h6 m-0">{item.name}</h4>
-                <p className="m-0 fw-bold">₹{item.price.toLocaleString('en-IN')}</p>
+                <p className="m-0 fw-bold">â‚¹{item.price.toLocaleString('en-IN')}</p>
                 <div className="d-flex gap-2 mt-2">
                   <button
                     className="btn-chronix-outline x-small"
@@ -427,5 +427,4 @@ export default function Profile() {
       </div>
     </div>
   );
-}
-
+}

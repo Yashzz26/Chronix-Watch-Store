@@ -7,11 +7,6 @@ import { HiOutlineArrowTrendingUp } from 'react-icons/hi2';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { motion } from 'framer-motion';
 
-const getStatusBadgeClass = (status) => {
-  const s = (status || '').toLowerCase();
-  return `status-badge status-badge-${s || 'pending'}`;
-};
-
 const Dashboard = () => {
   const [orders, setOrders] = useState([]);
   const [customers, setCustomers] = useState(0);

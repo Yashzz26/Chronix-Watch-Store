@@ -5,7 +5,6 @@ import { db } from '../lib/firebase';
 import { apiCall } from '../lib/apiHelper';
 import { HiOutlineTrash, HiStar } from 'react-icons/hi';
 import toast from 'react-hot-toast';
-import { motion } from 'framer-motion';
 
 const Reviews = () => {
   const queryClient = useQueryClient();
@@ -139,3 +138,4 @@ const Reviews = () => {
 };
 
 export default Reviews;
+import { motion } from 'framer-motion';

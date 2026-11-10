@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { HiOutlineLockClosed, HiOutlineUser, HiEye, HiEyeOff } from 'react-icons/hi';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import useAdminAuthStore from '../store/adminAuthStore';
 import toast from 'react-hot-toast';
+import { motion } from 'framer-motion';
 
 export default function AdminLogin() {
   const navigate = useNavigate();

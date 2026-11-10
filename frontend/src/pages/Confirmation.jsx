@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { HiOutlineCheckCircle } from 'react-icons/hi2';
 
 export default function Confirmation() {
@@ -64,4 +63,4 @@ export default function Confirmation() {
     </div>
   );
 }
-
+import { motion } from 'framer-motion';

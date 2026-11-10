@@ -121,7 +121,6 @@ export default function ProductDetail() {
     return productReviews.some((rev) => rev.userId === profile.uid);
   }, [isLoggedIn, profile?.uid, productReviews]);
 
-  const isWishlisted = isInWishlist(product?.id);
 
   // ── Preload Gallery Images ─────────────────────────
   useEffect(() => {

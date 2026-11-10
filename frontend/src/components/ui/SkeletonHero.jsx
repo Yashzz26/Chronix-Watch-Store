@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 
 const SkeletonHero = () => {
   return (
@@ -39,4 +38,4 @@ const SkeletonHero = () => {
 };
 
 export default SkeletonHero;
-
+import { motion } from 'framer-motion';

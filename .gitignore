@@ -28,6 +28,7 @@ backend/createAdmin.js
 # Frontend
 frontend/dist/
 frontend/node_modules/
+frontend/lint-results*.txt
 
 # OS
 Thumbs.db

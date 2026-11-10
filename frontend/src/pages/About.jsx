@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { 
   HiOutlineSparkles, 
@@ -218,4 +217,4 @@ export default function About() {
     </div>
   );
 }
-
+import { motion } from 'framer-motion';

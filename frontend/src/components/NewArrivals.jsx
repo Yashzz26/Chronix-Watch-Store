@@ -104,4 +104,3 @@ export default function NewArrivals({ products, loading, addItem }) {
     </section>
   );
 }
-

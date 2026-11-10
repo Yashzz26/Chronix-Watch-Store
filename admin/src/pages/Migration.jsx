@@ -25,7 +25,7 @@ const Migration = () => {
       const pending = orders.filter(o => !o.orderDisplayId);
       setStats({ total: orders.length, pending: pending.length, completed: 0 });
       toast.success(`Scan complete: ${pending.length} orders need mapping.`);
-    } catch (err) {
+    } catch {
       toast.error('Scan failed');
     } finally {
       setLoading(false);
@@ -50,7 +50,7 @@ const Migration = () => {
       await batch.commit();
       setStats(prev => ({ ...prev, pending: 0, completed: pendingDocs.length }));
       toast.success(`Successfully mapped ${pendingDocs.length} orders to Enterprise IDs.`);
-    } catch (err) {
+    } catch {
       toast.error('Migration failed');
     } finally {
       setLoading(false);
